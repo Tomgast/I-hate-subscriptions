@@ -37,12 +37,9 @@ export interface SubscriptionStats {
   totalMonthly: number
   totalYearly: number
   activeCount: number
-  upcomingRenewals: number
+  dueSoon: number
   categoryBreakdown: Record<SubscriptionCategory, number>
-  monthlyTrend: Array<{
-    month: string
-    amount: number
-  }>
+  monthlyTrend: { month: string; amount: number }[]
 }
 
 export interface ImportedSubscription {

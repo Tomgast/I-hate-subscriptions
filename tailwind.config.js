@@ -37,6 +37,8 @@ module.exports = {
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
+        'airflow': 'airflow 20s ease-in-out infinite',
+        'breeze': 'breeze 15s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -46,6 +48,17 @@ module.exports = {
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        airflow: {
+          '0%': { transform: 'rotate(0deg) scale(1)' },
+          '25%': { transform: 'rotate(90deg) scale(1.1)' },
+          '50%': { transform: 'rotate(180deg) scale(1)' },
+          '75%': { transform: 'rotate(270deg) scale(0.9)' },
+          '100%': { transform: 'rotate(360deg) scale(1)' },
+        },
+        breeze: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
       },
     },

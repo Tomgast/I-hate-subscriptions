@@ -106,13 +106,13 @@ class SubscriptionStore {
       categoryBreakdown[sub.category] += monthlyAmount
     })
 
-    // Get upcoming renewals (next 30 days)
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    
-    const upcomingRenewals = subscriptions.filter(sub => {
+    // Get subscriptions due soon (next 7 days)
+    const sevenDaysFromNow = new Date()
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+  
+    const dueSoon = subscriptions.filter(sub => {
       const renewalDate = new Date(sub.nextBillingDate)
-      return renewalDate <= thirtyDaysFromNow && renewalDate >= new Date()
+      return renewalDate <= sevenDaysFromNow && renewalDate >= new Date()
     }).length
 
     // Generate monthly trend (last 12 months)
@@ -122,7 +122,7 @@ class SubscriptionStore {
       totalMonthly,
       totalYearly,
       activeCount: subscriptions.length,
-      upcomingRenewals,
+      dueSoon,
       categoryBreakdown,
       monthlyTrend,
     }

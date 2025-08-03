@@ -13,6 +13,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { format, isAfter, isBefore, addDays } from 'date-fns'
+import Link from 'next/link'
 
 interface SubscriptionCardProps {
   subscription: Subscription
@@ -191,12 +192,13 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
             <CheckCircle className="h-4 w-4" />
           </button>
           
-          <button
+          <Link
+            href={`/subscriptions/${subscription.id}`}
             className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
             title="Edit subscription"
           >
             <Edit3 className="h-4 w-4" />
-          </button>
+          </Link>
           
           <button
             onClick={handleDelete}
