@@ -12,7 +12,6 @@ interface User {
   name: string
   isPaid: boolean
   createdAt: string
-  trialEndsAt: string
 }
 
 export const authOptions: NextAuthOptions = {
@@ -146,8 +145,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub!
         // Add custom properties to session
+        ;(session.user as any).id = token.sub!
         ;(session.user as any).isPaid = token.isPaid as boolean
       }
       return session
@@ -186,7 +185,6 @@ export async function createUser(email: string, password: string, name: string):
     name,
     isPaid: false,
     createdAt: new Date().toISOString(),
-    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   }
 }
 
@@ -207,7 +205,6 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     name: userProfile.full_name || userProfile.email.split('@')[0],
     isPaid: userProfile.has_paid || false,
     createdAt: userProfile.created_at,
-    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default 7-day trial
   }
 }
 
@@ -223,6 +220,10 @@ export async function updateUserPaymentStatus(userId: string, isPaid: boolean): 
     .eq('id', userId)
 }
 
-export function isTrialExpired(user: User): boolean {
-  return new Date() > new Date(user.trialEndsAt)
+export function isPremiumUser(user: User): boolean {
+  return user.isPaid
+}
+
+export function canAccessPremiumFeatures(user: User): boolean {
+  return user.isPaid
 }

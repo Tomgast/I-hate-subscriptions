@@ -54,24 +54,63 @@ export default function HomePage() {
     }
   ]
 
-  const testimonials = [
+  // Real subscription waste statistics based on research
+  const subscriptionStats = [
     {
-      name: "Sarah M.",
-      text: "Found $180/month in forgotten subscriptions! This app paid for itself immediately.",
-      rating: 5,
-      savings: "$2,160/year"
+      figure: "$273",
+      label: "Average monthly subscription spending",
+      source: "West Monroe survey"
     },
     {
-      name: "Mike R.",
-      text: "Finally, a subscription tracker that doesn't charge monthly fees. Love the one-time payment.",
-      rating: 5,
-      savings: "$840/year"
+      figure: "12%",
+      label: "Of consumers underestimate subscription costs",
+      source: "Deloitte Digital Media Trends"
     },
     {
-      name: "Jessica L.",
-      text: "The privacy-first approach sold me. My data stays mine.",
-      rating: 5,
-      savings: "$1,320/year"
+      figure: "$348",
+      label: "Annual waste on unused subscriptions",
+      source: "Chase Bank study"
+    },
+    {
+      figure: "$640M",
+      label: "Lost to unwanted subscription renewals yearly",
+      source: "CNBC Consumer Reports"
+    }
+  ]
+  
+  // Competitor comparison data
+  const competitors = [
+    {
+      name: "Rocket Money",
+      price: "$3-$12/mo",
+      dataCollection: "Yes",
+      bankAccess: "Required",
+      onetime: "No",
+      privacy: "Limited"
+    },
+    {
+      name: "Bobby",
+      price: "$2-$6/mo",
+      dataCollection: "Yes",
+      bankAccess: "Optional",
+      onetime: "No",
+      privacy: "Moderate"
+    },
+    {
+      name: "Truebill",
+      price: "$3-$12/mo",
+      dataCollection: "Yes",
+      bankAccess: "Required",
+      onetime: "No",
+      privacy: "Limited"
+    },
+    {
+      name: "CashControl",
+      price: "$29 once",
+      dataCollection: "No",
+      bankAccess: "Optional",
+      onetime: "Yes",
+      privacy: "Complete"
     }
   ]
 
@@ -131,7 +170,7 @@ export default function HomePage() {
           </div>
           
           <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-            ✨ <span className="font-medium">No monthly fees</span> • <span className="font-medium">30-day money back</span> • <span className="font-medium">Instant access</span>
+            ✨ <span className="font-medium">No monthly fees</span> • <span className="font-medium">Pay once, use forever</span> • <span className="font-medium">Instant access</span>
           </div>
         </div>
       </section>
@@ -192,39 +231,70 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Real Results from Real Users
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              See how much our users are saving every month
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
+      {/* Subscription Waste Data Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+            The Real Cost of Subscription Overload
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
+            Research shows most people vastly underestimate how much they spend on subscriptions. See the data below.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {subscriptionStats.map((stat, i) => (
+              <div 
+                key={i} 
+                className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              >
+                <div className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
+                  {stat.figure}
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  "{testimonial.text}"
+                <p className="text-gray-600 dark:text-gray-400 mb-1">
+                  {stat.label}
                 </p>
-                <div className="flex justify-between items-center">
-                  <div className="font-semibold text-gray-900 dark:text-white">
-                    {testimonial.name}
-                  </div>
-                  <div className="text-green-600 dark:text-green-400 font-bold">
-                    Saved {testimonial.savings}
-                  </div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 italic">
+                  Source: {stat.source}
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Competitor Comparison Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            How We Compare
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto text-center">
+            Unlike subscription-based competitors, we offer a privacy-first approach with a one-time payment model.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">App</th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data Collection</th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bank Access</th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">One-Time Payment</th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Privacy Focus</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                {competitors.map((competitor, i) => (
+                  <tr key={i} className={competitor.name === "CashControl" ? "bg-green-50 dark:bg-green-900/20" : ""}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{competitor.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{competitor.price}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{competitor.dataCollection}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{competitor.bankAccess}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{competitor.onetime}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{competitor.privacy}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -233,6 +303,7 @@ export default function HomePage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
+
             Ready to Stop Wasting Money?
           </h2>
           <p className="text-xl text-primary-100 mb-8">
@@ -292,7 +363,11 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center justify-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  30-day money-back guarantee
+                  No recurring payments
+                </div>
+                <div className="flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  Complete privacy protection
                 </div>
               </div>
               

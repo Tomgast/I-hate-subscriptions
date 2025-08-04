@@ -15,7 +15,11 @@ import {
   PieChart,
   Edit,
   Trash2,
-  ArrowRight
+  ArrowRight,
+  MoreVertical,
+  CheckCircle,
+  CreditCard,
+  Upload
 } from 'lucide-react'
 import { Subscription, SubscriptionStats } from '@/types/subscription'
 
@@ -24,7 +28,16 @@ export default function DemoPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('nextBilling')
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list')
+  const [showUpcoming, setShowUpcoming] = useState(false)
 
+  // Define subscription stats type to match the actual dashboard
+  interface DemoSubscriptionStats {
+    totalMonthly: number;
+    totalYearly: number;
+    dueSoon: number;
+    activeCount: number;
+  }
+  
   // Expanded demo subscriptions data
   const demoSubscriptions: Subscription[] = [
     {
@@ -56,21 +69,6 @@ export default function DemoPage() {
       isActive: true,
       createdAt: '2024-02-01T00:00:00Z',
       updatedAt: '2024-02-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      name: 'Adobe Creative Cloud',
-      price: 52.99,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      nextBillingDate: '2025-02-01',
-      category: 'software',
-      description: 'Creative software suite',
-      website: 'https://adobe.com',
-      reminderDays: 7,
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
     },
     {
       id: '4',
@@ -148,8 +146,8 @@ export default function DemoPage() {
     },
     {
       id: '9',
-      name: 'VPN Service',
-      price: 12.99,
+      name: 'NordVPN',
+      price: 11.99,
       currency: 'USD',
       billingCycle: 'monthly',
       nextBillingDate: '2025-01-26',
@@ -177,29 +175,31 @@ export default function DemoPage() {
     }
   ]
 
-  const calculateStats = (): SubscriptionStats => {
-    const activeSubscriptions = demoSubscriptions.filter(sub => sub.isActive)
-    const totalMonthly = activeSubscriptions.reduce((sum, sub) => {
-      const monthlyAmount = sub.billingCycle === 'monthly' ? sub.price :
-                           sub.billingCycle === 'yearly' ? sub.price / 12 :
-                           sub.billingCycle === 'quarterly' ? sub.price / 3 :
-                           sub.price * 4.33 // weekly
-      return sum + monthlyAmount
-    }, 0)
 
-    const now = new Date()
+  // Calculate the dashboard stats
+  const calculateStats = (): DemoSubscriptionStats => {
+    // Filter active subscriptions
+    const activeSubscriptions = demoSubscriptions.filter(sub => sub.isActive)
+    
+    // Calculate total monthly spending
+    const totalMonthly = activeSubscriptions.reduce((total, sub) => {
+      return total + sub.price
+    }, 0)
+    
+    // Calculate subscriptions due in the next 7 days
     const dueSoon = activeSubscriptions.filter(sub => {
       const nextBilling = new Date(sub.nextBillingDate)
-      const diffTime = nextBilling.getTime() - now.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      return diffDays <= 7 && diffDays >= 0
+      const today = new Date()
+      const inSevenDays = new Date()
+      inSevenDays.setDate(today.getDate() + 7)
+      return nextBilling >= today && nextBilling <= inSevenDays
     }).length
-
+    
     return {
       totalMonthly,
       totalYearly: totalMonthly * 12,
       dueSoon,
-      activeSubscriptions: activeSubscriptions.length
+      activeCount: activeSubscriptions.length
     }
   }
 
@@ -259,219 +259,245 @@ export default function DemoPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Demo Account Status - Mimicking the actual dashboard */}
+        <div className="card mb-6 border-gray-300">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Account: Demo User
+              </h3>
+              <p className="text-sm text-gray-500">
+                demo@cashcontrol.app
+              </p>
+            </div>
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400">
+              Demo Account
+            </div>
+          </div>
+        </div>
+        
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DollarSign className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="ml-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Total</p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                   ${stats.totalMonthly.toFixed(2)}
                 </p>
               </div>
+              <DollarSign className="h-8 w-8 text-green-500 dark:text-green-400" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="ml-4">
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Yearly Total</p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                   ${stats.totalYearly.toFixed(2)}
                 </p>
               </div>
+              <TrendingUp className="h-8 w-8 text-blue-500 dark:text-blue-400" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-8 w-8 text-orange-600" />
-              </div>
-              <div className="ml-4">
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Due Soon</p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                   {stats.dueSoon}
                 </p>
               </div>
+              <AlertCircle className="h-8 w-8 text-orange-500 dark:text-orange-400" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Calendar className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="ml-4">
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  {stats.activeSubscriptions}
+                  {stats.activeCount}
                 </p>
               </div>
+              <Calendar className="h-8 w-8 text-purple-500 dark:text-purple-400" />
             </div>
           </div>
         </div>
 
-        {/* Spending Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Spending Over Time</h2>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setViewMode('chart')}
-                className={`p-2 rounded-lg ${viewMode === 'chart' ? 'bg-primary-100 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <BarChart3 className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-primary-100 text-primary-600' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <PieChart className="h-5 w-5" />
-              </button>
+        {/* Chart Section - Split into two cards like real dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Monthly Spending Trend
+            </h3>
+            <div className="h-64 flex items-end space-x-4">
+              {chartData.map((data, index) => (
+                <div key={index} className="flex-1 flex flex-col items-center">
+                  <div 
+                    className="w-full bg-primary-600 rounded-t-lg mb-2"
+                    style={{ height: `${(data.amount / 200) * 100}%` }}
+                  ></div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{data.month}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-500">${data.amount}</div>
+                </div>
+              ))}
             </div>
           </div>
           
-          {/* Simple Chart */}
-          <div className="h-64 flex items-end space-x-4">
-            {chartData.map((data, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full bg-primary-600 rounded-t-lg mb-2"
-                  style={{ height: `${(data.amount / 200) * 100}%` }}
-                ></div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{data.month}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-500">${data.amount}</div>
-              </div>
-            ))}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Spending by Category
+            </h3>
+            <div className="space-y-3">
+              {Object.entries({
+                streaming: 59.97,
+                music: 19.99,
+                productivity: 39.99,
+                fitness: 14.99,
+                cloud_storage: 9.99
+              })
+                .sort(([_, a], [__, b]) => b - a)
+                .map(([category, amount]) => (
+                  <div key={category} className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                      {category.replace('_', ' ')}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      ${amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search subscriptions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field pl-10"
-              />
-            </div>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search subscriptions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
           </div>
           
-          <div className="flex gap-4">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input-field"
+          <div className="flex gap-2">
+            <button
+              onClick={() => {}}
+              className="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
+              <Filter className="h-4 w-4 inline mr-2" />
+              Upcoming
+            </button>
             
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="input-field"
-            >
-              <option value="nextBilling">Next Billing</option>
-              <option value="name">Name</option>
-              <option value="price">Price</option>
-            </select>
+            <div className="relative">
+              <button
+                onClick={() => {}}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+            </div>
             
-            <button className="btn-secondary flex items-center gap-2">
+            <Link href="#" className="btn-primary flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Add Subscription
-            </button>
-            
-            <button className="btn-secondary flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export
-            </button>
+              Add New
+            </Link>
           </div>
         </div>
 
         {/* Subscriptions List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Your Subscriptions ({sortedSubscriptions.length})
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {sortedSubscriptions.length ? 'Your Subscriptions' : 'No subscriptions yet'}
             </h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {sortedSubscriptions.length} subscription{sortedSubscriptions.length !== 1 ? 's' : ''}
+            </span>
           </div>
-          
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {sortedSubscriptions.map((subscription) => (
-              <div key={subscription.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg ${
-                      subscription.category === 'streaming' ? 'bg-red-500' :
-                      subscription.category === 'music' ? 'bg-green-500' :
-                      subscription.category === 'software' ? 'bg-blue-500' :
-                      subscription.category === 'fitness' ? 'bg-orange-500' :
-                      subscription.category === 'productivity' ? 'bg-purple-500' :
-                      'bg-gray-500'
-                    }`}>
-                      {subscription.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        {subscription.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {subscription.description}
-                      </p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          Next billing: {new Date(subscription.nextBillingDate).toLocaleDateString()}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          subscription.isActive 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                        }`}>
-                          {subscription.isActive ? 'Active' : 'Inactive'}
-                        </span>
+
+          {sortedSubscriptions.length === 0 ? (
+            <div className="card text-center py-12">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No subscriptions found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {searchTerm 
+                  ? 'Try adjusting your search terms'
+                  : 'Get started by adding your first subscription'
+                }
+              </p>
+              {!searchTerm && (
+                <Link href="#" className="btn-primary">
+                  Add Your First Subscription
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {sortedSubscriptions.map((subscription) => (
+                <div key={subscription.id} className="subscription-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg ${
+                        subscription.category === 'streaming' ? 'bg-red-500' :
+                        subscription.category === 'music' ? 'bg-green-500' :
+                        subscription.category === 'software' ? 'bg-blue-500' :
+                        subscription.category === 'fitness' ? 'bg-orange-500' :
+                        subscription.category === 'productivity' ? 'bg-purple-500' :
+                        'bg-gray-500'
+                      }`}>
+                        {subscription.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {subscription.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {subscription.description}
+                        </p>
+                        <div className="flex items-center space-x-4 mt-1">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Next billing: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            subscription.isActive 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {subscription.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
                   
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        ${subscription.price.toFixed(2)}
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                          ${subscription.price.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {subscription.billingCycle}
+                        </p>
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {subscription.billingCycle}
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600">
-                        <Trash2 className="h-4 w-4" />
+                      <button className="btn-outline p-2 rounded-lg">
+                        <MoreVertical className="h-5 w-5" />
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
 
         {/* CTA */}
         <div className="mt-12 text-center">

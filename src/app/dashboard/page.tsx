@@ -62,6 +62,7 @@ export default function DashboardPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const bankConnected = urlParams.get('bank_connected')
     const provider = urlParams.get('provider')
+    const upgraded = urlParams.get('upgraded')
     
     if (bankConnected === 'success' && provider) {
       setSuccessMessage(`Successfully connected to ${provider.toUpperCase()}! European bank scanning is now ready.`)
@@ -70,8 +71,25 @@ export default function DashboardPage() {
       
       // Clear message after 5 seconds
       setTimeout(() => setSuccessMessage(''), 5000)
+    } else if (upgraded === 'true') {
+      setSuccessMessage(`Account successfully upgraded to PRO! All premium features are now available.`)
+      // Clean up URL params
+      window.history.replaceState({}, '', window.location.pathname)
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000)
     }
-  }, [])
+    
+    // Log user status for debugging
+    if (session?.user) {
+      console.log('Account status check:', {
+        email: session.user.email,
+        name: session.user.name,
+        isPaid: (session.user as any)?.isPaid,
+        sessionData: session
+      })
+    }
+  }, [session])
 
   // Load upcoming renewals and filtered subscriptions
   useEffect(() => {
@@ -140,27 +158,48 @@ export default function DashboardPage() {
   }
 
   const handleExportCSV = () => {
+    const isPremium = (session?.user as any)?.isPaid
+    if (!isPremium) {
+      router.push('/pricing')
+      return
+    }
     exportToCSV(subscriptions)
     setShowExportMenu(false)
   }
 
   const handleExportPDF = () => {
+    const isPremium = (session?.user as any)?.isPaid
+    if (!isPremium) {
+      router.push('/pricing')
+      return
+    }
     exportToPDF(subscriptions)
     setShowExportMenu(false)
   }
 
-  const handleExportJSON = async () => {
+  const handleExportJSON = () => {
+    const isPremium = (session?.user as any)?.isPaid
+    if (!isPremium) {
+      router.push('/pricing')
+      return
+    }
+    
     try {
-      const jsonData = await exportData()
-      const blob = new Blob([jsonData], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `subscriptions-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const data = {
+        exportDate: new Date().toISOString(),
+        subscriptions: subscriptions.map(sub => ({
+          name: sub.name,
+          price: sub.price,
+          billingCycle: sub.billingCycle,
+          nextBillingDate: sub.nextBillingDate,
+          category: sub.category,
+          description: sub.description,
+          website: sub.website,
+          isActive: sub.isActive
+        }))
+      }
+      
+      exportToJSON(subscriptions)
     } catch (error) {
       console.error('Export error:', error)
       alert('Failed to export data. Please try again.')
@@ -170,6 +209,19 @@ export default function DashboardPage() {
   }
 
   const handleBankScan = async () => {
+    // Check if user has premium access - add more robust checking
+    const isPremium = (session?.user as any)?.isPaid === true
+    
+    console.log('Current user session:', session?.user)
+    console.log('Is premium user:', isPremium)
+    
+    if (!isPremium) {
+      console.log('User does not have premium access, redirecting to pricing')
+      router.push('/pricing')
+      return
+    }
+    
+    console.log('User has premium access, proceeding with bank scan')
     setBankScanLoading(true)
     try {
       // Create TrueLayer link token for European banks
@@ -214,10 +266,12 @@ export default function DashboardPage() {
           <div className="relative">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="btn-secondary flex items-center gap-2"
+              className={`btn-secondary flex items-center gap-2 ${!(session?.user as any)?.isPaid ? 'opacity-75' : ''}`}
+              title={!(session?.user as any)?.isPaid ? 'Premium feature - Upgrade to access' : 'Export your data'}
             >
               <Download className="h-4 w-4" />
               Export
+              {!(session?.user as any)?.isPaid && <span className="text-xs bg-primary-600 text-white px-1 rounded ml-1">PRO</span>}
             </button>
             
             {showExportMenu && (
@@ -247,18 +301,22 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowBulkImport(true)}
-            className="btn-secondary flex items-center gap-2"
+            className={`btn-secondary flex items-center gap-2 ${!(session?.user as any)?.isPaid ? 'opacity-75' : ''}`}
+            title={!(session?.user as any)?.isPaid ? 'Premium feature - Upgrade to access' : 'Import multiple subscriptions'}
           >
             <Upload className="h-4 w-4" />
             Bulk Import
+            {!(session?.user as any)?.isPaid && <span className="text-xs bg-primary-600 text-white px-1 rounded ml-1">PRO</span>}
           </button>
           <button
             onClick={handleBankScan}
             disabled={bankScanLoading}
-            className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!(session?.user as any)?.isPaid ? 'opacity-75' : ''}`}
+            title={!(session?.user as any)?.isPaid ? 'Premium feature - Upgrade to access' : 'Automatically scan your bank for subscriptions'}
           >
             <CreditCard className="h-4 w-4" />
             {bankScanLoading ? 'Connecting...' : 'Scan Bank'}
+            {!(session?.user as any)?.isPaid && <span className="text-xs bg-primary-600 text-white px-1 rounded ml-1">PRO</span>}
           </button>
           <Link href="/subscriptions/new" className="btn-primary flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -283,8 +341,27 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* User Account Status */}
+      {session?.user && (
+        <div className={`card mb-6 ${(session.user as any)?.isPaid ? 'border-green-500' : 'border-gray-300'}`}>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Account: {session.user.name || 'User'}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {session.user.email}
+              </p>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${(session.user as any)?.isPaid ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400'}`}>
+              {(session.user as any)?.isPaid ? 'PRO Account' : 'Free Account'}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>

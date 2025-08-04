@@ -1,50 +1,36 @@
 {
   "..\\node_modules\\@supabase\\auth-js\\dist\\module\\lib\\helpers.js -> @supabase/node-fetch": {
-    "id": 80485,
+    "id": "..\\node_modules\\@supabase\\auth-js\\dist\\module\\lib\\helpers.js -> @supabase/node-fetch",
     "files": []
   },
   "..\\node_modules\\@supabase\\functions-js\\dist\\module\\helper.js -> @supabase/node-fetch": {
-    "id": 80485,
+    "id": "..\\node_modules\\@supabase\\functions-js\\dist\\module\\helper.js -> @supabase/node-fetch",
     "files": []
   },
   "..\\node_modules\\@supabase\\realtime-js\\dist\\module\\RealtimeClient.js -> @supabase/node-fetch": {
-    "id": 80485,
+    "id": "..\\node_modules\\@supabase\\realtime-js\\dist\\module\\RealtimeClient.js -> @supabase/node-fetch",
     "files": []
   },
   "..\\node_modules\\@supabase\\storage-js\\dist\\module\\lib\\helpers.js -> @supabase/node-fetch": {
-    "id": 80485,
+    "id": "..\\node_modules\\@supabase\\storage-js\\dist\\module\\lib\\helpers.js -> @supabase/node-fetch",
     "files": []
   },
   "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg": {
-    "id": 12396,
+    "id": "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg",
     "files": [
-      "static/chunks/bc98253f.2a86d0955713b458.js",
-      "static/chunks/969.8682b13d90244712.js"
+      "static/chunks/_app-pages-browser_node_modules_canvg_lib_index_es_js.js"
     ]
   },
   "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> dompurify": {
-    "id": 11411,
+    "id": "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> dompurify",
     "files": [
-      "static/chunks/411.497271701669eada.js"
+      "static/chunks/_app-pages-browser_node_modules_dompurify_dist_purify_js.js"
     ]
   },
   "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas": {
-    "id": 6807,
+    "id": "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas",
     "files": [
-      "static/chunks/ad2866b8.470e6af3964e3753.js"
-    ]
-  },
-  "app\\test-connections\\page.tsx -> @/lib/supabase": {
-    "id": 5526,
-    "files": [
-      "static/chunks/580-1c951878bfbcaea3.js",
-      "static/chunks/526.7c548a388182cbd3.js"
-    ]
-  },
-  "app\\test-connections\\page.tsx -> @stripe/stripe-js": {
-    "id": 48672,
-    "files": [
-      "static/chunks/672.d64ce87c1defe6c7.js"
+      "static/chunks/_app-pages-browser_node_modules_html2canvas_dist_html2canvas_js.js"
     ]
   }
 }

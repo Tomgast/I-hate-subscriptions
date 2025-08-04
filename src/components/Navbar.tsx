@@ -10,6 +10,7 @@ import { Logo } from './Logo'
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, right: 0 })
   const { data: session, status } = useSession()
   const { theme, setTheme } = useTheme()
 
@@ -38,12 +39,6 @@ export function Navbar() {
                   Dashboard
                 </Link>
                 <Link
-                  href="/subscriptions"
-                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Subscriptions
-                </Link>
-                <Link
                   href="/settings"
                   className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
@@ -56,40 +51,22 @@ export function Navbar() {
                   <HelpCircle className="h-5 w-5" />
                 </Link>
                 
-                {/* User Menu */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
+                {/* User Profile */}
+                <div className="relative flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md text-sm font-medium">
                     <User className="h-5 w-5" />
-                    <span>{session.user?.name || session.user?.email}</span>
-                  </button>
+                    <span className="truncate max-w-[120px]">{session.user?.name || session.user?.email}</span>
+                  </div>
                   
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
-                      <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        {session.user?.email}
-                      </div>
-                      <Link
-                        href="/settings"
-                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Settings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false)
-                          signOut()
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        <LogOut className="h-4 w-4 inline mr-2" />
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
+                  {/* Direct Logout Button */}
+                  <button
+                    onClick={() => signOut()}
+                    className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only">Sign Out</span>
+                  </button>
                 </div>
               </>
             ) : (
@@ -163,13 +140,6 @@ export function Navbar() {
                   onClick={() => setIsOpen(false)}
                 >
                   Dashboard
-                </Link>
-                <Link
-                  href="/subscriptions"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Subscriptions
                 </Link>
                 <Link
                   href="/settings"

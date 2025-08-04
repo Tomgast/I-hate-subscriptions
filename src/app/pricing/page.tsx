@@ -173,83 +173,44 @@ export default function PricingPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Free
-              </h3>
-              <div className="flex items-center justify-center mb-4">
-                <span className="text-4xl font-bold text-gray-900 dark:text-white">$0</span>
-                <span className="text-gray-500 dark:text-gray-400 ml-2">forever</span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Perfect for getting started
-              </p>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              {freeFeatures.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleGetStarted('free')}
-              disabled={isProcessing}
-              className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Get Started Free
-            </button>
-          </div>
-
-          {/* Pro Plan */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border-2 border-primary-500 relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-primary-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
-              </span>
-            </div>
-            
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center mb-2">
-                <Crown className="h-6 w-6 text-primary-500 mr-2" />
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Pro
                 </h3>
+                <div className="flex items-center justify-center mb-4">
+                  <span className="text-4xl font-bold text-gray-900 dark:text-white">${plan.price}</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-2">{plan.price > 0 ? 'one-time' : 'forever'}</span>
+                </div>
+                <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                  {plan.description}
+                  {plan.price > 0 && (
+                    <span className="block mt-2 text-xs text-gray-400">
+                      No hidden fees, cancel anytime
+                    </span>
+                  )}
+                </p>
               </div>
-              <div className="flex items-center justify-center mb-4">
-                <span className="text-4xl font-bold text-primary-600 dark:text-primary-400">$29</span>
-                <span className="text-gray-500 dark:text-gray-400 ml-2">one-time</span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Everything you need for complete control
-              </p>
+
+              <ul className="space-y-3 mb-8">
+                {plan.name === 'Free' ? freeFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                  </li>
+                )) : proFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handleGetStarted(plan.name.toLowerCase())}
+                disabled={isProcessing}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {plan.name === 'Free' ? 'Get Started Free' : 'Upgrade to Pro'}
+              </button>
             </div>
-
-            <ul className="space-y-3 mb-8">
-              {proFeatures.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleGetStarted('pro')}
-              disabled={isProcessing}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Upgrade to Pro'
-              )}
-            </button>
-          </div>
+          ))}
         </div>
 
         {/* Comparison */}
@@ -385,15 +346,6 @@ export default function PricingPage() {
               </h4>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 CashControl Pro includes smart email renewal alerts with customizable timing (1-30 days before renewal), welcome emails for new users, upgrade confirmations, and bank scan completion notifications. You can configure reminder frequency and preferred email times in settings.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                What if I'm not satisfied?
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                We offer a 30-day money-back guarantee. If you're not completely satisfied, we'll refund your money.
               </p>
             </div>
           </div>
