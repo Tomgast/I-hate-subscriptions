@@ -130,7 +130,7 @@ export default function OnboardingPage() {
               </div>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              7-day free trial
+              Free account
             </div>
           </div>
         </div>
@@ -420,11 +420,11 @@ export default function OnboardingPage() {
                 Want to explore more first?
               </div>
               <div className="flex justify-center space-x-4">
-                <Link href="/demo" className="btn-secondary">
-                  Try Interactive Demo
+                <Link href="/dashboard" className="btn-secondary">
+                  Go to Dashboard
                 </Link>
                 <Link href="/dashboard" className="text-primary-600 hover:text-primary-500 dark:text-primary-400 text-sm font-medium">
-                  Continue with Free Trial
+                  Continue with Free Account
                 </Link>
               </div>
             </div>

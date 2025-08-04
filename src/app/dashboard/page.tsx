@@ -6,17 +6,18 @@ import { Subscription, SubscriptionStats } from '@/types/subscription'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { 
-  DollarSign, 
-  TrendingUp, 
+  AlertCircle, 
   Calendar, 
-  AlertCircle,
-  Plus,
-  Filter,
+  CheckCircle, 
+  CreditCard, 
+  Crown,
+  DollarSign, 
+  Download, 
+  Plus, 
   Search,
-  Download,
-  Upload,
-  CreditCard,
-  CheckCircle,
+  Filter,
+  TrendingUp, 
+  Upload 
 } from 'lucide-react'
 import Link from 'next/link'
 import { SubscriptionCard } from '@/components/SubscriptionCard'
@@ -47,6 +48,8 @@ export default function DashboardPage() {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [bankScanLoading, setBankScanLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [userStatus, setUserStatus] = useState<{ isPaid: boolean, paymentDate?: string }>({ isPaid: false })
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -90,6 +93,32 @@ export default function DashboardPage() {
       })
     }
   }, [session])
+  
+  // Fetch the latest user status from the database
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      if (!session?.user?.email) return
+      
+      setIsLoadingStatus(true)
+      try {
+        const response = await fetch('/api/user/status')
+        
+        if (response.ok) {
+          const data = await response.json()
+          setUserStatus(data)
+          console.log('Latest user status from DB:', data)
+        } else {
+          console.error('Failed to fetch user status')
+        }
+      } catch (error) {
+        console.error('Error fetching user status:', error)
+      } finally {
+        setIsLoadingStatus(false)
+      }
+    }
+    
+    fetchUserStatus()
+  }, [session?.user?.email])
 
   // Load upcoming renewals and filtered subscriptions
   useEffect(() => {
@@ -209,21 +238,33 @@ export default function DashboardPage() {
   }
 
   const handleBankScan = async () => {
-    // Check if user has premium access - add more robust checking
-    const isPremium = (session?.user as any)?.isPaid === true
-    
-    console.log('Current user session:', session?.user)
-    console.log('Is premium user:', isPremium)
-    
-    if (!isPremium) {
-      console.log('User does not have premium access, redirecting to pricing')
-      router.push('/pricing')
-      return
-    }
-    
-    console.log('User has premium access, proceeding with bank scan')
-    setBankScanLoading(true)
+    // Always check the current premium status from the database
     try {
+      setBankScanLoading(true)
+      
+      // Get the latest premium status from the database
+      const userStatusResponse = await fetch('/api/user/status', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (!userStatusResponse.ok) {
+        throw new Error('Failed to verify premium status')
+      }
+      
+      const { isPaid } = await userStatusResponse.json()
+      
+      console.log('Current user premium status from DB:', isPaid)
+      
+      if (!isPaid) {
+        console.log('User does not have premium access')
+        // Show a modal or notification instead of redirecting
+        alert('Bank scanning is a premium feature. Please upgrade to Pro to access this feature.')
+        return
+      }
+      
+      console.log('User has premium access, proceeding with bank scan')
+      
       // Create TrueLayer link token for European banks
       const response = await fetch('/api/bank-providers/link-token', {
         method: 'POST',
@@ -343,7 +384,7 @@ export default function DashboardPage() {
 
       {/* User Account Status */}
       {session?.user && (
-        <div className={`card mb-6 ${(session.user as any)?.isPaid ? 'border-green-500' : 'border-gray-300'}`}>
+        <div className={`card mb-6 ${isLoadingStatus ? 'border-gray-300' : userStatus.isPaid ? 'border-green-500' : 'border-gray-300'}`}>
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -351,10 +392,33 @@ export default function DashboardPage() {
               </h3>
               <p className="text-sm text-gray-500">
                 {session.user.email}
+                {userStatus.paymentDate && userStatus.isPaid && (
+                  <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                    Pro since {new Date(userStatus.paymentDate).toLocaleDateString()}
+                  </span>
+                )}
               </p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-xs font-medium ${(session.user as any)?.isPaid ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400'}`}>
-              {(session.user as any)?.isPaid ? 'PRO Account' : 'Free Account'}
+            <div className="flex items-center gap-3">
+              <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${isLoadingStatus ? 'bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400' : userStatus.isPaid ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400'}`}>
+                {isLoadingStatus ? (
+                  <span className="flex items-center">
+                    <span className="animate-pulse mr-1">●</span> Checking...
+                  </span>
+                ) : userStatus.isPaid ? (
+                  <span className="flex items-center">
+                    <Crown className="h-3 w-3 mr-1" /> PRO Account
+                  </span>
+                ) : (
+                  'Free Account'
+                )}
+              </div>
+              {!isLoadingStatus && !userStatus.isPaid && (
+                <Link href="/pricing" className="btn-primary flex items-center gap-1 py-1 px-3 text-sm">
+                  <Crown className="h-4 w-4" />
+                  Upgrade to Pro
+                </Link>
+              )}
             </div>
           </div>
         </div>

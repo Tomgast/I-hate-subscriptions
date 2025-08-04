@@ -13,110 +13,258 @@ import {
   Shield,
   Eye,
   EyeOff,
-  ExternalLink
+  ExternalLink,
+  Info,
+  Lock,
+  HelpCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { DetectedSubscription } from '@/lib/bank-scan'
+import { useRouter } from 'next/navigation'
 
 interface BankScanProps {
   userTier: 'free' | 'pro'
   onSubscriptionsAdded?: (count: number) => void
 }
 
+type BankScanStep = 'intro' | 'provider-selection' | 'connecting' | 'scanning' | 'review' | 'complete' | 'error'
+
 export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
+  const router = useRouter()
+  const { data: session } = useSession()
+  
+  // Flow control states
+  const [currentStep, setCurrentStep] = useState<BankScanStep>('intro')
   const [isScanning, setIsScanning] = useState(false)
-  const [scanComplete, setScanComplete] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  
+  // Data states
   const [detectedSubscriptions, setDetectedSubscriptions] = useState<DetectedSubscription[]>([])
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<Set<number>>(new Set())
-  const [isConfirming, setIsConfirming] = useState(false)
   const [scanResults, setScanResults] = useState<{
     totalTransactionsAnalyzed: number
     analysisDateRange: { startDate: string; endDate: string }
   } | null>(null)
+  
+  // Error handling
+  const [error, setError] = useState<string | null>(null)
+  const [bankProviders, setBankProviders] = useState<{id: string, name: string, logo: string}[]>([
+    { id: 'truelayer', name: 'TrueLayer (Open Banking)', logo: '/images/truelayer-logo.png' },
+    { id: 'plaid', name: 'Plaid', logo: '/images/plaid-logo.png' },
+    { id: 'demo', name: 'Demo Bank (Test Data)', logo: '/images/demo-bank-logo.png' }
+  ])
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
 
-  // Mock bank connection for demo - in production this would use Plaid Link
-  const handleBankScan = async () => {
+  // Start bank connection flow
+  const startBankConnection = async () => {
     if (userTier !== 'pro') {
-      alert('Bank account scanning is a Pro feature. Please upgrade to access this functionality.')
+      setError('Bank account scanning is a Pro feature. Please upgrade to access this functionality.')
       return
     }
 
-    setIsScanning(true)
+    setCurrentStep('provider-selection')
+    setError(null)
+  }
+
+  // Handle provider selection
+  const handleProviderSelect = async (providerId: string) => {
+    setSelectedProvider(providerId)
+    setCurrentStep('connecting')
+    setError(null)
+
+    try {
+      if (providerId === 'demo') {
+        // Use demo data
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        await handleDemoScan()
+      } else {
+        // Real provider integration
+        const response = await fetch('/api/bank-providers/link-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: providerId,
+            countryCode: 'GB' // Default to UK for now, could be made configurable
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to connect to bank provider')
+        }
+
+        const data = await response.json()
+        
+        // In a real implementation, we would open the bank's authentication page
+        // For demo purposes, we'll simulate this process
+        console.log('Auth URL:', data.authUrl)
+        
+        // Simulate successful authentication
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        await handleBankScan(providerId)
+      }
+    } catch (error) {
+      console.error('Bank connection error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to connect to bank provider')
+      setCurrentStep('error')
+    }
+  }
+
+  // Handle demo scan
+  const handleDemoScan = async () => {
+    setCurrentStep('scanning')
     
     try {
-      // Simulate bank connection and scanning process
+      // Simulate scanning process
       await new Promise(resolve => setTimeout(resolve, 3000))
       
+      // Mock data for demo
+      const mockData: {
+        detectedSubscriptions: DetectedSubscription[],
+        totalTransactionsAnalyzed: number,
+        analysisDateRange: { startDate: string, endDate: string }
+      } = {
+        detectedSubscriptions: [
+          {
+            merchant_name: 'Netflix',
+            amount: 14.99,
+            frequency: 'monthly',
+            category: 'Entertainment',
+            confidence: 0.95,
+            transactions: [{ account_id: 'demo', amount: 14.99, date: '2023-05-15', name: 'NETFLIX', category: ['Entertainment'], transaction_id: 'tx1' }, 
+                          { account_id: 'demo', amount: 14.99, date: '2023-04-15', name: 'NETFLIX', category: ['Entertainment'], transaction_id: 'tx2' }],
+            next_billing_date: '2023-06-15',
+            logo_url: 'https://logo.clearbit.com/netflix.com',
+            website_url: 'https://netflix.com'
+          },
+          {
+            merchant_name: 'Spotify',
+            amount: 9.99,
+            frequency: 'monthly',
+            category: 'Entertainment',
+            confidence: 0.92,
+            transactions: [{ account_id: 'demo', amount: 9.99, date: '2023-05-10', name: 'SPOTIFY', category: ['Entertainment'], transaction_id: 'tx3' }, 
+                          { account_id: 'demo', amount: 9.99, date: '2023-04-10', name: 'SPOTIFY', category: ['Entertainment'], transaction_id: 'tx4' }],
+            next_billing_date: '2023-06-10',
+            logo_url: 'https://logo.clearbit.com/spotify.com',
+            website_url: 'https://spotify.com'
+          },
+          {
+            merchant_name: 'Adobe Creative Cloud',
+            amount: 52.99,
+            frequency: 'monthly',
+            category: 'Software',
+            confidence: 0.88,
+            transactions: [{ account_id: 'demo', amount: 52.99, date: '2023-05-05', name: 'ADOBE', category: ['Software'], transaction_id: 'tx5' }, 
+                          { account_id: 'demo', amount: 52.99, date: '2023-04-05', name: 'ADOBE', category: ['Software'], transaction_id: 'tx6' }],
+            next_billing_date: '2023-06-05',
+            logo_url: 'https://logo.clearbit.com/adobe.com',
+            website_url: 'https://adobe.com'
+          }
+        ],
+        totalTransactionsAnalyzed: 156,
+        analysisDateRange: { startDate: '2023-03-01', endDate: '2023-05-31' }
+      }
+      
+      setDetectedSubscriptions(mockData.detectedSubscriptions)
+      setScanResults({
+        totalTransactionsAnalyzed: mockData.totalTransactionsAnalyzed,
+        analysisDateRange: mockData.analysisDateRange
+      })
+      
+      // Pre-select all high-confidence subscriptions
+      const highConfidenceIndices = new Set<number>(
+        mockData.detectedSubscriptions
+          .map((sub: DetectedSubscription, index: number) => sub.confidence > 0.8 ? index : -1)
+          .filter((index: number) => index !== -1)
+      )
+      setSelectedSubscriptions(highConfidenceIndices as Set<number>)
+      
+      setCurrentStep('review')
+    } catch (error) {
+      console.error('Demo scan error:', error)
+      setError('Failed to process demo data. Please try again.')
+      setCurrentStep('error')
+    }
+  }
+
+  // Handle bank scan with real provider
+  const handleBankScan = async (providerId: string) => {
+    setCurrentStep('scanning')
+    
+    try {
       const response = await fetch('/api/bank-scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: 'demo_access_token', // In production, this comes from Plaid Link
-          accountIds: ['demo_account_1']
-        })
+        body: JSON.stringify({ providerId })
       })
-
+      
       if (!response.ok) {
-        throw new Error('Failed to scan bank account')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to scan bank account')
       }
-
+      
       const data = await response.json()
+      
+      // Process detected subscriptions
       setDetectedSubscriptions(data.detectedSubscriptions)
       setScanResults({
         totalTransactionsAnalyzed: data.totalTransactionsAnalyzed,
         analysisDateRange: data.analysisDateRange
       })
       
-      // Pre-select all high-confidence subscriptions
-      const highConfidenceIndices = new Set(
-        data.detectedSubscriptions
-          .map((sub: DetectedSubscription, index: number) => sub.confidence > 0.8 ? index : -1)
-          .filter((index: number) => index !== -1)
-      )
-      setSelectedSubscriptions(highConfidenceIndices)
+      // Select all subscriptions by default
+      setSelectedSubscriptions(new Set<number>(data.detectedSubscriptions.map((_: DetectedSubscription, index: number) => index)))
       
-      setScanComplete(true)
+      setCurrentStep('review')
     } catch (error) {
       console.error('Bank scan error:', error)
-      alert('Failed to scan bank account. Please try again.')
-    } finally {
-      setIsScanning(false)
+      setError(error instanceof Error ? error.message : 'Failed to scan bank account')
+      setCurrentStep('error')
     }
   }
 
+  // Handle confirm subscriptions
   const handleConfirmSubscriptions = async () => {
+    if (selectedSubscriptions.size === 0) return
+    
     setIsConfirming(true)
     
     try {
-      const confirmedSubs = Array.from(selectedSubscriptions).map(index => detectedSubscriptions[index])
+      // Get selected subscriptions
+      const subscriptionsToAdd = Array.from(selectedSubscriptions).map(index => detectedSubscriptions[index])
       
+      // In a real implementation, we would send these to the API
       const response = await fetch('/api/bank-scan/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirmedSubscriptions: confirmedSubs })
+        body: JSON.stringify({ subscriptions: subscriptionsToAdd })
       })
-
+      
       if (!response.ok) {
         throw new Error('Failed to add subscriptions')
       }
-
-      const data = await response.json()
       
-      // Notify parent component
-      onSubscriptionsAdded?.(data.addedSubscriptions.length)
+      // Notify parent component if callback provided
+      if (onSubscriptionsAdded) {
+        onSubscriptionsAdded(selectedSubscriptions.size)
+      }
       
-      // Reset state
-      setScanComplete(false)
-      setDetectedSubscriptions([])
-      setSelectedSubscriptions(new Set())
-      setScanResults(null)
+      // Show completion state briefly before resetting
+      setCurrentStep('complete')
       
-      alert(`Successfully added ${data.addedSubscriptions.length} subscriptions to your account!`)
+      // Reset after a delay
+      setTimeout(() => {
+        setDetectedSubscriptions([])
+        setSelectedSubscriptions(new Set<number>())
+        setIsScanning(false)
+        setIsConfirming(false)
+      }, 5000)
       
     } catch (error) {
-      console.error('Confirm subscriptions error:', error)
-      alert('Failed to add subscriptions. Please try again.')
-    } finally {
+      console.error('Error confirming subscriptions:', error)
+      setError(error instanceof Error ? error.message : 'Failed to add subscriptions')
+      setCurrentStep('error')
       setIsConfirming(false)
     }
   }
@@ -128,7 +276,7 @@ export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
     } else {
       newSelection.add(index)
     }
-    setSelectedSubscriptions(newSelection)
+    setSelectedSubscriptions(newSelection as Set<number>)
   }
 
   const formatCurrency = (amount: number) => {
@@ -188,7 +336,7 @@ export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
     )
   }
 
-  if (scanComplete && detectedSubscriptions.length > 0) {
+  if (currentStep === 'review' && detectedSubscriptions.length > 0) {
     return (
       <div className="space-y-6">
         {/* Scan Results Header */}
@@ -298,7 +446,7 @@ export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
           <div className="flex justify-between items-center">
             <button
               onClick={() => {
-                setScanComplete(false)
+                setCurrentStep('intro')
                 setDetectedSubscriptions([])
                 setSelectedSubscriptions(new Set())
               }}
@@ -341,7 +489,202 @@ export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
       </div>
     )
   }
+  // Provider selection step
+  if (currentStep === 'provider-selection') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Select Your Bank Provider
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            Choose a provider to securely connect your bank account.
+          </p>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {bankProviders.map(provider => (
+            <button
+              key={provider.id}
+              onClick={() => handleProviderSelect(provider.id)}
+              className="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-4">
+                <Building2 className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-gray-900 dark:text-white">{provider.name}</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {provider.id === 'demo' ? 'Test with sample data' : 'Connect securely via Open Banking'}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="text-sm text-blue-700 dark:text-blue-300">
+              <p className="font-medium mb-1">Your data is secure</p>
+              <p>We use bank-level encryption and security. Your credentials are never stored on our servers, and we only access the transaction data needed to identify subscriptions.</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setCurrentStep('intro')}
+          className="mt-6 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mx-auto block"
+        >
+          Cancel
+        </button>
+      </div>
+    )
+  }
+
+  // Connecting step
+  if (currentStep === 'connecting') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
+            <Lock className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+          </div>
+          
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Connecting to {selectedProvider === 'demo' ? 'Demo Bank' : 'Your Bank'}
+          </h3>
+          
+          <div className="flex justify-center items-center space-x-2 mb-6">
+            <Loader2 className="h-5 w-5 animate-spin text-primary-600 dark:text-primary-400" />
+            <p className="text-gray-600 dark:text-gray-400">
+              Establishing secure connection...
+            </p>
+          </div>
+          
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <Shield className="h-4 w-4 mr-2" />
+              <span>Secure Connection</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              You'll be redirected to your bank's secure login page. Your credentials are never shared with us.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Scanning step
+  if (currentStep === 'scanning') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
+            <Loader2 className="h-8 w-8 text-primary-600 dark:text-primary-400 animate-spin" />
+          </div>
+          
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Scanning Your Transactions
+          </h3>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            We're analyzing your transaction history to identify recurring subscription payments.
+            This may take a few moments.
+          </p>
+          
+          <div className="w-full max-w-md mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-6">
+            <div className="bg-primary-600 h-2.5 rounded-full animate-pulse w-2/3"></div>
+          </div>
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Looking for patterns in your transaction history...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Complete step
+  if (currentStep === 'complete') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+          </div>
+          
+          <h3 className="text-xl font-semibold text-green-900 dark:text-green-100 mb-2">
+            Subscriptions Added Successfully!
+          </h3>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            Your selected subscriptions have been added to your account.
+          </p>
+          
+          <button
+            onClick={() => {
+              setCurrentStep('intro')
+              router.push('/dashboard')
+            }}
+            className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium"
+          >
+            View My Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Error step
+  if (currentStep === 'error') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+          </div>
+          
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Something Went Wrong
+          </h3>
+          
+          <p className="text-red-600 dark:text-red-400 mb-4">
+            {error || 'We encountered an issue while connecting to your bank.'}
+          </p>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            This could be due to a temporary connection issue or because the bank's services are currently unavailable.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-3">
+            <button
+              onClick={() => {
+                if (selectedProvider) {
+                  handleProviderSelect(selectedProvider)
+                } else {
+                  setCurrentStep('provider-selection')
+                }
+              }}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium"
+            >
+              Try Again
+            </button>
+            
+            <button
+              onClick={() => setCurrentStep('intro')}
+              className="border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Default intro step
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
       <div className="text-center">
@@ -371,7 +714,7 @@ export function BankScan({ userTier, onSubscriptionsAdded }: BankScanProps) {
         </div>
         
         <button
-          onClick={handleBankScan}
+          onClick={startBankConnection}
           disabled={isScanning}
           className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center mx-auto"
         >

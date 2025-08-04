@@ -27,6 +27,7 @@ export default function PricingPage() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const handleGetStarted = async (plan: 'free' | 'pro') => {
+    // First check if user is logged in
     if (!session) {
       router.push('/auth/signin')
       return
@@ -40,19 +41,43 @@ export default function PricingPage() {
     setIsProcessing(true)
     
     try {
-      const response = await fetch('/api/upgrade', {
+      // First check if user is already a Pro user
+      const userStatusResponse = await fetch('/api/user/status')
+      
+      if (userStatusResponse.ok) {
+        const { isPaid } = await userStatusResponse.json()
+        
+        if (isPaid) {
+          // User is already a Pro user, redirect to dashboard
+          alert('You are already a Pro user! Redirecting to dashboard.')
+          router.push('/dashboard')
+          return
+        }
+      }
+      
+      // User is not a Pro user, redirect to Stripe checkout
+      const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session.user?.email, plan: 'pro' })
+        body: JSON.stringify({ 
+          userId: session.user?.email, 
+          plan: 'pro',
+          successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+          cancelUrl: `${window.location.origin}/pricing`
+        })
       })
       
       if (response.ok) {
-        router.push('/dashboard?upgraded=true')
+        const { checkoutUrl } = await response.json()
+        
+        // Redirect to Stripe checkout
+        window.location.href = checkoutUrl
       } else {
-        throw new Error('Payment failed')
+        throw new Error('Failed to create checkout session')
       }
     } catch (error) {
-      alert('Payment failed. Please try again.')
+      console.error('Upgrade error:', error)
+      alert('Failed to process upgrade. Please try again.')
     } finally {
       setIsProcessing(false)
     }
@@ -87,6 +112,21 @@ export default function PricingPage() {
     '⏰ Flexible Reminder Scheduling',
     '🚀 Priority Support & Updates',
     '🔗 Cancellation Assistance Tools'
+  ]
+  
+  const plans = [
+    {
+      name: 'Free',
+      price: 0,
+      description: 'Get started with basic subscription tracking',
+      features: freeFeatures
+    },
+    {
+      name: 'Pro',
+      price: 29.99,
+      description: 'Advanced features for power users',
+      features: proFeatures
+    }
   ]
 
   const testimonials = [
@@ -169,10 +209,11 @@ export default function PricingPage() {
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {/* Free Plan */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          {plans.map((plan, planIndex) => (
+            <div key={planIndex} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {plan.name}
                 </h3>
                 <div className="flex items-center justify-center mb-4">
                   <span className="text-4xl font-bold text-gray-900 dark:text-white">${plan.price}</span>
@@ -189,12 +230,7 @@ export default function PricingPage() {
               </div>
 
               <ul className="space-y-3 mb-8">
-                {plan.name === 'Free' ? freeFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                  </li>
-                )) : proFeatures.map((feature, index) => (
+                {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-700 dark:text-gray-300">{feature}</span>
@@ -203,7 +239,7 @@ export default function PricingPage() {
               </ul>
 
               <button
-                onClick={() => handleGetStarted(plan.name.toLowerCase())}
+                onClick={() => handleGetStarted(plan.name.toLowerCase() as 'free' | 'pro')}
                 disabled={isProcessing}
                 className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

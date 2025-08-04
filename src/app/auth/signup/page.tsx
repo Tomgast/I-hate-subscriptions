@@ -142,7 +142,7 @@ export default function SignUpPage() {
           <ul className="text-xs text-primary-700 dark:text-primary-300 space-y-1">
             <li className="flex items-center">
               <CheckCircle className="h-3 w-3 mr-2" />
-              7-day free trial with full access
+              Free account with basic features
             </li>
             <li className="flex items-center">
               <CheckCircle className="h-3 w-3 mr-2" />

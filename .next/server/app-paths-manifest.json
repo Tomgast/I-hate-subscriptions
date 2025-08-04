@@ -1,1 +1,4 @@
-{}
+{
+  "/pricing/page": "app/pricing/page.js",
+  "/dashboard/page": "app/dashboard/page.js"
+}

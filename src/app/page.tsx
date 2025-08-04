@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { 
   DollarSign, 
   Shield, 
@@ -19,6 +20,7 @@ import {
 import { Logo } from '@/components/Logo'
 
 export default function HomePage() {
+  const { data: session } = useSession()
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   const features = [
@@ -156,48 +158,39 @@ export default function HomePage() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/demo" className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
-              <Play className="h-5 w-5 mr-2" />
-              Try Free Demo
-            </Link>
-            <Link 
-              href="/auth/signup"
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-lg px-8 py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <Zap className="h-5 w-5 mr-2 inline" />
-              Get Started
-            </Link>
+            {session ? (
+              // Logged-in users: Go to Dashboard or Demo
+              <>
+                <Link href="/dashboard" className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                  <DollarSign className="h-5 w-5 mr-2" />
+                  Go to Dashboard
+                </Link>
+                <Link href="/demo" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-lg px-8 py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                  <Play className="h-5 w-5 mr-2" />
+                  View Demo
+                </Link>
+              </>
+            ) : (
+              // Not logged-in users: Demo and Sign Up
+              <>
+                <Link href="/demo" className="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                  <Play className="h-5 w-5 mr-2" />
+                  Try Interactive Demo
+                </Link>
+                <Link 
+                  href="/auth/signup"
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-lg px-8 py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <Zap className="h-5 w-5 mr-2 inline" />
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
           
           <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
             ✨ <span className="font-medium">No monthly fees</span> • <span className="font-medium">Pay once, use forever</span> • <span className="font-medium">Instant access</span>
           </div>
-        </div>
-      </section>
-
-      {/* Problem Statement */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-            The Average Person Wastes <span className="text-red-500">$273/Month</span> on Forgotten Subscriptions
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-red-500 mb-2">73%</div>
-              <p className="text-gray-600 dark:text-gray-400">Have subscriptions they forgot about</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-orange-500 mb-2">$3,276</div>
-              <p className="text-gray-600 dark:text-gray-400">Wasted per year on unused services</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-yellow-500 mb-2">5.2</div>
-              <p className="text-gray-600 dark:text-gray-400">Average forgotten subscriptions per person</p>
-            </div>
-          </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
-            Don't be part of the statistic. Take control today.
-          </p>
         </div>
       </section>
 
@@ -314,13 +307,13 @@ export default function HomePage() {
               href="/demo"
               className="bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
             >
-              Try Free Demo
+              Try Interactive Demo
             </Link>
             <Link
               href="/auth/signup"
               className="bg-primary-800 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 transition-colors border border-primary-500"
             >
-              Get Started
+              Start Free Account
             </Link>
           </div>
         </div>

@@ -1,18 +1,43 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from './ThemeProvider'
-import { Moon, Sun, Menu, X, Settings, HelpCircle, User, LogOut, LogIn } from 'lucide-react'
+import { Moon, Sun, Menu, X, Settings, HelpCircle, User, LogOut, LogIn, Crown } from 'lucide-react'
 import { Logo } from './Logo'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, right: 0 })
+  const [userStatus, setUserStatus] = useState<{ isPaid: boolean }>({ isPaid: false })
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const { data: session, status } = useSession()
   const { theme, setTheme } = useTheme()
+  
+  // Fetch user status when session changes
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      if (!session?.user?.email) return
+      
+      setIsLoadingStatus(true)
+      try {
+        const response = await fetch('/api/user/status')
+        
+        if (response.ok) {
+          const data = await response.json()
+          setUserStatus(data)
+        }
+      } catch (error) {
+        console.error('Error fetching user status:', error)
+      } finally {
+        setIsLoadingStatus(false)
+      }
+    }
+    
+    fetchUserStatus()
+  }, [session?.user?.email])
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -38,6 +63,15 @@ export function Navbar() {
                 >
                   Dashboard
                 </Link>
+                {!isLoadingStatus && !userStatus.isPaid && (
+                  <Link
+                    href="/pricing"
+                    className="flex items-center gap-1 bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Upgrade to Pro
+                  </Link>
+                )}
                 <Link
                   href="/settings"
                   className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
@@ -60,7 +94,7 @@ export function Navbar() {
                   
                   {/* Direct Logout Button */}
                   <button
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ callbackUrl: '/' })}
                     className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                     title="Sign Out"
                   >
@@ -141,6 +175,16 @@ export function Navbar() {
                 >
                   Dashboard
                 </Link>
+                {!isLoadingStatus && !userStatus.isPaid && (
+                  <Link
+                    href="/pricing"
+                    className="block px-3 py-2 rounded-md text-base font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Crown className="h-4 w-4" />
+                    Upgrade to Pro
+                  </Link>
+                )}
                 <Link
                   href="/settings"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -158,7 +202,7 @@ export function Navbar() {
                 <button
                   onClick={() => {
                     setIsOpen(false)
-                    signOut()
+                    signOut({ callbackUrl: '/' })
                   }}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >

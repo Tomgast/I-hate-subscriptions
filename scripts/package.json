@@ -1,0 +1,14 @@
+{
+  "name": "cashcontrol-db-setup",
+  "version": "1.0.0",
+  "description": "Database setup script for CashControl",
+  "main": "setup-database.js",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup-database.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
+    "dotenv": "^16.6.1"
+  }
+}
