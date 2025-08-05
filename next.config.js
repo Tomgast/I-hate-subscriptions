@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable static export for Plesk hosting
+  output: 'export',
+  trailingSlash: true,
+  
   // Image optimization
   images: {
     unoptimized: true,
