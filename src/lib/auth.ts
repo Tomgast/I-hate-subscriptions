@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { compare, hash } from 'bcryptjs'
-import { dbAdapter } from '@/lib/database/adapter'
+import { databaseAdapter, getDatabaseType } from '@/lib/database'
 
 // Database user interface
 interface User {
@@ -39,7 +39,8 @@ export const authOptions: NextAuthOptions = {
           // Sign up logic with MySQL database
           
           // Check if user already exists
-          const existingUser = await dbAdapter.getUserByEmail(credentials.email)
+          console.log(`🔐 Auth: Using ${getDatabaseType()} database for signup`)
+          const existingUser = await databaseAdapter.getUserByEmail(credentials.email)
           if (existingUser) {
             throw new Error('User already exists')
           }
@@ -47,15 +48,15 @@ export const authOptions: NextAuthOptions = {
           // Hash password
           const hashedPassword = await hash(credentials.password, 12)
           
-          // Create user in MySQL database
-          const newUser = await dbAdapter.createUser({
+          // Create user in database (local or production)
+          const newUser = await databaseAdapter.createUser({
             email: credentials.email,
             name: credentials.name || credentials.email.split('@')[0],
             is_paid: false
           })
 
           // Create default user preferences
-          await dbAdapter.createUserPreferences(newUser.id, {})
+          await databaseAdapter.createUserPreferences(newUser.id, {})
 
           return {
             id: newUser.id,
@@ -64,10 +65,10 @@ export const authOptions: NextAuthOptions = {
             isPaid: false,
           }
         } else {
-          // Sign in logic with MySQL database
+          // Sign in logic with database (local or production)
           
           // Get user profile
-          const userProfile = await dbAdapter.getUserByEmail(credentials.email)
+          const userProfile = await databaseAdapter.getUserByEmail(credentials.email)
           if (!userProfile) {
             throw new Error('No user found')
           }
@@ -95,14 +96,15 @@ export const authOptions: NextAuthOptions = {
         token.isPaid = user.isPaid
       }
       
-      // Handle Google OAuth with MySQL database
+      // Handle Google OAuth with database (local or production)
       if (account?.provider === 'google' && user) {
+        console.log(`🔐 Google OAuth: Using ${getDatabaseType()} database for:`, user.email)
         // Check if user exists, if not create them
-        const existingUser = await dbAdapter.getUserByEmail(user.email!)
+        const existingUser = await databaseAdapter.getUserByEmail(user.email!)
 
         if (!existingUser) {
-          // Create user in MySQL database for OAuth
-          const newUser = await dbAdapter.createUser({
+          // Create user in database for OAuth
+          const newUser = await databaseAdapter.createUser({
             email: user.email!,
             name: user.name || user.email!.split('@')[0],
             image: user.image || undefined,
@@ -110,7 +112,7 @@ export const authOptions: NextAuthOptions = {
           })
 
           // Create default user preferences
-          await dbAdapter.createUserPreferences(newUser.id, {})
+          await databaseAdapter.createUserPreferences(newUser.id, {})
           
           token.isPaid = false
         } else {
@@ -137,20 +139,20 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
-// Helper functions for user management with MySQL database
+// Helper functions for user management with database (local or production)
 export async function createUser(email: string, password: string, name: string): Promise<User> {
   // Hash password
   const hashedPassword = await hash(password, 12)
   
-  // Create user in MySQL database
-  const newUser = await dbAdapter.createUser({
+  // Create user in database
+  const newUser = await databaseAdapter.createUser({
     email,
     name,
     is_paid: false
   })
 
   // Create default user preferences
-  await dbAdapter.createUserPreferences(newUser.id, {})
+  await databaseAdapter.createUserPreferences(newUser.id, {})
 
   return {
     id: newUser.id,
@@ -162,7 +164,7 @@ export async function createUser(email: string, password: string, name: string):
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const userProfile = await dbAdapter.getUserByEmail(email)
+  const userProfile = await databaseAdapter.getUserByEmail(email)
   
   if (!userProfile) return null
 
@@ -176,7 +178,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 export async function updateUserPaymentStatus(userId: string, isPaid: boolean): Promise<void> {
-  await dbAdapter.updateUser(userId, {
+  await databaseAdapter.updateUser(userId, {
     is_paid: isPaid
   })
 }

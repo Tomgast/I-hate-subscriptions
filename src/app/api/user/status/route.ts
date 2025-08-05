@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { dbAdapter } from '@/lib/database/adapter'
+import { databaseAdapter, getDatabaseType } from '@/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
 
     const userEmail = session.user.email
     
-    // Get the latest user status from the MySQL database
-    const userProfile = await dbAdapter.getUserByEmail(userEmail)
+    // Get the latest user status from the database (local or production)
+    console.log(`🔍 Checking user status using ${getDatabaseType()} database for:`, userEmail)
+    const userProfile = await databaseAdapter.getUserByEmail(userEmail)
     
     if (!userProfile) {
       console.error('User profile not found for email:', userEmail)

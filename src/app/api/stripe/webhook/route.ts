@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
-import { updateUserPaymentStatus } from '@/lib/auth'
-import { createServerClient } from '@/lib/supabase'
+import { databaseAdapter, getDatabaseType } from '@/lib/database'
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -42,21 +41,32 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'No user email found' }, { status: 400 })
       }
 
-      console.log(`Processing payment for user: ${userEmail}`)
+      console.log(`Processing payment for user: ${userEmail} using ${getDatabaseType()} database`)
       
-      // Update user payment status in Supabase
-      const supabase = createServerClient()
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          has_paid: true,
-          payment_date: new Date().toISOString()
+      // Update user payment status in database (local or production)
+      let user = await databaseAdapter.getUserByEmail(userEmail)
+      
+      if (!user) {
+        // Create new user if doesn't exist
+        user = await databaseAdapter.createUser({
+          email: userEmail,
+          name: userEmail.split('@')[0], // Use email prefix as name
+          is_paid: true
         })
-        .eq('email', userEmail)
-        .select()
+        
+        // Create default user preferences
+        await databaseAdapter.createUserPreferences(user.id, {})
+        console.log(`Created new Pro user: ${userEmail}`)
+      } else {
+        // Update existing user's payment status
+        user = await databaseAdapter.updateUser(user.id, {
+          is_paid: true
+        })
+        console.log(`Updated existing user to Pro: ${userEmail}`)
+      }
       
-      if (error) {
-        console.error('Error updating user payment status:', error)
+      if (!user) {
+        console.error('Failed to create/update user payment status')
         return NextResponse.json({ error: 'Failed to update user status' }, { status: 500 })
       }
       
@@ -68,7 +78,7 @@ export async function POST(request: NextRequest) {
         const { emailService } = await import('@/lib/email/email-service')
         await emailService.sendUpgradeConfirmation(
           userEmail, 
-          data?.[0]?.full_name || userEmail.split('@')[0]
+          user.name || userEmail.split('@')[0]
         )
         console.log('✅ Upgrade confirmation email sent to:', userEmail)
       } catch (emailError) {

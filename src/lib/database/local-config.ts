@@ -117,7 +117,7 @@ export class LocalDatabaseService {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
     
-    stmt.run(id, userData.email, userData.name, userData.image, userData.is_paid, now, now)
+    stmt.run(id, userData.email, userData.name, userData.image, userData.is_paid ? 1 : 0, now, now)
 
     return {
       id,
@@ -129,20 +129,37 @@ export class LocalDatabaseService {
 
   async getUserById(id: string): Promise<LocalUser | null> {
     const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?')
-    const result = stmt.get(id) as LocalUser | undefined
-    return result || null
+    const result = stmt.get(id) as any
+    if (!result) return null
+    
+    // Convert SQLite integer back to boolean
+    return {
+      ...result,
+      is_paid: Boolean(result.is_paid)
+    } as LocalUser
   }
 
   async getUserByEmail(email: string): Promise<LocalUser | null> {
     const stmt = this.db.prepare('SELECT * FROM users WHERE email = ?')
-    const result = stmt.get(email) as LocalUser | undefined
-    return result || null
+    const result = stmt.get(email) as any
+    if (!result) return null
+    
+    // Convert SQLite integer back to boolean
+    return {
+      ...result,
+      is_paid: Boolean(result.is_paid)
+    } as LocalUser
   }
 
   async updateUser(id: string, updates: Partial<Omit<LocalUser, 'id' | 'created_at'>>): Promise<LocalUser | null> {
     const now = new Date().toISOString()
     const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ')
-    const values = [...Object.values(updates), now, id]
+    
+    // Convert boolean values to integers for SQLite
+    const convertedValues = Object.values(updates).map(value => 
+      typeof value === 'boolean' ? (value ? 1 : 0) : value
+    )
+    const values = [...convertedValues, now, id]
     
     const stmt = this.db.prepare(`UPDATE users SET ${setClause}, updated_at = ? WHERE id = ?`)
     stmt.run(...values)
