@@ -272,7 +272,7 @@ export class RenewalReminderService {
     let failedReminders = 0
     let lastReminderSent: string | undefined
 
-    for (const [subscriptionId, logs] of this.reminderLogs) {
+    Array.from(this.reminderLogs.entries()).forEach(([subscriptionId, logs]) => {
       const userLogs = logs.filter(log => log.userId === userId)
       totalReminders += userLogs.length
       successfulReminders += userLogs.filter(log => log.status === 'sent').length
@@ -282,7 +282,7 @@ export class RenewalReminderService {
       if (latestLog && (!lastReminderSent || latestLog.sentAt > lastReminderSent)) {
         lastReminderSent = latestLog.sentAt
       }
-    }
+    })
 
     return {
       totalReminders,

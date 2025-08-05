@@ -96,7 +96,8 @@ export default function SubscriptionsPage() {
       yearly: 1/12,
       quarterly: 1/3,
       weekly: 4.33,
-      daily: 30
+      daily: 30,
+      'one-time': 0
     }
     return subscription.price * (multipliers[subscription.billingCycle] || 1)
   }

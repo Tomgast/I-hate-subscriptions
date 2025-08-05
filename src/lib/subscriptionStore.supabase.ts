@@ -388,8 +388,6 @@ class SupabaseSubscriptionStore {
       isActive: dbSub.status === 'active',
       category: dbSub.category || 'other',
       website: dbSub.website_url,
-      logo: dbSub.logo_url,
-      notes: dbSub.notes,
       tags: [], // We can add tags later if needed
       reminderDays: dbSub.reminder_days || 3,
       createdAt: dbSub.created_at,
@@ -410,8 +408,6 @@ class SupabaseSubscriptionStore {
       status: subscription.isActive ? 'active' : 'cancelled',
       category: subscription.category,
       website_url: subscription.website,
-      logo_url: subscription.logo,
-      notes: subscription.notes,
       reminder_days: subscription.reminderDays || 3,
     }
   }
@@ -429,8 +425,6 @@ class SupabaseSubscriptionStore {
     if (updates.isActive !== undefined) dbUpdates.status = updates.isActive ? 'active' : 'cancelled'
     if (updates.category !== undefined) dbUpdates.category = updates.category
     if (updates.website !== undefined) dbUpdates.website_url = updates.website
-    if (updates.logo !== undefined) dbUpdates.logo_url = updates.logo
-    if (updates.notes !== undefined) dbUpdates.notes = updates.notes
     if (updates.reminderDays !== undefined) dbUpdates.reminder_days = updates.reminderDays
 
     return dbUpdates

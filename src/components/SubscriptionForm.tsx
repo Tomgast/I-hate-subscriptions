@@ -13,7 +13,7 @@ const subscriptionSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
   price: z.number().min(0.01, 'Price must be greater than 0'),
   currency: z.string().default('USD'),
-  billingCycle: z.enum(['monthly', 'yearly', 'weekly', 'daily', 'quarterly']),
+  billingCycle: z.enum(['monthly', 'yearly', 'weekly', 'daily', 'quarterly', 'one-time']),
   nextBillingDate: z.string().min(1, 'Next billing date is required'),
   category: z.enum([
     'streaming', 'software', 'gaming', 'fitness', 'utilities', 'food',

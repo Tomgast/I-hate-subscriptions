@@ -13,24 +13,24 @@ class PlaidBankProvider extends BankProvider {
     return this.supportedCountries.includes(countryCode.toUpperCase())
   }
 
-  async createLinkToken(userId: string) {
+  async createLinkToken(userId: string, countryCode?: string): Promise<any> {
     // This would use your existing Plaid implementation
     throw new Error('Plaid implementation should use existing code')
   }
 
-  async exchangePublicToken(publicToken: string) {
+  async exchangePublicToken(publicToken: string): Promise<any> {
     throw new Error('Plaid implementation should use existing code')
   }
 
-  async getAccounts(accessToken: string) {
+  async getAccounts(accessToken: string): Promise<any> {
     throw new Error('Plaid implementation should use existing code')
   }
 
-  async getTransactions(accessToken: string, accountIds: string[], dateRange: any) {
+  async getTransactions(accessToken: string, accountIds: string[], dateRange: any): Promise<any> {
     throw new Error('Plaid implementation should use existing code')
   }
 
-  async getInstitutions(countryCode: string) {
+  async getInstitutions(countryCode: string): Promise<any> {
     throw new Error('Plaid implementation should use existing code')
   }
 }
@@ -44,23 +44,23 @@ class NordigenBankProvider extends BankProvider {
     return this.supportedCountries.includes(countryCode.toUpperCase())
   }
 
-  async createLinkToken(userId: string) {
+  async createLinkToken(userId: string, countryCode?: string): Promise<any> {
     throw new Error('Nordigen implementation coming soon')
   }
 
-  async exchangePublicToken(publicToken: string) {
+  async exchangePublicToken(publicToken: string): Promise<any> {
     throw new Error('Nordigen implementation coming soon')
   }
 
-  async getAccounts(accessToken: string) {
+  async getAccounts(accessToken: string): Promise<any> {
     throw new Error('Nordigen implementation coming soon')
   }
 
-  async getTransactions(accessToken: string, accountIds: string[], dateRange: any) {
+  async getTransactions(accessToken: string, accountIds: string[], dateRange: any): Promise<any> {
     throw new Error('Nordigen implementation coming soon')
   }
 
-  async getInstitutions(countryCode: string) {
+  async getInstitutions(countryCode: string): Promise<any> {
     throw new Error('Nordigen implementation coming soon')
   }
 }
@@ -73,23 +73,23 @@ class YapilyBankProvider extends BankProvider {
     return this.supportedCountries.includes(countryCode.toUpperCase())
   }
 
-  async createLinkToken(userId: string) {
+  async createLinkToken(userId: string, countryCode?: string): Promise<any> {
     throw new Error('Yapily implementation coming soon')
   }
 
-  async exchangePublicToken(publicToken: string) {
+  async exchangePublicToken(publicToken: string): Promise<any> {
     throw new Error('Yapily implementation coming soon')
   }
 
-  async getAccounts(accessToken: string) {
+  async getAccounts(accessToken: string): Promise<any> {
     throw new Error('Yapily implementation coming soon')
   }
 
-  async getTransactions(accessToken: string, accountIds: string[], dateRange: any) {
+  async getTransactions(accessToken: string, accountIds: string[], dateRange: any): Promise<any> {
     throw new Error('Yapily implementation coming soon')
   }
 
-  async getInstitutions(countryCode: string) {
+  async getInstitutions(countryCode: string): Promise<any> {
     throw new Error('Yapily implementation coming soon')
   }
 }

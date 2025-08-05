@@ -55,12 +55,12 @@ export class BankScanService {
     const merchantGroups = this.groupTransactionsByMerchant(transactions)
     const detectedSubscriptions: DetectedSubscription[] = []
 
-    for (const [merchantName, merchantTransactions] of merchantGroups) {
+    Array.from(merchantGroups.entries()).forEach(([merchantName, merchantTransactions]) => {
       const subscription = this.analyzeRecurringPattern(merchantName, merchantTransactions)
       if (subscription && subscription.confidence > 0.7) {
         detectedSubscriptions.push(subscription)
       }
-    }
+    })
 
     return detectedSubscriptions.sort((a, b) => b.confidence - a.confidence)
   }

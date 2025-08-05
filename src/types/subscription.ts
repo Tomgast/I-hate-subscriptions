@@ -3,7 +3,7 @@ export interface Subscription {
   name: string
   price: number
   currency: string
-  billingCycle: 'monthly' | 'yearly' | 'weekly' | 'daily' | 'quarterly'
+  billingCycle: 'monthly' | 'yearly' | 'weekly' | 'daily' | 'quarterly' | 'one-time'
   nextBillingDate: string
   category: SubscriptionCategory
   description?: string
