@@ -1,14 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Optimize static file serving
-  compress: true,
-  poweredByHeader: false,
-  
-  // Image optimization
+  // Enable static export for Plesk hosting
+  output: 'export',
+  trailingSlash: true,
   images: {
+    unoptimized: true,
     domains: [],
     formats: ['image/webp', 'image/avif'],
   },
+  
+  // Optimize static file serving
+  compress: true,
+  poweredByHeader: false,
   
   // Environment variables
   env: {
