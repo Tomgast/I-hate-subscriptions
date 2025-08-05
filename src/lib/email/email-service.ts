@@ -85,7 +85,7 @@ export class EmailService {
   private async initializeTransporter() {
     try {
       if (this.config.provider === 'plesk') {
-        this.transporter = nodemailer.createTransporter({
+        this.transporter = nodemailer.createTransport({
           host: this.config.host,
           port: this.config.port,
           secure: this.config.secure,

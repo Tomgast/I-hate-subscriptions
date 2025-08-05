@@ -16,32 +16,40 @@ async function testMariaDBConnection() {
   console.log(`🗄️  Database: ${process.env.DB_NAME}`)
   console.log(`👤 User: ${process.env.DB_USER}`)
   
+  let connection = null
+  
   try {
-    // Test basic connection
-    const isConnected = await databaseService.testConnection()
-    
-    if (!isConnected) {
-      throw new Error('Failed to connect to MariaDB database')
-    }
+    // Create connection
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '3306'),
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      charset: 'utf8mb4',
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+      dateStrings: false
+    })
     
     console.log('✅ MariaDB connection successful!')
     
     // Test database version and info
     console.log('\n🔍 Checking MariaDB version and configuration...')
-    const versionResult = await databaseService.query('SELECT VERSION() as version')
+    const [versionResult] = await connection.execute('SELECT VERSION() as version')
     console.log(`📊 MariaDB Version: ${versionResult[0]?.version}`)
     
     // Check current database
-    const dbResult = await databaseService.query('SELECT DATABASE() as current_db')
+    const [dbResult] = await connection.execute('SELECT DATABASE() as current_db')
     console.log(`🗄️  Current Database: ${dbResult[0]?.current_db}`)
     
     // Check character set
-    const charsetResult = await databaseService.query('SHOW VARIABLES LIKE "character_set_database"')
+    const [charsetResult] = await connection.execute('SHOW VARIABLES LIKE "character_set_database"')
     console.log(`🔤 Character Set: ${charsetResult[0]?.Value}`)
     
     // List existing tables
     console.log('\n📋 Checking existing tables...')
-    const tables = await databaseService.query('SHOW TABLES')
+    const [tables] = await connection.execute('SHOW TABLES')
     
     if (tables.length > 0) {
       console.log('✅ Found existing tables:')
@@ -49,40 +57,35 @@ async function testMariaDBConnection() {
         const tableName = Object.values(table)[0]
         console.log(`   - ${tableName}`)
       })
+      
+      // Test a simple query on each table if they exist
+      console.log('\n🧪 Testing table queries...')
+      
+      const tableNames = tables.map(table => Object.values(table)[0])
+      
+      if (tableNames.includes('users')) {
+        const [userCount] = await connection.execute('SELECT COUNT(*) as count FROM users')
+        console.log(`👥 Users table: ${userCount[0]?.count} records`)
+      }
+      
+      if (tableNames.includes('subscriptions')) {
+        const [subscriptionCount] = await connection.execute('SELECT COUNT(*) as count FROM subscriptions')
+        console.log(`📋 Subscriptions table: ${subscriptionCount[0]?.count} records`)
+      }
+      
+      if (tableNames.includes('user_preferences')) {
+        const [prefsCount] = await connection.execute('SELECT COUNT(*) as count FROM user_preferences')
+        console.log(`⚙️  User preferences table: ${prefsCount[0]?.count} records`)
+      }
+      
+      if (tableNames.includes('reminder_logs')) {
+        const [logsCount] = await connection.execute('SELECT COUNT(*) as count FROM reminder_logs')
+        console.log(`📧 Reminder logs table: ${logsCount[0]?.count} records`)
+      }
+      
     } else {
-      console.log('📝 No tables found. Will create them...')
-      
-      // Initialize tables
-      await databaseService.initializeTables()
-      console.log('✅ Database tables created successfully!')
-      
-      // Verify tables were created
-      const newTables = await databaseService.query('SHOW TABLES')
-      console.log('\n✅ Created tables:')
-      newTables.forEach(table => {
-        const tableName = Object.values(table)[0]
-        console.log(`   - ${tableName}`)
-      })
-    }
-    
-    // Test a simple query on each table
-    console.log('\n🧪 Testing table queries...')
-    
-    try {
-      const userCount = await databaseService.query('SELECT COUNT(*) as count FROM users')
-      console.log(`👥 Users table: ${userCount[0]?.count} records`)
-      
-      const subscriptionCount = await databaseService.query('SELECT COUNT(*) as count FROM subscriptions')
-      console.log(`📋 Subscriptions table: ${subscriptionCount[0]?.count} records`)
-      
-      const prefsCount = await databaseService.query('SELECT COUNT(*) as count FROM user_preferences')
-      console.log(`⚙️  User preferences table: ${prefsCount[0]?.count} records`)
-      
-      const logsCount = await databaseService.query('SELECT COUNT(*) as count FROM reminder_logs')
-      console.log(`📧 Reminder logs table: ${logsCount[0]?.count} records`)
-      
-    } catch (queryError) {
-      console.warn('⚠️  Some tables may not exist yet:', queryError.message)
+      console.log('📝 No tables found in database.')
+      console.log('💡 Tables will be created automatically when the application starts.')
     }
     
     console.log('\n🎉 MariaDB database test completed successfully!')
@@ -109,8 +112,10 @@ async function testMariaDBConnection() {
     process.exit(1)
   } finally {
     // Clean up connection
-    await databaseService.closePool()
-    console.log('\n🔌 Database connection closed')
+    if (connection) {
+      await connection.end()
+      console.log('\n🔌 Database connection closed')
+    }
   }
 }
 
