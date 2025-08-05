@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailService } from '@/lib/email/email-service'
-import { dbAdapter } from '@/lib/database/adapter'
+import { databaseAdapter, getDatabaseType } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,22 +15,23 @@ export async function POST(request: NextRequest) {
     const { userId, plan } = await request.json()
     const userEmail = session.user.email
     
-    // Update user payment status in MySQL database
-    let user = await dbAdapter.getUserByEmail(userEmail)
+    // Update user payment status in database (local or production)
+    console.log(`🗄️ Using ${getDatabaseType()} database for upgrade`)
+    let user = await databaseAdapter.getUserByEmail(userEmail)
     
     if (!user) {
       // Create new user if doesn't exist
-      user = await dbAdapter.createUser({
+      user = await databaseAdapter.createUser({
         email: userEmail,
         name: session.user.name || 'User',
         is_paid: plan === 'pro'
       })
       
       // Create default user preferences
-      await dbAdapter.createUserPreferences(user.id, {})
+      await databaseAdapter.createUserPreferences(user.id, {})
     } else {
       // Update existing user's payment status
-      user = await dbAdapter.updateUser(user.id, {
+      user = await databaseAdapter.updateUser(user.id, {
         is_paid: plan === 'pro'
       })
     }
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await dbAdapter.getUserByEmail(session.user.email)
+    const user = await databaseAdapter.getUserByEmail(session.user.email)
     
     return NextResponse.json({
       isPaid: user?.is_paid || false,
