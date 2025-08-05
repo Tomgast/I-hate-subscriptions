@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { createServerClient } from '@/lib/supabase'
+import { dbAdapter } from '@/lib/database/adapter'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,26 +13,23 @@ export async function GET(request: NextRequest) {
 
     const userEmail = session.user.email
     
-    // Get the latest user status from the database
-    const supabase = createServerClient()
-    const { data: userProfile, error } = await supabase
-      .from('user_profiles')
-      .select('has_paid, payment_date')
-      .eq('email', userEmail)
-      .single()
+    // Get the latest user status from the MySQL database
+    const userProfile = await dbAdapter.getUserByEmail(userEmail)
     
-    if (error || !userProfile) {
-      console.error('Error fetching user profile:', error)
+    if (!userProfile) {
+      console.error('User profile not found for email:', userEmail)
       return NextResponse.json({ 
         isPaid: false,
-        error: 'Failed to fetch user status'
+        error: 'User profile not found'
       })
     }
 
     return NextResponse.json({
-      isPaid: userProfile.has_paid || false,
-      paymentDate: userProfile.payment_date,
-      email: userEmail
+      isPaid: userProfile.is_paid || false,
+      paymentDate: userProfile.updated_at,
+      email: userEmail,
+      userId: userProfile.id,
+      name: userProfile.name
     })
   } catch (error) {
     console.error('Get user status error:', error)

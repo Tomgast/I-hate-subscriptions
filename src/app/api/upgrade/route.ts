@@ -2,19 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { emailService } from '@/lib/email/email-service'
-
-// In-memory user storage for demo (replace with database in production)
-const users = new Map<string, {
-  id: string
-  email: string
-  name: string
-  hashedPassword?: string
-  isPaid: boolean
-  userTier: 'free' | 'pro'
-  subscriptionLimit: number
-  createdAt: string
-  paidAt?: string
-}>()
+import { dbAdapter } from '@/lib/database/adapter'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,34 +15,25 @@ export async function POST(request: NextRequest) {
     const { userId, plan } = await request.json()
     const userEmail = session.user.email
     
-    // In a real implementation, this would:
-    // 1. Verify payment with Stripe/PayPal webhook
-    // 2. Update user record in database
-    // 3. Send confirmation email
+    // Update user payment status in MySQL database
+    let user = await dbAdapter.getUserByEmail(userEmail)
     
-    // For demo purposes, we'll create/update the user with pro tier
-    let user = users.get(userEmail)
     if (!user) {
-      user = {
-        id: userEmail,
+      // Create new user if doesn't exist
+      user = await dbAdapter.createUser({
         email: userEmail,
         name: session.user.name || 'User',
-        isPaid: plan === 'pro',
-        userTier: plan === 'pro' ? 'pro' : 'free',
-        subscriptionLimit: plan === 'pro' ? -1 : 5, // -1 means unlimited
-        createdAt: new Date().toISOString(),
-        paidAt: plan === 'pro' ? new Date().toISOString() : undefined
-      }
+        is_paid: plan === 'pro'
+      })
+      
+      // Create default user preferences
+      await dbAdapter.createUserPreferences(user.id, {})
     } else {
-      user.isPaid = plan === 'pro'
-      user.userTier = plan === 'pro' ? 'pro' : 'free'
-      user.subscriptionLimit = plan === 'pro' ? -1 : 5
-      if (plan === 'pro') {
-        user.paidAt = new Date().toISOString()
-      }
+      // Update existing user's payment status
+      user = await dbAdapter.updateUser(user.id, {
+        is_paid: plan === 'pro'
+      })
     }
-    
-    users.set(userEmail, user)
 
     // Send email notification for Pro upgrade
     if (plan === 'pro') {
@@ -72,8 +51,13 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: `${plan === 'pro' ? 'Upgrade' : 'Account setup'} successful`,
       user: {
-        ...user,
-        hashedPassword: undefined // Don't send password hash
+        id: user!.id,
+        email: user!.email,
+        name: user!.name,
+        isPaid: user!.is_paid,
+        userTier: user!.is_paid ? 'pro' : 'free',
+        subscriptionLimit: user!.is_paid ? -1 : 5,
+        createdAt: user!.created_at
       }
     })
   } catch (error) {
@@ -90,13 +74,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = users.get(session.user.email)
+    const user = await dbAdapter.getUserByEmail(session.user.email)
     
     return NextResponse.json({
-      isPaid: user?.isPaid || false,
-      userTier: user?.userTier || 'free',
-      subscriptionLimit: user?.subscriptionLimit || 5,
-      paidAt: user?.paidAt
+      isPaid: user?.is_paid || false,
+      userTier: user?.is_paid ? 'pro' : 'free',
+      subscriptionLimit: user?.is_paid ? -1 : 5,
+      paidAt: user?.updated_at
     })
   } catch (error) {
     console.error('Get upgrade status error:', error)
