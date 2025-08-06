@@ -14,24 +14,27 @@
 
 return [
     // Google OAuth Configuration
-    'GOOGLE_CLIENT_SECRET' => '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',
+    // Get these from Google Cloud Console -> Credentials
+    'GOOGLE_CLIENT_SECRET' => 'REPLACE_WITH_YOUR_GOOGLE_CLIENT_SECRET',
     
-    // TrueLayer Bank Integration Configuration
-    'TRUELAYER_CLIENT_ID' => 'sandbox-123cashcontrol-496c49',
-    'TRUELAYER_CLIENT_SECRET' => 'a7e49c68-72c7-4fda-ac30-4be41407a366',
-    'TRUELAYER_ENVIRONMENT' => 'sandbox',
+    // TrueLayer Bank Integration Configuration  
+    // Get these from TrueLayer Console -> Data API
+    'TRUELAYER_CLIENT_ID' => 'REPLACE_WITH_YOUR_TRUELAYER_CLIENT_ID',
+    'TRUELAYER_CLIENT_SECRET' => 'REPLACE_WITH_YOUR_TRUELAYER_CLIENT_SECRET',
+    'TRUELAYER_ENVIRONMENT' => 'sandbox', // or 'live' for production
     
-    // Stripe Payment Configuration (Test Environment)
-    'STRIPE_PUBLISHABLE_KEY' => 'pk_test_51RrlZALvnN2VglsGvTVQQGbxuxQ1lqY0mm1S3nhvUyRKDMIy03t4A6D9yYOaiLzPOnnU53JnMy3Gnr9mOtRzdKJs00KfGWumn8',
-    'STRIPE_SECRET_KEY' => 'sk_test_51RrlZALvnN2VglsGjadB3fyDsuYobiL4E5v0LHLHWskuQi5j4Paiglxb2w9IjlqLMTcjRWmxXwm28chUoPzV4CT400EJOx6Vtk',
-    'STRIPE_WEBHOOK_SECRET' => 'we_1RrlzeLsoDV5QV3U99d8AZNt', // Webhook endpoint ID
+    // Stripe Payment Configuration
+    // Get these from Stripe Dashboard -> Developers -> API Keys
+    'STRIPE_PUBLISHABLE_KEY' => 'REPLACE_WITH_YOUR_STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_SECRET_KEY' => 'REPLACE_WITH_YOUR_STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET' => 'REPLACE_WITH_YOUR_STRIPE_WEBHOOK_SECRET',
     
-    // Stripe Live Keys (for production deployment)
-    // 'STRIPE_PUBLISHABLE_KEY' => 'pk_live_51RrlYaLsoDV5QV3UM9pWVwJMNPuMNk60ICLX9XG72U7dRpz24ZUYT1R6UnckRG3MTHrqNj3PBOxgsErNxmQM9l4s00MCYbV6Rj',
-    // 'STRIPE_SECRET_KEY' => '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',
-    
-    // Email Configuration (if needed)
-    'SMTP_HOST' => 'your-smtp-host',
-    'SMTP_USERNAME' => 'your-smtp-username',
-    'SMTP_PASSWORD' => 'your-smtp-password',
+    // Email Configuration (Plesk SMTP)
+    // Configure these with your Plesk email settings
+    'SMTP_HOST' => 'shared58.cloud86-host.nl',
+    'SMTP_PORT' => '587',
+    'SMTP_USERNAME' => 'info@123cashcontrol.com',
+    'SMTP_PASSWORD' => 'REPLACE_WITH_YOUR_EMAIL_PASSWORD',
+    'FROM_EMAIL' => 'info@123cashcontrol.com',
+    'FROM_NAME' => 'CashControl',
 ];

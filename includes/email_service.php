@@ -11,13 +11,39 @@ class EmailService {
     private $fromName;
     
     public function __construct() {
-        // Load email configuration from environment or use Plesk defaults
-        $this->smtpHost = $_ENV['SMTP_HOST'] ?? 'shared58.cloud86-host.nl';
-        $this->smtpPort = $_ENV['SMTP_PORT'] ?? 587;
-        $this->smtpUsername = $_ENV['SMTP_USERNAME'] ?? 'info@123cashcontrol.com';
-        $this->smtpPassword = $_ENV['SMTP_PASSWORD'] ?? '';
-        $this->fromEmail = $_ENV['FROM_EMAIL'] ?? 'info@123cashcontrol.com';
-        $this->fromName = $_ENV['FROM_NAME'] ?? 'CashControl';
+        // Load email configuration securely
+        $this->smtpHost = $this->getSecureConfig('SMTP_HOST', 'shared58.cloud86-host.nl');
+        $this->smtpPort = $this->getSecureConfig('SMTP_PORT', 587);
+        $this->smtpUsername = $this->getSecureConfig('SMTP_USERNAME', 'info@123cashcontrol.com');
+        $this->smtpPassword = $this->getSecureConfig('SMTP_PASSWORD');
+        $this->fromEmail = $this->getSecureConfig('FROM_EMAIL', 'info@123cashcontrol.com');
+        $this->fromName = $this->getSecureConfig('FROM_NAME', 'CashControl');
+    }
+    
+    /**
+     * Securely load configuration values from multiple sources
+     * Priority: Plesk Environment Variables > Secure Config File > Default
+     */
+    private function getSecureConfig($key, $default = null) {
+        // Try Plesk environment variables first
+        $value = getenv($key) ?: $_SERVER[$key] ?? null;
+        
+        if ($value) {
+            return $value;
+        }
+        
+        // Try secure config file (outside web root)
+        static $secureConfig = null;
+        if ($secureConfig === null) {
+            $configPath = dirname(__DIR__) . '/../secure-config.php';
+            if (file_exists($configPath)) {
+                $secureConfig = include $configPath;
+            } else {
+                $secureConfig = [];
+            }
+        }
+        
+        return $secureConfig[$key] ?? $default;
     }
     
     /**

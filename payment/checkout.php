@@ -26,8 +26,8 @@ if ($_POST['action'] ?? '' === 'create_checkout') {
     $session = $stripeService->createCheckoutSession(
         $userId, 
         $userEmail,
-        'https://123cashcontrol.com/payment/success.php',
-        'https://123cashcontrol.com/payment/cancel.php'
+        'https://I-hate-subscriptions.com/payment/success.php',
+        'https://I-hate-subscriptions.com/payment/cancel.php'
     );
     
     if ($session && isset($session['url'])) {
