@@ -9,10 +9,10 @@ class EmailNotifications {
     private $db;
     
     public function __construct() {
-        require_once 'config/email.php';
-        require_once 'config/database.php';
+        require_once 'includes/email_service.php';
+        require_once 'config/db_config.php';
         $this->emailService = new EmailService();
-        $this->db = new Database();
+        $this->db = getDBConnection();
     }
     
     /**
