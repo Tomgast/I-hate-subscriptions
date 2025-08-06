@@ -10,7 +10,7 @@ class Database {
     private $port = '3306';
     private $db_name = 'vxmjmwlj_';
     private $username = '123cashcontrol';
-    private $password = 'Super-mannetje45';
+    private $password;
     private $charset = 'utf8mb4';
     
     private $pdo = null;

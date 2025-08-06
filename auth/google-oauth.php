@@ -4,7 +4,9 @@ require_once '../config/db_config.php';
 
 // Google OAuth configuration
 $client_id = '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
-$client_secret = 'GOCSPX-your-client-secret'; // You'll need to add this to your secure config
+// Load secure configuration
+require_once '../secure-config.php';
+$client_secret = getSecureConfig('GOOGLE_CLIENT_SECRET');
 $redirect_uri = 'https://123cashcontrol.com/auth/google-callback.php';
 
 // Build Google OAuth URL

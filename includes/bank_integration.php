@@ -6,7 +6,7 @@
 
 class BankIntegration {
     private $client_id = 'your_truelayer_client_id';
-    private $client_secret = 'your_truelayer_client_secret';
+    private $client_secret;
     private $redirect_uri = 'https://123cashcontrol.com/bank/callback.php';
     private $environment = 'sandbox'; // or 'live'
     private $db;

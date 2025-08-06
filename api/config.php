@@ -4,7 +4,9 @@ $host = '45.82.188.227';
 $port = '3306';
 $dbname = 'vxmjmwlj_';
 $username = '123cashcontrol';
-$password = 'Super-mannetje45';
+// Load secure configuration
+require_once __DIR__ . '/../secure-config.php';
+$password = getSecureConfig('DB_PASSWORD');
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $username, $password, [

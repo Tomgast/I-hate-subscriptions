@@ -10,7 +10,7 @@ class EmailService {
     private $smtp_host = 'shared58.cloud86-host.nl';
     private $smtp_port = 587;
     private $smtp_user = 'info@123cashcontrol.com';
-    private $smtp_password = 'Super-mannetje45'; // Use actual password from .env
+    private $smtp_password; // Loaded from secure config
     private $from_email = 'info@123cashcontrol.com';
     private $from_name = 'CashControl';
     private $db;

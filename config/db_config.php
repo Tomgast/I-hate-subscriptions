@@ -1,10 +1,13 @@
 <?php
-// Database configuration for MariaDB on Plesk
+// Database configuration
+// Load secure configuration
+require_once __DIR__ . '/../secure-config.php';
+
 define('DB_HOST', '45.82.188.227');
 define('DB_PORT', '3306');
 define('DB_NAME', 'vxmjmwlj_');
 define('DB_USER', '123cashcontrol');
-define('DB_PASS', 'Super-mannetje45');
+define('DB_PASS', getSecureConfig('DB_PASSWORD'));
 
 // Create database connection
 function getDBConnection() {
