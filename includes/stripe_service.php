@@ -8,9 +8,7 @@ class StripeService {
     private $webhookSecret;
     
     public function __construct() {
-        // Load secure configuration
-        require_once __DIR__ . '/../config/secure_loader.php';
-        
+        // Use consistent database connection
         $this->pdo = getDBConnection();
         
         // Load Stripe credentials securely
@@ -318,6 +316,75 @@ class StripeService {
             }
         }
         return $result;
+    }
+    
+    /**
+     * Handle successful payment from Stripe checkout
+     */
+    public function handleSuccessfulPayment($sessionId) {
+        try {
+            // Retrieve the checkout session from Stripe
+            $session = $this->makeStripeRequest('GET', "checkout/sessions/$sessionId");
+            
+            if (!$session || $session['payment_status'] !== 'paid') {
+                error_log("Payment not completed for session: $sessionId");
+                return false;
+            }
+            
+            // Get user ID from session metadata or database
+            $userId = null;
+            if (isset($session['metadata']['user_id'])) {
+                $userId = $session['metadata']['user_id'];
+            } else {
+                // Try to find user by email from session
+                $customerEmail = $session['customer_details']['email'] ?? null;
+                if ($customerEmail) {
+                    $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
+                    $stmt->execute([$customerEmail]);
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $userId = $user['id'] ?? null;
+                }
+            }
+            
+            if (!$userId) {
+                error_log("Could not determine user ID for session: $sessionId");
+                return false;
+            }
+            
+            // Update user to Pro status
+            $stmt = $this->pdo->prepare("UPDATE users SET is_pro = 1, is_premium = 1 WHERE id = ?");
+            $stmt->execute([$userId]);
+            
+            // Record the payment in payment history
+            $stmt = $this->pdo->prepare("
+                INSERT INTO payment_history 
+                (user_id, amount, currency, payment_date, status, transaction_reference) 
+                VALUES (?, ?, ?, NOW(), 'completed', ?)
+            ");
+            $stmt->execute([
+                $userId,
+                29.00, // €29 one-time payment
+                'EUR',
+                $sessionId
+            ]);
+            
+            // Update checkout session status
+            $stmt = $this->pdo->prepare("
+                UPDATE checkout_sessions 
+                SET status = 'completed', updated_at = NOW() 
+                WHERE stripe_session_id = ?
+            ");
+            $stmt->execute([$sessionId]);
+            
+            // Send upgrade confirmation email
+            $this->sendUpgradeConfirmationEmail($userId);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Payment handling error: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
