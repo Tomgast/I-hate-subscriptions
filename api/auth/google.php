@@ -14,7 +14,7 @@ $action = $_GET['action'] ?? 'signin';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Redirect to Google OAuth
-    $redirectUri = 'https://123cashcontrol.com/api/auth/google-callback.php';
+    $redirectUri = 'https://123cashcontrol.com/api/auth/google.php';
     $scope = 'openid email profile';
     $state = base64_encode(json_encode(['action' => $action]));
     
