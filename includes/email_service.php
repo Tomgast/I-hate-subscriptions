@@ -32,10 +32,10 @@ class EmailService {
             return $value;
         }
         
-        // Try secure config file (in project root)
+        // Try secure config file (outside web root - confirmed working path)
         static $secureConfig = null;
         if ($secureConfig === null) {
-            $configPath = dirname(__DIR__) . '/secure-config.php';
+            $configPath = dirname(__DIR__) . '/../secure-config.php';
             if (file_exists($configPath)) {
                 $secureConfig = include $configPath;
             } else {
