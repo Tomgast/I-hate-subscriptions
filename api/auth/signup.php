@@ -10,9 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once '../../config/database.php';
-require_once '../../config/auth.php';
-require_once '../../config/email.php';
+require_once '../config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -54,61 +52,58 @@ try {
         throw new Exception('Passwords do not match');
     }
     
-    // Initialize database and auth
-    $database = new Database();
-    $auth = new Auth($database);
+    // Check if user already exists (using global $pdo from config.php)
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $existingUser = $stmt->fetch();
     
-    // Check if user already exists
-    $existingUser = $database->query(
-        "SELECT id FROM users WHERE email = ?",
-        [$email]
-    );
-    
-    if (!empty($existingUser)) {
+    if ($existingUser) {
         throw new Exception('An account with this email already exists');
     }
+    
+    // Generate verification token
+    $verificationToken = bin2hex(random_bytes(32));
     
     // Hash password
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
     // Create user
-    $userId = $database->insert('users', [
-        'name' => $name,
-        'email' => $email,
-        'password' => $hashedPassword,
-        'is_paid' => 0,
-        'created_at' => date('Y-m-d H:i:s'),
-        'updated_at' => date('Y-m-d H:i:s')
-    ]);
+    $stmt = $pdo->prepare("
+        INSERT INTO users (name, email, password_hash, verification_token, email_verified, is_pro, created_at) 
+        VALUES (?, ?, ?, ?, FALSE, FALSE, NOW())
+    ");
     
-    if (!$userId) {
+    $success = $stmt->execute([$name, $email, $hashedPassword, $verificationToken]);
+    
+    if (!$success) {
         throw new Exception('Failed to create user account');
     }
     
-    // Create user session
-    $sessionData = $auth->createSession($userId);
+    $userId = $pdo->lastInsertId();
     
-    // Send welcome email
-    try {
-        $emailService = new EmailService();
-        $emailService->sendWelcomeEmail($email, $name);
-    } catch (Exception $e) {
-        // Log email error but don't fail the signup
-        error_log("Welcome email failed: " . $e->getMessage());
+    // Create default user preferences
+    $stmt = $pdo->prepare("
+        INSERT INTO user_preferences (user_id, reminder_days, reminder_frequency, preferred_time) 
+        VALUES (?, '[7, 3, 1]', 'once', '09:00:00')
+    ");
+    $stmt->execute([$userId]);
+    
+    // Send verification email
+    $emailSent = sendVerificationEmail($email, $name, $verificationToken);
+    
+    if (!$emailSent) {
+        error_log("Failed to send verification email to: " . $email);
     }
     
     echo json_encode([
         'success' => true,
-        'message' => 'Account created successfully',
-        'user' => [
-            'id' => $userId,
-            'name' => $name,
-            'email' => $email,
-            'is_paid' => false
-        ]
+        'message' => 'Account created successfully! Please check your email to verify your account.',
+        'redirect' => '/app/auth/signin.html?message=verify',
+        'email_sent' => $emailSent
     ]);
     
 } catch (Exception $e) {
+    error_log("Signup error: " . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         'success' => false,
