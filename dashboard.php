@@ -159,253 +159,205 @@ $categories = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CashControl</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
+        }
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .subscription-card {
+            transition: all 0.3s ease;
+        }
+        .subscription-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-white">
     <?php include 'includes/header.php'; ?>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Success/Error Messages -->
-        <?php if (isset($success)): ?>
-        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
-            ✅ <?php echo htmlspecialchars($success); ?>
-        </div>
-        <?php endif; ?>
-        
-        <?php if (isset($error)): ?>
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-            ❌ <?php echo htmlspecialchars($error); ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- Welcome Section -->
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-sm border border-green-100 p-8 mb-8">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome back, <?php echo htmlspecialchars($userName); ?>! 👋</h1>
-                    <p class="text-gray-700 text-lg">
-                        <?php if ($isPaid): ?>
-                            You're enjoying the <span class="text-green-700 font-semibold bg-green-100 px-2 py-1 rounded-md">Pro Plan</span> with all features unlocked!
-                        <?php else: ?>
-                            You're using the <span class="text-gray-700 font-semibold bg-gray-100 px-2 py-1 rounded-md">Free Plan</span> - perfect for getting started with subscription management
-                        <?php endif; ?>
-                    </p>
-                    <?php if (!$isPaid): ?>
-                    <p class="text-sm text-gray-600 mt-2">
-                        💡 <a href="upgrade.php" class="text-green-600 hover:text-green-700 font-medium underline">Upgrade to Pro</a> to unlock bank integration and advanced features
-                    </p>
-                    <?php endif; ?>
-                </div>
-                <div class="text-right">
-                    <?php if (!$isPaid): ?>
-                        <div class="flex flex-col items-end space-y-2">
-                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">Free User</span>
-                            <a href="upgrade.php" class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                                Upgrade to Pro
-                            </a>
-                        </div>
+    <!-- Dashboard Content -->
+    <div class="hero-gradient py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Dashboard Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                    Welcome back, <span class="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"><?php echo htmlspecialchars($userName); ?></span>! 👋
+                </h1>
+                <p class="text-xl text-gray-600 mb-6">
+                    <?php if ($isPaid): ?>
+                        You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!
                     <?php else: ?>
-                        <span class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium flex items-center">
-                            ✨ Pro User
-                        </span>
+                        You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease
+                    <?php endif; ?>
+                </p>
+                <?php if (!$isPaid): ?>
+                <a href="upgrade.php" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                    Upgrade to Pro for Bank Integration
+                </a>
+                <?php endif; ?>
+            </div>
+
+            <!-- Success/Error Messages -->
+            <?php if (isset($success)): ?>
+            <div class="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-lg mb-8 shadow-sm">
+                ✅ <?php echo htmlspecialchars($success); ?>
+            </div>
+            <?php endif; ?>
+            <?php if (isset($error)): ?>
+            <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-8 shadow-sm">
+                ❌ <?php echo htmlspecialchars($error); ?>
+            </div>
+            <?php endif; ?>
+
+            <!-- Stats Overview - Classic 4-Box Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <!-- Active Subscriptions -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-lg bg-blue-100">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Active Subscriptions</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php echo $stats['total_active']; ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Spending -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-lg bg-green-100">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Monthly Spending</p>
+                            <p class="text-2xl font-bold text-gray-900">€<?php echo number_format($stats['monthly_total'], 2); ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yearly Total -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-lg bg-purple-100">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Yearly Total</p>
+                            <p class="text-2xl font-bold text-gray-900">€<?php echo number_format($stats['yearly_total'], 2); ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiring Subscriptions -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-lg bg-orange-100">
+                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Expiring Soon</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php echo count($upcomingPayments); ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscriptions Section -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Subscription Management Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Your Subscriptions</h2>
+                <p class="text-lg text-gray-600 mb-6">Manage all your recurring payments in one place</p>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                        Add New Subscription
+                    </button>
+                    <?php if ($isPaid): ?>
+                        <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all duration-200">
+                            Scan Bank Account
+                        </button>
+                    <?php else: ?>
+                        <a href="upgrade.php" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-gray-700 transform hover:-translate-y-1 transition-all duration-200">
+                            Upgrade for Bank Scan
+                        </a>
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
+            <!-- Filter and Search -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <label for="categoryFilter" class="text-sm font-medium text-gray-700">Filter by category:</label>
+                        <select id="categoryFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" onchange="filterSubscriptions()">
+                            <option value="">All Categories</option>
+                            <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo htmlspecialchars($category['name']); ?>">
+                                <?php echo $category['icon']; ?> <?php echo htmlspecialchars($category['name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 mb-1">Active Subscriptions</p>
-                        <p class="text-3xl font-bold text-gray-900"><?php echo $stats['total_active']; ?></p>
-                        <p class="text-xs text-gray-400 mt-1">📊 Currently tracked</p>
+                    <div class="text-sm text-gray-500">
+                        Showing <?php echo count($subscriptions); ?> subscription<?php echo count($subscriptions) !== 1 ? 's' : ''; ?>
                     </div>
                 </div>
             </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 mb-1">Monthly Total</p>
-                        <p class="text-3xl font-bold text-gray-900">€<?php echo number_format($stats['monthly_total'], 2); ?></p>
-                        <p class="text-xs text-gray-400 mt-1">💰 Per month</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 mb-1">Yearly Total</p>
-                        <p class="text-3xl font-bold text-gray-900">€<?php echo number_format($stats['yearly_total'], 2); ?></p>
-                        <p class="text-xs text-gray-400 mt-1">📅 Per year</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 mb-1">Next Payment</p>
-                        <p class="text-3xl font-bold text-gray-900">
-                            <?php if ($stats['next_payment']): ?>
-                                <?php echo date('M j', strtotime($stats['next_payment']['next_payment_date'])); ?>
-                            <?php else: ?>
-                                None
-                            <?php endif; ?>
-                        </p>
-                        <p class="text-xs text-gray-400 mt-1">⏰ Upcoming</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pro Features Section -->
-        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-900">Available Features</h2>
-                <?php if (!$isPaid): ?>
-                <span class="text-sm text-gray-500">Upgrade to unlock Pro features</span>
-                <?php endif; ?>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Manual Add (Free Feature) -->
-                <button onclick="openAddModal()" class="flex items-center p-4 border-2 border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                    <div class="p-2 bg-green-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-medium text-green-900">Add Subscription</p>
-                        <p class="text-sm text-green-600">Manual entry (Free)</p>
-                    </div>
-                </button>
-                
-                <!-- Bank Integration (Pro Feature) -->
-                <?php if ($isPaid): ?>
-                <button onclick="startBankScan()" class="flex items-center p-4 border-2 border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                    <div class="p-2 bg-blue-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-medium text-blue-900">Bank Scan</p>
-                        <p class="text-sm text-blue-600">Auto-discover subscriptions</p>
-                    </div>
-                </button>
-                <?php else: ?>
-                <a href="upgrade.php" class="flex items-center p-4 border-2 border-gray-300 bg-gray-50 rounded-lg opacity-75 cursor-pointer hover:opacity-100 transition-opacity">
-                    <div class="p-2 bg-gray-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-medium text-gray-700">Bank Scan 🔒</p>
-                        <p class="text-sm text-orange-600">Pro feature - Upgrade to unlock</p>
-                    </div>
-                </a>
-                <?php endif; ?>
-                
-                <!-- Email Notifications (Pro Feature) -->
-                <?php if ($isPaid): ?>
-                <a href="settings.php" class="flex items-center p-4 border-2 border-purple-200 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                    <div class="p-2 bg-purple-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-medium text-purple-900">Email Reminders</p>
-                        <p class="text-sm text-purple-600">Configure notifications</p>
-                    </div>
-                </a>
-                <?php else: ?>
-                <a href="upgrade.php" class="flex items-center p-4 border-2 border-gray-300 bg-gray-50 rounded-lg opacity-75 cursor-pointer hover:opacity-100 transition-opacity">
-                    <div class="p-2 bg-gray-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-medium text-gray-700">Email Reminders 🔒</p>
-                        <p class="text-sm text-orange-600">Pro feature - Upgrade to unlock</p>
-                    </div>
-                </a>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Subscriptions List -->
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-lg font-semibold text-gray-900">Your Subscriptions</h2>
-                <div class="flex items-center space-x-3">
-                    <select id="categoryFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm" onchange="filterSubscriptions()">
-                        <option value="">All Categories</option>
-                        <?php foreach ($categories as $category): ?>
-                        <option value="<?php echo htmlspecialchars($category['name']); ?>">
-                            <?php echo $category['icon']; ?> <?php echo htmlspecialchars($category['name']); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button onclick="openAddModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                        Add Subscription
-                    </button>
-                </div>
-            </div>
-            
+            <!-- Subscriptions List -->
             <?php if (empty($subscriptions)): ?>
-            <div class="text-center py-12">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                     </svg>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No subscriptions yet</h3>
-                <p class="text-gray-500 mb-6">Get started by adding your first subscription manually or with bank integration</p>
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button onclick="openAddModal()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                        Add Manually (Free)
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">No subscriptions yet</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">Get started by adding your first subscription manually or with bank integration</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                        Add Your First Subscription
                     </button>
                     <?php if (!$isPaid): ?>
-                    <a href="upgrade.php" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <a href="upgrade.php" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all duration-200">
                         Upgrade for Bank Scan
                     </a>
                     <?php endif; ?>
                 </div>
             </div>
             <?php else: ?>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="subscriptionsList">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="subscriptionsList">
                 <?php foreach ($subscriptions as $subscription): ?>
-                <div class="subscription-card border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-category="<?php echo htmlspecialchars($subscription['category']); ?>">
-                    <div class="flex items-start justify-between mb-3">
+                <div class="subscription-card bg-white rounded-xl shadow-sm border border-gray-100 p-6" data-category="<?php echo htmlspecialchars($subscription['category']); ?>">
+                    <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center">
                             <span class="text-2xl mr-3">
                                 <?php 
@@ -420,17 +372,17 @@ $categories = [
                                 ?>
                             </span>
                             <div>
-                                <h4 class="font-semibold text-gray-900"><?php echo htmlspecialchars($subscription['name']); ?></h4>
+                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['name']); ?></h4>
                                 <p class="text-sm text-gray-500"><?php echo htmlspecialchars($subscription['category']); ?></p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <button onclick="editSubscription(<?php echo $subscription['id']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors">
+                            <button onclick="editSubscription(<?php echo $subscription['id']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </button>
-                            <button onclick="deleteSubscription(<?php echo $subscription['id']; ?>)" class="text-gray-400 hover:text-red-600 transition-colors">
+                            <button onclick="deleteSubscription(<?php echo $subscription['id']; ?>)" class="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
@@ -438,34 +390,35 @@ $categories = [
                         </div>
                     </div>
                     
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500">Cost:</span>
-                            <span class="font-semibold text-gray-900">€<?php echo number_format($subscription['cost'], 2); ?></span>
+                    <div class="mb-4">
+                        <div class="text-3xl font-bold text-gray-900 mb-1">
+                            €<?php echo number_format($subscription['cost'], 2); ?>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500">Billing:</span>
-                            <span class="text-sm text-gray-700 capitalize"><?php echo htmlspecialchars($subscription['billing_cycle']); ?></span>
+                        <div class="text-sm text-gray-500">
+                            per <?php echo $subscription['billing_cycle']; ?>
                         </div>
-                        <?php if ($subscription['next_payment_date']): ?>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500">Next payment:</span>
-                            <span class="text-sm text-gray-700"><?php echo date('M j, Y', strtotime($subscription['next_payment_date'])); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500">Status:</span>
-                            <span class="text-sm px-2 py-1 rounded-full <?php echo $subscription['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                                <?php echo ucfirst($subscription['status']); ?>
-                            </span>
-                        </div>
+                    </div>
+                    
+                    <?php if ($subscription['next_payment_date']): ?>
+                    <div class="flex items-center justify-between text-sm mb-4">
+                        <span class="text-gray-500">Next payment:</span>
+                        <span class="font-medium text-gray-900">
+                            <?php echo date('M j, Y', strtotime($subscription['next_payment_date'])); ?>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            <?php echo $subscription['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                            <?php echo ucfirst($subscription['status']); ?>
+                        </span>
                     </div>
                 </div>
                 <?php endforeach; ?>
             </div>
-            <?php endif; ?>
         </div>
-    </div>
+    </section>
 
     <!-- Add Subscription Modal -->
     <div id="addModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
