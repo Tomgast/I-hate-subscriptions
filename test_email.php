@@ -16,25 +16,25 @@ try {
     
     echo "<h3>🧪 Testing Email Functionality:</h3>";
     
-    // Test welcome email to support address
-    echo "<p>Testing welcome email to support@123cashcontrol.com...</p>";
-    $welcomeTest = $emailService->sendWelcomeEmail('support@123cashcontrol.com', 'Support Test');
+    // Test welcome email to info address
+    echo "<p>Testing welcome email to info@123cashcontrol.com...</p>";
+    $welcomeTest = $emailService->sendWelcomeEmail('info@123cashcontrol.com', 'Info Test');
     
     if ($welcomeTest) {
         echo "<p>✅ <strong>Welcome email test PASSED</strong></p>";
-        echo "<p>📬 Welcome email sent to: support@123cashcontrol.com</p>";
+        echo "<p>📬 Welcome email sent to: info@123cashcontrol.com</p>";
     } else {
         echo "<p>❌ <strong>Welcome email test FAILED</strong></p>";
         echo "<p>Check server logs for detailed error information.</p>";
     }
     
     // Test upgrade confirmation email
-    echo "<p>Testing upgrade confirmation email to support@123cashcontrol.com...</p>";
-    $upgradeTest = $emailService->sendUpgradeConfirmation('support@123cashcontrol.com', 'Support Test');
+    echo "<p>Testing upgrade confirmation email to info@123cashcontrol.com...</p>";
+    $upgradeTest = $emailService->sendUpgradeConfirmation('info@123cashcontrol.com', 'Info Test');
     
     if ($upgradeTest) {
         echo "<p>✅ <strong>Upgrade confirmation email test PASSED</strong></p>";
-        echo "<p>📬 Upgrade email sent to: support@123cashcontrol.com</p>";
+        echo "<p>📬 Upgrade email sent to: info@123cashcontrol.com</p>";
     } else {
         echo "<p>❌ <strong>Upgrade confirmation email test FAILED</strong></p>";
         echo "<p>Check server logs for detailed error information.</p>";

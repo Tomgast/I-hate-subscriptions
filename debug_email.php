@@ -34,7 +34,7 @@ try {
     echo "<h3>2. Testing PHP mail() function:</h3>";
     
     // Test basic PHP mail function
-    $testEmail = 'support@123cashcontrol.com'; // Send to support email
+    $testEmail = 'info@123cashcontrol.com'; // Send to info email
     $subject = 'CashControl Email Test - Basic';
     $message = 'This is a basic PHP mail test from CashControl using noreply@123cashcontrol.com.';
     $headers = 'From: noreply@123cashcontrol.com' . "\r\n" .

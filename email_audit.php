@@ -59,9 +59,9 @@ require_once 'includes/email_service.php';
             // Test welcome email
             echo "<div class='mb-4'>";
             echo "<h3 class='font-semibold text-gray-700 mb-2'>Welcome Email Test:</h3>";
-            $welcomeResult = $emailService->sendWelcomeEmail('support@123cashcontrol.com', 'Email Audit Test');
+            $welcomeResult = $emailService->sendWelcomeEmail('info@123cashcontrol.com', 'Email Audit Test');
             if ($welcomeResult) {
-                echo "<p class='text-green-600'>✅ Welcome email sent successfully to support@123cashcontrol.com</p>";
+                echo "<p class='text-green-600'>✅ Welcome email sent successfully to info@123cashcontrol.com</p>";
             } else {
                 echo "<p class='text-red-600'>❌ Welcome email failed to send</p>";
             }
@@ -70,9 +70,9 @@ require_once 'includes/email_service.php';
             // Test upgrade email
             echo "<div class='mb-4'>";
             echo "<h3 class='font-semibold text-gray-700 mb-2'>Upgrade Confirmation Test:</h3>";
-            $upgradeResult = $emailService->sendUpgradeConfirmation('support@123cashcontrol.com', 'Email Audit Test');
+            $upgradeResult = $emailService->sendUpgradeConfirmation('info@123cashcontrol.com', 'Email Audit Test');
             if ($upgradeResult) {
-                echo "<p class='text-green-600'>✅ Upgrade confirmation email sent successfully to support@123cashcontrol.com</p>";
+                echo "<p class='text-green-600'>✅ Upgrade confirmation email sent successfully to info@123cashcontrol.com</p>";
             } else {
                 echo "<p class='text-red-600'>❌ Upgrade confirmation email failed to send</p>";
             }
@@ -87,7 +87,7 @@ require_once 'includes/email_service.php';
                        'Reply-To: noreply@123cashcontrol.com' . "\r\n" .
                        'X-Mailer: PHP/' . phpversion();
             
-            $basicResult = mail('support@123cashcontrol.com', $subject, $message, $headers);
+            $basicResult = mail('info@123cashcontrol.com', $subject, $message, $headers);
             if ($basicResult) {
                 echo "<p class='text-green-600'>✅ Basic PHP mail() function returned TRUE</p>";
             } else {
@@ -183,7 +183,7 @@ require_once 'includes/email_service.php';
             
             echo "<div class='bg-blue-100 border border-blue-300 rounded-lg p-4'>";
             echo "<h3 class='font-semibold text-blue-800 mb-2'>📧 Check Your Email</h3>";
-            echo "<p class='text-blue-700'>If tests passed, check <strong>support@123cashcontrol.com</strong> inbox for test emails.</p>";
+            echo "<p class='text-blue-700'>If tests passed, check <strong>info@123cashcontrol.com</strong> inbox for test emails.</p>";
             echo "<p class='text-blue-700 text-sm mt-1'>Don't forget to check spam/junk folders if emails are not in the inbox.</p>";
             echo "</div>";
             
