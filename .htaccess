@@ -1,0 +1,24 @@
+# CashControl Authentication Redirects
+# Ensure legacy auth routes redirect to Next.js authentication
+
+# Redirect legacy auth pages to Next.js routes
+RewriteEngine On
+
+# Redirect old HTML auth pages to Next.js auth
+RewriteRule ^app/auth/signin\.html$ /auth/signin [R=301,L]
+RewriteRule ^app/auth/signup\.html$ /auth/signup [R=301,L]
+
+# Redirect old PHP auth pages to Next.js auth
+RewriteRule ^api/auth/signin\.php$ /auth/signin [R=301,L]
+RewriteRule ^api/auth/signup\.php$ /auth/signup [R=301,L]
+
+# Ensure any other legacy auth patterns redirect properly
+RewriteRule ^auth/signin\.html$ /auth/signin [R=301,L]
+RewriteRule ^auth/signup\.html$ /auth/signup [R=301,L]
+RewriteRule ^signin\.html$ /auth/signin [R=301,L]
+RewriteRule ^signup\.html$ /auth/signup [R=301,L]
+
+# Handle Next.js routing for auth pages
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^auth/(.*)$ /auth/$1 [L]
