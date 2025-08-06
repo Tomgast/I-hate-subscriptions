@@ -417,6 +417,7 @@ $categories = [
                 </div>
                 <?php endforeach; ?>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 
