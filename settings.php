@@ -18,21 +18,6 @@ if ($_POST) {
     try {
         $pdo = getDBConnection();
         
-        // Update user preferences (using correct column names)
-        $stmt = $pdo->prepare("INSERT INTO user_preferences (user_id, preferred_currency, timezone, email_reminders) 
-                              VALUES (?, ?, ?, ?) 
-                              ON DUPLICATE KEY UPDATE 
-                              preferred_currency = VALUES(preferred_currency), 
-                              timezone = VALUES(timezone), 
-                              email_reminders = VALUES(email_reminders)");
-        
-        $stmt->execute([
-            $userId,
-            $_POST['currency'] ?? 'EUR',
-            $_POST['timezone'] ?? 'Europe/Amsterdam',
-            isset($_POST['email_notifications']) ? 1 : 0
-        ]);
-        
         // Update user name if changed
         if (!empty($_POST['name']) && $_POST['name'] !== $userName) {
             $stmt = $pdo->prepare("UPDATE users SET name = ? WHERE id = ?");
