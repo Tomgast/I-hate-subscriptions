@@ -21,7 +21,7 @@ class EmailNotifications {
     public function sendRenewalReminders() {
         $pdo = $this->db->connect();
         
-        // Get subscriptions due in the next 7 days
+        // Get subscriptions due in the next 7 days (only for paid users)
         $stmt = $pdo->prepare("
             SELECT s.*, u.email, u.name, up.email_notifications, up.reminder_days
             FROM subscriptions s
@@ -29,6 +29,7 @@ class EmailNotifications {
             LEFT JOIN user_preferences up ON u.id = up.user_id
             WHERE s.is_active = 1 
             AND s.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            AND u.is_paid = 1
             AND (up.email_notifications IS NULL OR up.email_notifications = 1)
         ");
         $stmt->execute();

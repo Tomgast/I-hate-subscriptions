@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once 'config/db_config.php';
-require_once 'config/database_schema.php';
 require_once 'includes/subscription_manager.php';
 
 // Check if user is logged in
