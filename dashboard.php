@@ -20,16 +20,18 @@ if ($_POST && isset($_POST['action'])) {
         
         if ($_POST['action'] === 'add_subscription') {
             // Add new subscription
-            $stmt = $pdo->prepare("INSERT INTO subscriptions (user_id, name, cost, billing_cycle, category, next_payment_date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())");
-            $nextPayment = null;
+            $stmt = $pdo->prepare("INSERT INTO subscriptions (user_id, name, cost, billing_cycle, category, next_billing_date, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
+            $nextBilling = null;
             
-            // Calculate next payment date
+            // Calculate next billing date
             if ($_POST['billing_cycle'] === 'monthly') {
-                $nextPayment = date('Y-m-d', strtotime('+1 month'));
+                $nextBilling = date('Y-m-d', strtotime('+1 month'));
             } elseif ($_POST['billing_cycle'] === 'yearly') {
-                $nextPayment = date('Y-m-d', strtotime('+1 year'));
+                $nextBilling = date('Y-m-d', strtotime('+1 year'));
             } elseif ($_POST['billing_cycle'] === 'weekly') {
-                $nextPayment = date('Y-m-d', strtotime('+1 week'));
+                $nextBilling = date('Y-m-d', strtotime('+1 week'));
+            } elseif ($_POST['billing_cycle'] === 'daily') {
+                $nextBilling = date('Y-m-d', strtotime('+1 day'));
             }
             
             $stmt->execute([
@@ -38,7 +40,7 @@ if ($_POST && isset($_POST['action'])) {
                 floatval($_POST['cost']),
                 $_POST['billing_cycle'],
                 $_POST['category'],
-                $nextPayment
+                $nextBilling
             ]);
             
             $success = "Subscription added successfully!";
@@ -97,7 +99,7 @@ try {
     $nextPaymentDate = null;
     
     foreach ($subscriptions as $subscription) {
-        if ($subscription['status'] === 'active') {
+        if ($subscription['is_active'] == 1) {
             $stats['total_active']++;
             
             // Calculate monthly cost
@@ -112,22 +114,24 @@ try {
                 case 'weekly':
                     $monthlyCost = $subscription['cost'] * 4.33;
                     break;
+                case 'daily':
+                    $monthlyCost = $subscription['cost'] * 30;
+                    break;
             }
             
             $stats['monthly_total'] += $monthlyCost;
             $stats['yearly_total'] += $monthlyCost * 12;
             
             // Check for upcoming payments (next 7 days)
-            if ($subscription['next_payment_date']) {
-                $paymentDate = strtotime($subscription['next_payment_date']);
-                $now = time();
-                $sevenDaysFromNow = $now + (7 * 24 * 60 * 60);
+            if ($subscription['next_billing_date']) {
+                $paymentDate = strtotime($subscription['next_billing_date']);
+                $sevenDaysFromNow = strtotime('+7 days');
                 
-                if ($paymentDate >= $now && $paymentDate <= $sevenDaysFromNow) {
+                if ($paymentDate <= $sevenDaysFromNow && $paymentDate >= time()) {
                     $upcomingPayments[] = $subscription;
                 }
                 
-                // Find next payment
+                // Track next payment
                 if (!$nextPaymentDate || $paymentDate < $nextPaymentDate) {
                     $nextPaymentDate = $paymentDate;
                     $stats['next_payment'] = $subscription;
@@ -406,19 +410,19 @@ $categories = [
                         </div>
                     </div>
                     
-                    <?php if ($subscription['next_payment_date']): ?>
+                    <?php if ($subscription['next_billing_date']): ?>
                     <div class="flex items-center justify-between text-sm mb-4">
                         <span class="text-gray-500">Next payment:</span>
                         <span class="font-medium text-gray-900">
-                            <?php echo date('M j, Y', strtotime($subscription['next_payment_date'])); ?>
+                            <?php echo date('M j, Y', strtotime($subscription['next_billing_date'])); ?>
                         </span>
                     </div>
                     <?php endif; ?>
                     
                     <div class="pt-4 border-t border-gray-100">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            <?php echo $subscription['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                            <?php echo ucfirst($subscription['status']); ?>
+                            <?php echo $subscription['is_active'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                            <?php echo $subscription['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
                         </span>
                     </div>
                 </div>
