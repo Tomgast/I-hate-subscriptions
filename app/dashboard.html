@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CashControl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="icon" href="/favicon.ico" />
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">💰 CashControl</h1>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="/app/dashboard.html" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="/app/subscriptions.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Subscriptions
+                        </a>
+                        <a href="/app/settings.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Settings
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="user-info" class="flex items-center space-x-3">
+                        <img id="user-avatar" class="h-8 w-8 rounded-full" src="" alt="">
+                        <span id="user-name" class="text-sm font-medium text-gray-700"></span>
+                    </div>
+                    <button id="logout-btn" class="text-gray-500 hover:text-gray-700">
+                        <i data-lucide="log-out" class="h-5 w-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Loading State -->
+        <div id="loading" class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" class="hidden">
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i data-lucide="credit-card" class="h-6 w-6 text-gray-400"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Active Subscriptions</dt>
+                                    <dd id="total-count" class="text-lg font-medium text-gray-900">0</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i data-lucide="calendar" class="h-6 w-6 text-gray-400"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Monthly Total</dt>
+                                    <dd id="monthly-total" class="text-lg font-medium text-gray-900">€0.00</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i data-lucide="trending-up" class="h-6 w-6 text-gray-400"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Yearly Total</dt>
+                                    <dd id="yearly-total" class="text-lg font-medium text-gray-900">€0.00</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i data-lucide="bar-chart" class="h-6 w-6 text-gray-400"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Average Monthly</dt>
+                                    <dd id="average-monthly" class="text-lg font-medium text-gray-900">€0.00</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Spending Chart -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Spending</h3>
+                        <canvas id="spending-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">By Category</h3>
+                        <canvas id="category-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Subscriptions -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Subscriptions</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">Your latest subscription activity</p>
+                    </div>
+                    <a href="/app/subscriptions.html" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        View All
+                    </a>
+                </div>
+                <ul id="recent-subscriptions" class="divide-y divide-gray-200">
+                    <!-- Subscriptions will be loaded here -->
+                </ul>
+            </div>
+
+            <!-- Upcoming Renewals -->
+            <div class="mt-8 bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Upcoming Renewals</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Subscriptions renewing in the next 30 days</p>
+                </div>
+                <ul id="upcoming-renewals" class="divide-y divide-gray-200">
+                    <!-- Upcoming renewals will be loaded here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="hidden text-center py-12">
+            <i data-lucide="alert-circle" class="h-12 w-12 text-red-400 mx-auto mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
+            <p class="text-gray-500 mb-4">We couldn't load your dashboard data.</p>
+            <button id="retry-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/auth.js"></script>
+    <script src="/assets/js/dashboard.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication first
+            Auth.checkSession().then(user => {
+                if (!user) {
+                    window.location.href = '/app/auth/login.html';
+                    return;
+                }
+                
+                // Update user info in nav
+                document.getElementById('user-name').textContent = user.name;
+                if (user.avatar_url) {
+                    document.getElementById('user-avatar').src = user.avatar_url;
+                } else {
+                    document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=3b82f6&color=ffffff';
+                }
+                
+                // Initialize dashboard
+                Dashboard.init();
+            }).catch(error => {
+                console.error('Auth check failed:', error);
+                window.location.href = '/app/auth/login.html';
+            });
+            
+            // Logout handler
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                Auth.logout().then(() => {
+                    window.location.href = '/';
+                });
+            });
+            
+            // Retry handler
+            document.getElementById('retry-btn').addEventListener('click', function() {
+                Dashboard.init();
+            });
+        });
+    </script>
+</body>
+</html>

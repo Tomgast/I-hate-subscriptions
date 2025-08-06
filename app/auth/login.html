@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - CashControl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="icon" href="/favicon.ico" />
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Logo -->
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">💰 CashControl</h1>
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Track your subscriptions and take control of your finances
+                </p>
+            </div>
+
+            <!-- Sign In Form -->
+            <div class="bg-white py-8 px-6 shadow-lg rounded-lg">
+                <div class="space-y-6">
+                    <!-- Google Sign In Button -->
+                    <div class="text-center">
+                        <div id="google-signin-button" class="flex justify-center"></div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300" />
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">Why Google OAuth?</span>
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">
+                                    <strong>Secure & Fast:</strong> No passwords to remember or manage
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">
+                                    <strong>Privacy First:</strong> We only access your name and email
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">
+                                    <strong>Always Free:</strong> Start tracking subscriptions immediately
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Preview -->
+            <div class="bg-white py-6 px-6 shadow-lg rounded-lg">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">What you get with CashControl:</h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Track unlimited subscriptions</p>
+                            <p class="text-sm text-gray-500">Add all your monthly and yearly subscriptions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5-5-5h5v-12" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Smart renewal reminders</p>
+                            <p class="text-sm text-gray-500">Never miss a renewal date again</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <svg class="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Spending analytics</p>
+                            <p class="text-sm text-gray-500">See where your money goes each month</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-900">Premium Features</span>
+                        <span class="text-sm font-bold text-green-600">€29 one-time</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Bank integration, advanced analytics, priority support</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center">
+                <p class="text-xs text-gray-500">
+                    By signing in, you agree to our 
+                    <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a> and 
+                    <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check if already logged in
+            const user = await Auth.checkSession();
+            if (user) {
+                window.location.href = '/app/dashboard.html';
+                return;
+            }
+            
+            // Initialize Google Auth
+            try {
+                await Auth.initGoogleAuth();
+                Auth.renderGoogleButton('google-signin-button');
+            } catch (error) {
+                console.error('Failed to initialize Google Auth:', error);
+                Auth.showError('Failed to load sign-in options. Please refresh the page.');
+            }
+        });
+    </script>
+</body>
+</html>
