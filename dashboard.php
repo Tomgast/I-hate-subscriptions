@@ -78,8 +78,9 @@ $categories = $subscriptionManager->getCategories();
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-brand">
-                <span class="icon-credit-card mr-3" style="font-size: 2rem;"></span>
-                <span>CashControl</span>
+                <a href="dashboard.php" class="flex items-center">
+                    <img src="assets/images/logo.svg" alt="CashControl" class="h-8">
+                </a>
             </div>
             
             <div class="navbar-user">
