@@ -40,10 +40,22 @@ if (!function_exists('getSecureConfig')) {
         $debugInfo[] = "Checking: $path - " . (file_exists($path) ? 'EXISTS' : 'NOT FOUND') . (file_exists($path) && is_readable($path) ? ' & READABLE' : '');
         
         if (file_exists($path) && is_readable($path)) {
-            require_once $path;
-            $configLoaded = true;
-            error_log("CashControl: SUCCESS - Loaded secure config from: $path");
-            break;
+            try {
+                require_once $path;
+                $configLoaded = true;
+                error_log("CashControl: SUCCESS - Loaded secure config from: $path");
+                
+                // Verify that getSecureConfig function is now available
+                if (function_exists('getSecureConfig')) {
+                    error_log("CashControl: SUCCESS - getSecureConfig function is available");
+                } else {
+                    error_log("CashControl: WARNING - secure-config.php loaded but getSecureConfig function not found");
+                }
+                break;
+            } catch (Exception $e) {
+                error_log("CashControl: ERROR loading secure config from $path: " . $e->getMessage());
+                continue;
+            }
         }
     }
     
