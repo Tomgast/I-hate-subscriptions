@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - CashControl</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="icon" href="/favicon.ico" />
     <style>
@@ -206,7 +205,7 @@
                             Full Name
                         </label>
                         <div class="relative">
-                            <i data-lucide="user" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"></i>
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">👤</span>
                             <input
                                 id="name"
                                 name="name"
@@ -224,7 +223,7 @@
                             Email address
                         </label>
                         <div class="relative">
-                            <i data-lucide="mail" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"></i>
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">📧</span>
                             <input
                                 id="email"
                                 name="email"
@@ -243,7 +242,7 @@
                             Password
                         </label>
                         <div class="relative">
-                            <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"></i>
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
                             <input
                                 id="password"
                                 name="password"
@@ -258,7 +257,7 @@
                                 id="togglePassword"
                                 class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
-                                <i data-lucide="eye" class="h-5 w-5"></i>
+                                <span>👁</span>
                             </button>
                         </div>
                         
@@ -280,7 +279,7 @@
                             Confirm Password
                         </label>
                         <div class="relative">
-                            <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"></i>
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
                             <input
                                 id="confirmPassword"
                                 name="confirmPassword"
@@ -295,7 +294,7 @@
                                 id="toggleConfirmPassword"
                                 class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
-                                <i data-lucide="eye" class="h-5 w-5"></i>
+                                <span>👁</span>
                             </button>
                         </div>
                         <div id="passwordMatch" class="mt-1 text-xs hidden">
@@ -331,7 +330,7 @@
                         class="btn-primary w-full py-3 px-4 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         <span id="submitText">Create Account</span>
-                        <i id="submitSpinner" data-lucide="loader-2" class="hidden h-5 w-5 ml-2 animate-spin"></i>
+                        <span id="submitSpinner" class="hidden ml-2">⏳</span>
                     </button>
                 </form>
 
@@ -346,53 +345,36 @@
     </div>
 
     <script>
-        // Initialize Lucide icons with fallback
+        // Simple initialization without external dependencies
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            } else {
-                console.warn('Lucide icons not loaded, using text fallbacks');
-                // Replace icon placeholders with text
-                document.querySelectorAll('[data-lucide]').forEach(el => {
-                    const iconName = el.getAttribute('data-lucide');
-                    if (iconName === 'eye') el.textContent = '👁';
-                    if (iconName === 'eye-off') el.textContent = '🙈';
-                    if (iconName === 'lock') el.textContent = '🔒';
-                    if (iconName === 'user') el.textContent = '👤';
-                    if (iconName === 'mail') el.textContent = '📧';
-                    if (iconName === 'check') el.textContent = '✓';
-                    if (iconName === 'loader-2') el.textContent = '⏳';
-                });
-            }
+            console.log('Signup page loaded successfully');
         });
 
         // Password visibility toggles
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
+            const icon = this.querySelector('span');
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
+                icon.textContent = '🙈';
             } else {
                 passwordInput.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
+                icon.textContent = '👁';
             }
-            lucide.createIcons();
         });
 
         document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('confirmPassword');
-            const icon = this.querySelector('i');
+            const icon = this.querySelector('span');
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
+                icon.textContent = '🙈';
             } else {
                 passwordInput.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
+                icon.textContent = '👁';
             }
-            lucide.createIcons();
         });
 
         // Password strength checker
