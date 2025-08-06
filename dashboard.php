@@ -65,7 +65,14 @@ if ($_POST && isset($_POST['action'])) {
         }
     } catch (Exception $e) {
         error_log("Dashboard action error: " . $e->getMessage());
-        $error = "An error occurred. Please try again.";
+        error_log("Dashboard action error details: " . print_r($e, true));
+        
+        // Show more specific error in development/debugging
+        if (isset($_GET['debug'])) {
+            $error = "Database error: " . $e->getMessage();
+        } else {
+            $error = "An error occurred. Please try again.";
+        }
     }
 }
 
