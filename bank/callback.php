@@ -1,7 +1,8 @@
 <?php
 session_start();
-require_once '../includes/bank_integration.php';
-require_once '../config/email.php';
+require_once '../includes/bank_service.php';
+require_once '../includes/email_service.php';
+require_once '../includes/subscription_manager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -10,8 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$bankIntegration = new BankIntegration();
+$bankService = new BankService();
 $emailService = new EmailService();
+$subscriptionManager = new SubscriptionManager();
 
 try {
     // Get authorization code from callback
@@ -19,45 +21,107 @@ try {
     $state = $_GET['state'] ?? null;
     
     if (!$code) {
-        throw new Exception('Authorization failed');
+        throw new Exception('Authorization failed - no authorization code received');
     }
     
     // Verify state parameter
     $stateData = json_decode(base64_decode($state), true);
-    if ($stateData['user_id'] != $userId) {
-        throw new Exception('Invalid state parameter');
+    if (!$stateData || $stateData['user_id'] != $userId) {
+        throw new Exception('Invalid state parameter - security check failed');
     }
     
     // Exchange code for access token
-    $tokenResponse = $bankIntegration->exchangeCodeForToken($code);
-    $accessToken = $tokenResponse['access_token'];
+    $tokenData = $bankService->exchangeCodeForToken($code);
     
-    // Get user's accounts
-    $accountsResponse = $bankIntegration->getAccounts($accessToken);
-    $accounts = $accountsResponse['results'] ?? [];
-    
-    $connectedAccounts = 0;
-    
-    foreach ($accounts as $account) {
-        // Store account in database
-        $bankIntegration->storeBankAccount($userId, $account, $accessToken);
-        $connectedAccounts++;
-        
-        // Get recent transactions for subscription detection
-        $fromDate = date('Y-m-d', strtotime('-3 months'));
-        $transactionsResponse = $bankIntegration->getTransactions($accessToken, $account['account_id'], $fromDate);
-        $transactions = $transactionsResponse['results'] ?? [];
-        
-        // Detect subscription payments
-        $detectedPayments = $bankIntegration->detectSubscriptionPayments($userId, $transactions);
+    if (!$tokenData || !isset($tokenData['access_token'])) {
+        throw new Exception('Failed to exchange authorization code for access token');
     }
     
-    // Send success email
-    $emailService->sendBankScanEmail($_SESSION['user_email'], $_SESSION['user_name'], $connectedAccounts, count($detectedPayments ?? []));
+    $accessToken = $tokenData['access_token'];
+    $refreshToken = $tokenData['refresh_token'] ?? null;
     
-    $success = "Successfully connected $connectedAccounts bank account(s)!";
+    // Get user's bank accounts
+    $accounts = $bankService->getBankAccounts($accessToken);
+    
+    if ($accounts === false || empty($accounts)) {
+        throw new Exception('Failed to retrieve bank accounts or no accounts found');
+    }
+    
+    $connectedAccounts = 0;
+    $totalDetectedSubscriptions = 0;
+    $allDetectedSubscriptions = [];
+    
+    foreach ($accounts as $account) {
+        $connectedAccounts++;
+        
+        // Get recent transactions for subscription detection (last 3 months)
+        $fromDate = date('Y-m-d', strtotime('-90 days'));
+        $toDate = date('Y-m-d');
+        
+        $transactions = $bankService->getAccountTransactions($accessToken, $account['account_id'], $fromDate, $toDate);
+        
+        if ($transactions && !empty($transactions)) {
+            // Detect potential subscriptions from transaction patterns
+            $detectedSubscriptions = $bankService->detectSubscriptions($transactions);
+            
+            // Add detected subscriptions to user's account
+            foreach ($detectedSubscriptions as $subscription) {
+                // Only add high-confidence subscriptions automatically
+                if ($subscription['confidence'] >= 70) {
+                    try {
+                        $subscriptionManager->addSubscription($userId, [
+                            'name' => $subscription['name'],
+                            'description' => 'Auto-detected from bank transactions',
+                            'cost' => $subscription['amount'],
+                            'currency' => $subscription['currency'],
+                            'billing_cycle' => $subscription['billing_cycle'],
+                            'next_payment_date' => $subscription['next_payment_date'],
+                            'category' => 'Other',
+                            'website_url' => '',
+                            'logo_url' => ''
+                        ]);
+                        
+                        $totalDetectedSubscriptions++;
+                        $allDetectedSubscriptions[] = $subscription;
+                    } catch (Exception $e) {
+                        error_log("Failed to add detected subscription: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+    }
+    
+    // Save bank connection details
+    $bankName = 'Connected Bank'; // TrueLayer doesn't always provide bank name
+    $connectionId = $bankService->saveBankConnection($userId, $accessToken, $refreshToken, $bankName, $accounts);
+    
+    if (!$connectionId) {
+        error_log("Warning: Failed to save bank connection details for user $userId");
+    }
+    
+    // Send success notification email
+    if (isset($_SESSION['user_email']) && isset($_SESSION['user_name'])) {
+        // Create a simple bank scan success email since the method might not exist
+        $emailService->sendEmail(
+            $_SESSION['user_email'],
+            'Bank Connection Successful! 🏦',
+            "<h2>Bank Connection Successful!</h2>
+            <p>Hi {$_SESSION['user_name']},</p>
+            <p>Great news! We've successfully connected your bank account to CashControl.</p>
+            <ul>
+                <li><strong>Connected Accounts:</strong> $connectedAccounts</li>
+                <li><strong>Detected Subscriptions:</strong> $totalDetectedSubscriptions</li>
+            </ul>
+            <p>You can now view and manage all your subscriptions in your dashboard.</p>
+            <p><a href='https://123cashcontrol.com/dashboard.php'>View Dashboard</a></p>
+            <p>Best regards,<br>The CashControl Team</p>"
+        );
+    }
+    
+    $success = "Successfully connected $connectedAccounts bank account(s) and detected $totalDetectedSubscriptions subscriptions!";
     
 } catch (Exception $e) {
+    error_log("Bank callback error: " . $e->getMessage());
     $error = $e->getMessage();
 }
 ?>
