@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - CashControl</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="icon" href="/favicon.ico" />
     <style>
@@ -349,9 +350,23 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Password visibility toggle
+        // Password visibility toggles
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                passwordInput.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirmPassword');
             const icon = this.querySelector('i');
             
             if (passwordInput.type === 'password') {
@@ -404,6 +419,30 @@
             strengthText.textContent = password.length > 0 ? strengthLabels[Math.min(strength, 4)] : 'Password strength';
         });
 
+        // Password confirmation matching
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const matchDiv = document.getElementById('passwordMatch');
+            const matchText = document.getElementById('matchText');
+            
+            if (confirmPassword.length > 0) {
+                matchDiv.classList.remove('hidden');
+                if (password === confirmPassword) {
+                    matchText.textContent = '✓ Passwords match';
+                    matchText.className = 'text-green-600';
+                } else {
+                    matchText.textContent = '✗ Passwords do not match';
+                    matchText.className = 'text-red-600';
+                }
+            } else {
+                matchDiv.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('password').addEventListener('input', checkPasswordMatch);
+        document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
+
         // Form submission
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -423,8 +462,19 @@
             const formData = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
-                password: document.getElementById('password').value
+                password: document.getElementById('password').value,
+                confirmPassword: document.getElementById('confirmPassword').value
             };
+            
+            // Validate passwords match
+            if (formData.password !== formData.confirmPassword) {
+                errorText.textContent = 'Passwords do not match';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitText.textContent = 'Create Account';
+                submitSpinner.classList.add('hidden');
+                return;
+            }
             
             try {
                 const response = await fetch('/api/auth/signup.php', {
@@ -438,8 +488,12 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Success - redirect to dashboard
-                    window.location.href = '/app/dashboard.html';
+                    // Success - redirect to signin with verification message
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        window.location.href = '/app/auth/signin.html?message=verify';
+                    }
                 } else {
                     // Show error
                     errorText.textContent = result.message || 'Failed to create account';
