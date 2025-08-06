@@ -1,28 +1,10 @@
 <?php
 session_start();
-require_once 'config/db_config.php';
-require_once 'includes/subscription_manager.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['session_token'])) {
-    header('Location: auth/signin.php');
-    exit;
-}
-
-// Verify session token
-try {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare("SELECT user_id FROM user_sessions WHERE session_token = ? AND expires_at > NOW()");
-    $stmt->execute([$_SESSION['session_token']]);
-    
-    if (!$stmt->fetch()) {
-        // Invalid or expired session
-        session_destroy();
-        header('Location: auth/signin.php');
-        exit;
-    }
-} catch (Exception $e) {
-    error_log("Session verification error: " . $e->getMessage());
     header('Location: auth/signin.php');
     exit;
 }
@@ -32,11 +14,53 @@ $userEmail = $_SESSION['user_email'] ?? '';
 $isPaid = $_SESSION['is_paid'] ?? false;
 $userId = $_SESSION['user_id'];
 
-// Initialize subscription manager
-$subscriptionManager = new SubscriptionManager();
+// Initialize variables with safe defaults
+$subscriptions = [];
+$stats = [
+    'total_active' => 0,
+    'monthly_total' => 0,
+    'yearly_total' => 0,
+    'next_payment' => null,
+    'category_breakdown' => []
+];
+$upcomingPayments = [];
+$categories = [];
+$error = null;
 
-// Get user data
-$subscriptions = $subscriptionManager->getUserSubscriptions($userId);
+// Try to load data safely
+try {
+    require_once 'config/db_config.php';
+    $pdo = getDBConnection();
+    
+    // Verify session token
+    $stmt = $pdo->prepare("SELECT user_id FROM user_sessions WHERE session_token = ? AND expires_at > NOW()");
+    $stmt->execute([$_SESSION['session_token']]);
+    
+    if (!$stmt->fetch()) {
+        // Invalid or expired session
+        session_destroy();
+        header('Location: auth/signin.php');
+        exit;
+    }
+    
+    // Try to load subscription data
+    try {
+        require_once 'includes/subscription_manager.php';
+        $subscriptionManager = new SubscriptionManager();
+        
+        $subscriptions = $subscriptionManager->getUserSubscriptions($userId);
+        $stats = $subscriptionManager->getSubscriptionStats($userId);
+        $upcomingPayments = $subscriptionManager->getUpcomingPayments($userId, 7);
+        $categories = $subscriptionManager->getCategories();
+    } catch (Exception $e) {
+        $error = "Data loading error: " . $e->getMessage();
+        // Continue with empty data
+    }
+    
+} catch (Exception $e) {
+    $error = "Database connection error: " . $e->getMessage();
+    // Continue with empty data
+}
 $stats = $subscriptionManager->getSubscriptionStats($userId);
 $upcomingPayments = $subscriptionManager->getUpcomingPayments($userId, 7);
 $categories = $subscriptionManager->getCategories();
