@@ -71,28 +71,7 @@ try {
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-brand">
-                <span class="icon-credit-card mr-3" style="font-size: 2rem;"></span>
-                <span>CashControl</span>
-            </div>
-            
-            <div class="navbar-user">
-                <a href="dashboard.php" class="text-blue-600" style="text-decoration: none;">← Back to Dashboard</a>
-                <span class="text-sm text-gray-700">Welcome, <?php echo htmlspecialchars($userName); ?></span>
-                <?php if (!$isPaid): ?>
-                    <span class="badge badge-gray">Free Plan</span>
-                <?php else: ?>
-                    <span class="badge badge-blue">Pro Plan</span>
-                <?php endif; ?>
-                <a href="auth/logout.php" class="text-gray-500" style="text-decoration: none;">
-                    <span class="icon-logout"></span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/header.php'; ?>
 
     <!-- Main Content -->
     <div class="container py-6">

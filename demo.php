@@ -10,24 +10,7 @@ session_start();
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-brand">
-                <span class="icon-credit-card mr-3" style="font-size: 2rem;"></span>
-                <span>CashControl</span>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-                <a href="index.html" class="text-gray-600 hover:text-gray-900" style="text-decoration: none; padding: 0.5rem 1rem;">
-                    ← Back to Home
-                </a>
-                <a href="auth/signup.php" class="btn btn-primary">
-                    Sign Up
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/header.php'; ?>
 
     <!-- Demo Content -->
     <div class="container py-8">
