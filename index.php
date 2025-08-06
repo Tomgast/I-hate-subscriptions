@@ -91,13 +91,21 @@
                     Connect your bank account once to discover all your subscriptions and manage them effortlessly.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="auth/signup.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                        Start Free Today
-                    </a>
-                    <a href="demo.php" class="bg-white text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
-                        View Demo
-                    </a>
-                </div>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <a href="dashboard.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                            Go to Dashboard
+                        </a>
+                        <a href="upgrade.php" class="bg-white text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
+                            <?php echo ($_SESSION['is_paid'] ?? false) ? 'Manage Account' : 'Upgrade to Pro'; ?>
+                        </a>
+                    <?php else: ?>
+                        <a href="auth/signup.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                            Start Free Today
+                        </a>
+                        <a href="demo.php" class="bg-white text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
+                            View Demo
+                        </a>
+                    <?php endif; ?>
             </div>
         </div>
     </section>

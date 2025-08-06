@@ -59,6 +59,10 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             </div>
             <?php else: ?>
             <div class="hidden md:flex items-center space-x-8">
+                <a href="index.html" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'index' ? 'text-green-600' : ''; ?>">
+                    Home
+                    <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'index' ? 'w-full' : ''; ?>"></span>
+                </a>
                 <a href="dashboard.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'dashboard' ? 'text-green-600' : ''; ?>">
                     Dashboard
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'dashboard' ? 'w-full' : ''; ?>"></span>
