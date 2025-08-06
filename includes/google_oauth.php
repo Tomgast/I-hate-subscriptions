@@ -1,6 +1,6 @@
 <?php
 // Google OAuth Service for CashControl
-require_once __DIR__ . '/../config/secure_loader.php';
+require_once __DIR__ . '/../config/db_config.php';
 
 class GoogleOAuthService {
     private $clientId;
@@ -9,19 +9,13 @@ class GoogleOAuthService {
     private $pdo;
     
     public function __construct() {
-        // Load secure configuration
-        $config = loadSecureConfig();
-        $this->pdo = new PDO(
-            "mysql:host={$config['db_host']};port={$config['db_port']};dbname={$config['db_name']};charset=utf8mb4",
-            $config['db_user'],
-            $config['db_password'],
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        // Load database connection
+        $this->pdo = getDBConnection();
         
         // Load Google OAuth credentials securely
-        $this->clientId = $config['google_client_id'] ?? '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
-        $this->clientSecret = $config['google_client_secret'] ?? '';
-        $this->redirectUri = $config['google_redirect_uri'] ?? 'https://123cashcontrol.com/auth/google-callback.php';
+        $this->clientId = getSecureConfig('GOOGLE_CLIENT_ID') ?: '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
+        $this->clientSecret = getSecureConfig('GOOGLE_CLIENT_SECRET');
+        $this->redirectUri = getSecureConfig('GOOGLE_REDIRECT_URI') ?: 'https://123cashcontrol.com/auth/google-callback.php';
     }
     
     /**

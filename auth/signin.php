@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../config/secure_loader.php';
+require_once '../config/db_config.php';
 
 // Handle form submission
 if ($_POST) {
@@ -11,13 +11,7 @@ if ($_POST) {
         $error = "Please fill in all fields.";
     } else {
         try {
-            $config = loadSecureConfig();
-            $pdo = new PDO(
-                "mysql:host={$config['db_host']};port={$config['db_port']};dbname={$config['db_name']};charset=utf8mb4",
-                $config['db_user'],
-                $config['db_password'],
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
+            $pdo = getDBConnection();
             
             // Get user by email
             $stmt = $pdo->prepare("SELECT id, email, name, password_hash, is_pro FROM users WHERE email = ?");
