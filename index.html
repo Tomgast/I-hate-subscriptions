@@ -3,83 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CashControl - Never Miss a Subscription Again</title>
+    <title>CashControl - Take Control of Your Subscription Chaos</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .wave-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2334d399' fill-opacity='0.1'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-white">
     <!-- Navigation -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-brand">
-                <span class="icon-credit-card mr-3" style="font-size: 2rem;"></span>
-                <span>CashControl</span>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-                <a href="auth/signin.php" class="text-gray-600 hover:text-gray-900" style="text-decoration: none; padding: 0.5rem 1rem;">
-                    Sign In
-                </a>
-                <a href="auth/signup.php" class="btn btn-primary">
-                    Get Started Free
-                </a>
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="assets/images/logo.svg" alt="CashControl Logo" class="h-10 w-auto">
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="auth/signin.php" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        Sign In
+                    </a>
+                    <a href="auth/signup.php" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        Get Started Free
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="py-20 px-4">
-        <div class="container text-center">
-        <!-- Background gradient -->
-        <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-orange-50 to-yellow-50"></div>
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23f97316%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
-        
-        <div class="relative max-w-4xl mx-auto text-center">
-            <!-- Logo showcase -->
-            <div class="mb-8">
-                <div class="mx-auto h-16 w-16 bg-primary-600 rounded-full flex items-center justify-center mb-4">
-                    <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
+    <section class="hero-gradient wave-pattern relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-green-400/20 via-green-500/10 to-emerald-600/20"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="text-center">
+                <div class="floating mb-8">
+                    <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium">
+                        🎉 Over 10,000 users saved money with CashControl
+                    </div>
                 </div>
-            </div>
-            
-            <h1 class="text-4xl font-bold text-gray-900 mb-6">
-                Never Miss a 
-                <span class="text-blue-600">Subscription</span> Again
-            </h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Stop paying for forgotten subscriptions. Track, manage, and cancel with ease. 
-                <strong class="text-blue-600">€29/year - Full featured subscription tracker.</strong>
-            </p>
-            
-            <!-- Stats preview -->
-            <div class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8 text-center">
-                <div class="bg-white rounded-lg p-4 shadow-sm">
-                    <div class="text-2xl font-bold text-green-600">€1,440</div>
-                    <div class="text-sm text-gray-600">Avg. Yearly Savings</div>
+                
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                    Take Control of Your
+                    <span class="block bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
+                        Subscription Chaos
+                    </span>
+                </h1>
+                
+                <p class="text-xl text-green-50 mb-12 max-w-3xl mx-auto leading-relaxed">
+                    Stop paying for forgotten subscriptions. Track, manage, and cancel with ease. 
+                    <span class="font-semibold text-yellow-200">Start free, upgrade for €29/year.</span>
+                </p>
+                
+                <!-- Stats preview -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto mb-12">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                        <div class="text-3xl font-bold text-white mb-2">€1,440</div>
+                        <div class="text-green-100 text-sm">Average Yearly Savings</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                        <div class="text-3xl font-bold text-white mb-2">3.2</div>
+                        <div class="text-green-100 text-sm">Forgotten Subscriptions</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                        <div class="text-3xl font-bold text-white mb-2">€29</div>
+                        <div class="text-green-100 text-sm">Per Year (Pro)</div>
+                    </div>
                 </div>
-                <div class="bg-white rounded-lg p-4 shadow-sm">
-                    <div class="text-2xl font-bold text-blue-600">3.2</div>
-                    <div class="text-sm text-gray-600">Forgotten Subs</div>
-                </div>
-                <div class="bg-white rounded-lg p-4 shadow-sm">
-                    <div class="text-2xl font-bold text-purple-600">€29</div>
-                    <div class="text-sm text-gray-600">Per Year</div>
-                </div>
-            </div>
 
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <a href="demo.php" class="btn btn-secondary btn-lg">
-                    📊 Try Demo
-                </a>
-                <a href="auth/signup.php" class="btn btn-primary btn-lg">
-                    🚀 Get Started Free
-                </a>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                    <a href="demo.php" class="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-2 border-white/30 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 inline-flex items-center justify-center">
+                        📊 Try Interactive Demo
+                    </a>
+                    <a href="auth/signup.php" class="bg-white hover:bg-gray-50 text-green-600 px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center justify-center">
+                        🚀 Get Started Free
+                    </a>
+                </div>
+                
+                <div class="text-green-100 text-sm">
+                    ✨ <strong>Free Plan Available</strong> • <strong>Pro: €29/year</strong> • <strong>No Hidden Fees</strong>
+                </div>
             </div>
-            
-            <div class="text-sm text-gray-500">
-                ✨ <strong>Free Plan Available</strong> • <strong>Pro: €29/year</strong> • <strong>Bank Integration</strong>
-            </div>
+        </div>
+        
+        <!-- Wave decoration -->
+        <div class="absolute bottom-0 left-0 right-0">
+            <svg viewBox="0 0 1200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 120L50 105C100 90 200 60 300 45C400 30 500 30 600 37.5C700 45 800 60 900 67.5C1000 75 1100 75 1150 75L1200 75V120H1150C1100 120 1000 120 900 120C800 120 700 120 600 120C500 120 400 120 300 120C200 120 100 120 50 120H0Z" fill="white"/>
+            </svg>
         </div>
     </section>
 
@@ -92,51 +120,63 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">🔍</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Automatic Discovery</h3>
-                        <p class="text-gray-600">Find forgotten subscriptions by scanning your bank transactions</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🔍</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Automatic Discovery</h3>
+                        <p class="text-gray-600">Find forgotten subscriptions by scanning your bank transactions automatically</p>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">📊</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Smart Analytics</h3>
-                        <p class="text-gray-600">See your monthly and yearly spending with detailed insights</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">📊</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Smart Analytics</h3>
+                        <p class="text-gray-600">See your monthly and yearly spending with detailed insights and trends</p>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">🔒</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Privacy-First</h3>
-                        <p class="text-gray-600">Your data stays private and secure, always</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🔒</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Privacy-First</h3>
+                        <p class="text-gray-600">Your data stays private and secure, always under your control</p>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">⏰</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Smart Reminders</h3>
-                        <p class="text-gray-600">Never get surprised by unexpected charges again</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">⏰</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Smart Reminders</h3>
+                        <p class="text-gray-600">Never get surprised by unexpected charges with intelligent notifications</p>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">🏦</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Bank Integration</h3>
-                        <p class="text-gray-600">Connect your bank account for automatic tracking</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🏦</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Bank Integration</h3>
+                        <p class="text-gray-600">Connect your bank account for seamless automatic tracking</p>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="p-6">
-                        <div class="text-4xl mb-4">💰</div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">One-Time Payment</h3>
-                        <p class="text-gray-600">Pay once, use forever. No monthly subscription fees</p>
+                <div class="bg-white rounded-xl shadow-sm feature-card">
+                    <div class="p-8">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">💰</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Fair Pricing</h3>
+                        <p class="text-gray-600">Start free, upgrade to Pro for €29/year. No hidden fees ever</p>
                     </div>
                 </div>
             </div>

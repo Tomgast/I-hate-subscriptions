@@ -1,6 +1,6 @@
 <?php
 // Subscription Management Class
-require_once '../config/db_config.php';
+require_once __DIR__ . '/../config/db_config.php';
 
 class SubscriptionManager {
     private $pdo;
