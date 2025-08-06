@@ -10,21 +10,33 @@ try {
     echo "<ul>";
     echo "<li><strong>SMTP Host:</strong> shared58.cloud86-host.nl</li>";
     echo "<li><strong>Port:</strong> 587</li>";
-    echo "<li><strong>From Email:</strong> info@123cashcontrol.com</li>";
+    echo "<li><strong>From Email:</strong> noreply@123cashcontrol.com</li>";
     echo "<li><strong>From Name:</strong> CashControl</li>";
     echo "</ul>";
     
     echo "<h3>🧪 Testing Email Functionality:</h3>";
     
-    // Test email configuration
-    echo "<p>Testing email configuration...</p>";
-    $configTest = $emailService->testEmailConfiguration();
+    // Test welcome email to your test address
+    echo "<p>Testing welcome email to tom@degruijterweb.nl...</p>";
+    $welcomeTest = $emailService->sendWelcomeEmail('tom@degruijterweb.nl', 'Tom Test');
     
-    if ($configTest) {
-        echo "<p>✅ <strong>Email configuration test PASSED</strong></p>";
-        echo "<p>📬 Test email sent to: info@123cashcontrol.com</p>";
+    if ($welcomeTest) {
+        echo "<p>✅ <strong>Welcome email test PASSED</strong></p>";
+        echo "<p>📬 Welcome email sent to: tom@degruijterweb.nl</p>";
     } else {
-        echo "<p>❌ <strong>Email configuration test FAILED</strong></p>";
+        echo "<p>❌ <strong>Welcome email test FAILED</strong></p>";
+        echo "<p>Check server logs for detailed error information.</p>";
+    }
+    
+    // Test upgrade confirmation email
+    echo "<p>Testing upgrade confirmation email to tom@degruijterweb.nl...</p>";
+    $upgradeTest = $emailService->sendUpgradeConfirmation('tom@degruijterweb.nl', 'Tom Test');
+    
+    if ($upgradeTest) {
+        echo "<p>✅ <strong>Upgrade confirmation email test PASSED</strong></p>";
+        echo "<p>📬 Upgrade email sent to: tom@degruijterweb.nl</p>";
+    } else {
+        echo "<p>❌ <strong>Upgrade confirmation email test FAILED</strong></p>";
         echo "<p>Check server logs for detailed error information.</p>";
     }
     

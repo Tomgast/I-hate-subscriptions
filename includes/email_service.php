@@ -14,9 +14,9 @@ class EmailService {
         // Load email configuration securely using consistent system
         $this->smtpHost = getSecureConfig('SMTP_HOST') ?: 'shared58.cloud86-host.nl';
         $this->smtpPort = getSecureConfig('SMTP_PORT') ?: 587;
-        $this->smtpUsername = getSecureConfig('SMTP_USERNAME') ?: 'info@123cashcontrol.com';
+        $this->smtpUsername = getSecureConfig('SMTP_USERNAME') ?: 'noreply@123cashcontrol.com';
         $this->smtpPassword = getSecureConfig('SMTP_PASSWORD');
-        $this->fromEmail = getSecureConfig('FROM_EMAIL') ?: 'info@123cashcontrol.com';
+        $this->fromEmail = getSecureConfig('FROM_EMAIL') ?: 'noreply@123cashcontrol.com';
         $this->fromName = getSecureConfig('FROM_NAME') ?: 'CashControl';
     }
     
