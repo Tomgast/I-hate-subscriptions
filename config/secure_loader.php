@@ -112,9 +112,44 @@ if (!function_exists('getSecureConfig')) {
     }
 }
 
-// Verify the function exists
+// Add loadSecureConfig function that returns the full config array
+if (!function_exists('loadSecureConfig')) {
+    function loadSecureConfig() {
+        global $configData;
+        
+        // Return the loaded config data or emergency fallbacks
+        if (!empty($configData)) {
+            return $configData;
+        }
+        
+        // Emergency fallback config
+        return [
+            'db_host' => 'localhost',
+            'db_port' => '3306',
+            'db_name' => 'vxmjmwlj_',
+            'db_user' => '123cashcontrol',
+            'db_password' => 'Super-mannetje45',
+            'google_client_id' => '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com',
+            'google_client_secret' => '',
+            'google_redirect_uri' => 'https://123cashcontrol.com/auth/google-callback.php',
+            'stripe_secret_key' => '',
+            'stripe_webhook_secret' => '',
+            'smtp_host' => 'shared58.cloud86-host.nl',
+            'smtp_port' => '587',
+            'smtp_user' => 'info@123cashcontrol.com',
+            'smtp_password' => 'Super-mannetje45'
+        ];
+    }
+}
+
+// Verify the functions exist
 if (!function_exists('getSecureConfig')) {
     error_log("CashControl: CRITICAL ERROR - getSecureConfig function still not available");
+    die('Configuration system error. Please check server logs.');
+}
+
+if (!function_exists('loadSecureConfig')) {
+    error_log("CashControl: CRITICAL ERROR - loadSecureConfig function still not available");
     die('Configuration system error. Please check server logs.');
 }
 ?>

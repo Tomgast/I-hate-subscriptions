@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config/db_config.php';
+require_once 'config/secure_loader.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -16,7 +16,13 @@ $isPaid = $_SESSION['is_paid'] ?? false;
 // Handle form submissions
 if ($_POST && isset($_POST['action'])) {
     try {
-        $pdo = getDBConnection();
+        $config = loadSecureConfig();
+        $pdo = new PDO(
+            "mysql:host={$config['db_host']};port={$config['db_port']};dbname={$config['db_name']};charset=utf8mb4",
+            $config['db_user'],
+            $config['db_password'],
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
         
         if ($_POST['action'] === 'add_subscription') {
             // Add new subscription
@@ -80,7 +86,13 @@ if ($_POST && isset($_POST['action'])) {
 
 // Get user's subscriptions
 try {
-    $pdo = getDBConnection();
+    $config = loadSecureConfig();
+    $pdo = new PDO(
+        "mysql:host={$config['db_host']};port={$config['db_port']};dbname={$config['db_name']};charset=utf8mb4",
+        $config['db_user'],
+        $config['db_password'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
     
     // Get subscriptions
     $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC");
