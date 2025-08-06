@@ -1,9 +1,10 @@
 <?php
 // Test endpoint for all service connections
 session_start();
-require_once '../includes/email_service.php';
-require_once '../includes/google_oauth.php';
-require_once '../includes/bank_service.php';
+require_once __DIR__ . '/../includes/email_service.php';
+require_once __DIR__ . '/../includes/google_oauth.php';
+require_once __DIR__ . '/../includes/bank_service.php';
+require_once __DIR__ . '/../includes/stripe_service.php';
 
 ?>
 <!DOCTYPE html>
@@ -105,6 +106,44 @@ require_once '../includes/bank_service.php';
                 
             } catch (Exception $e) {
                 echo "<div class='bg-red-100 text-red-800 p-3 rounded'>❌ Bank service error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            }
+            echo "</div>";
+            
+            // Test Stripe Payment Service
+            echo "<div class='border rounded-lg p-6'>";
+            echo "<h2 class='text-xl font-bold text-gray-900 mb-4'>💳 Stripe Payment Service</h2>";
+            
+            try {
+                $stripeService = new StripeService();
+                $config = $stripeService->testConfiguration();
+                
+                if ($config['configured']) {
+                    echo "<div class='bg-green-100 text-green-800 p-3 rounded mb-4'>✅ Stripe is properly configured</div>";
+                    
+                    if (isset($_SESSION['user_id'])) {
+                        echo "<div class='mt-4'>";
+                        echo "<form method='post' action='../payment/checkout.php' class='inline'>";
+                        echo "<input type='hidden' name='action' value='create_checkout'>";
+                        echo "<button type='submit' class='bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600'>";
+                        echo "Test €29 Payment (Stripe Checkout)";
+                        echo "</button>";
+                        echo "</form>";
+                        echo "</div>";
+                    } else {
+                        echo "<p class='text-gray-600 text-sm'>Log in to test payment functionality</p>";
+                    }
+                    
+                } else {
+                    echo "<div class='bg-red-100 text-red-800 p-3 rounded mb-4'>❌ Stripe configuration issues:</div>";
+                    echo "<ul class='list-disc list-inside text-red-700'>";
+                    foreach ($config['errors'] as $error) {
+                        echo "<li>" . htmlspecialchars($error) . "</li>";
+                    }
+                    echo "</ul>";
+                }
+                
+            } catch (Exception $e) {
+                echo "<div class='bg-red-100 text-red-800 p-3 rounded'>❌ Stripe service error: " . htmlspecialchars($e->getMessage()) . "</div>";
             }
             echo "</div>";
             

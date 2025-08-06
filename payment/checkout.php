@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../config/db_config.php';
+require_once '../includes/stripe_service.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -11,12 +11,31 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
-$isPaid = $_SESSION['is_paid'] ?? false;
 
-// If already pro, redirect to dashboard
-if ($isPaid) {
-    header('Location: ../dashboard.php');
+// Initialize Stripe service
+$stripeService = new StripeService();
+
+// Check if user already has Pro access
+if ($stripeService->hasProAccess($userId)) {
+    header('Location: ../dashboard.php?message=already_pro');
     exit;
+}
+
+// Handle checkout session creation
+if ($_POST['action'] ?? '' === 'create_checkout') {
+    $session = $stripeService->createCheckoutSession(
+        $userId, 
+        $userEmail,
+        'https://123cashcontrol.com/payment/success.php',
+        'https://123cashcontrol.com/payment/cancel.php'
+    );
+    
+    if ($session && isset($session['url'])) {
+        header('Location: ' . $session['url']);
+        exit;
+    } else {
+        $error = "Failed to create payment session. Please try again.";
+    }
 }
 
 // Stripe configuration

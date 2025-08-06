@@ -1,7 +1,6 @@
 <?php
 session_start();
-require_once '../config/db_config.php';
-require_once '../config/email.php';
+require_once '../includes/stripe_service.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -13,20 +12,28 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
 
-// Update user to Pro status
+// Get session ID from URL
+$sessionId = $_GET['session_id'] ?? null;
+
+if (!$sessionId) {
+    header('Location: ../dashboard.php?error=invalid_session');
+    exit;
+}
+
+// Handle payment with StripeService
 try {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare("UPDATE users SET is_pro = 1 WHERE id = ?");
-    $stmt->execute([$userId]);
+    $stripeService = new StripeService();
+    $success = $stripeService->handleSuccessfulPayment($sessionId);
     
-    // Update session
-    $_SESSION['is_paid'] = true;
+    if ($success) {
+        // Update session
+        $_SESSION['is_premium'] = true;
+        $_SESSION['is_paid'] = true;
+        $message = "Welcome to CashControl Pro! Your €29 lifetime access has been activated.";
+    } else {
+        $error = "Payment verification failed. Please contact support.";
+    }
     
-    // Send upgrade confirmation email
-    $emailService = new EmailService();
-    $emailService->sendUpgradeEmail($userEmail, $userName);
-    
-    $success = true;
 } catch (Exception $e) {
     $success = false;
     $error = $e->getMessage();
