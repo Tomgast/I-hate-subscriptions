@@ -11,10 +11,36 @@ class GoogleOAuthService {
     public function __construct() {
         $this->pdo = getDBConnection();
         
-        // Load Google OAuth credentials from environment
-        $this->clientId = $_ENV['GOOGLE_CLIENT_ID'] ?? '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
-        $this->clientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? '';
-        $this->redirectUri = $_ENV['GOOGLE_REDIRECT_URI'] ?? 'https://123cashcontrol.com/auth/google-callback.php';
+        // Load Google OAuth credentials securely
+        $this->clientId = $this->getSecureConfig('GOOGLE_CLIENT_ID', '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com');
+        $this->clientSecret = $this->getSecureConfig('GOOGLE_CLIENT_SECRET');
+        $this->redirectUri = $this->getSecureConfig('GOOGLE_REDIRECT_URI', 'https://123cashcontrol.com/auth/google-callback.php');
+    }
+    
+    /**
+     * Securely load configuration values from multiple sources
+     * Priority: Plesk Environment Variables > Secure Config File > Default
+     */
+    private function getSecureConfig($key, $default = null) {
+        // Try Plesk environment variables first
+        $value = getenv($key) ?: $_SERVER[$key] ?? null;
+        
+        if ($value) {
+            return $value;
+        }
+        
+        // Try secure config file (outside web root)
+        static $secureConfig = null;
+        if ($secureConfig === null) {
+            $configPath = dirname(__DIR__) . '/../secure-config.php';
+            if (file_exists($configPath)) {
+                $secureConfig = include $configPath;
+            } else {
+                $secureConfig = [];
+            }
+        }
+        
+        return $secureConfig[$key] ?? $default;
     }
     
     /**

@@ -11,10 +11,36 @@ class BankService {
     public function __construct() {
         $this->pdo = getDBConnection();
         
-        // Load TrueLayer credentials from environment
-        $this->trueLayerClientId = $_ENV['TRUELAYER_CLIENT_ID'] ?? '';
-        $this->trueLayerClientSecret = $_ENV['TRUELAYER_CLIENT_SECRET'] ?? '';
-        $this->trueLayerEnvironment = $_ENV['TRUELAYER_ENVIRONMENT'] ?? 'sandbox';
+        // Load TrueLayer credentials securely
+        $this->trueLayerClientId = $this->getSecureConfig('TRUELAYER_CLIENT_ID');
+        $this->trueLayerClientSecret = $this->getSecureConfig('TRUELAYER_CLIENT_SECRET');
+        $this->trueLayerEnvironment = $this->getSecureConfig('TRUELAYER_ENVIRONMENT', 'sandbox');
+    }
+    
+    /**
+     * Securely load configuration values from multiple sources
+     * Priority: Plesk Environment Variables > Secure Config File > Default
+     */
+    private function getSecureConfig($key, $default = null) {
+        // Try Plesk environment variables first
+        $value = getenv($key) ?: $_SERVER[$key] ?? null;
+        
+        if ($value) {
+            return $value;
+        }
+        
+        // Try secure config file (outside web root)
+        static $secureConfig = null;
+        if ($secureConfig === null) {
+            $configPath = dirname(__DIR__) . '/../secure-config.php';
+            if (file_exists($configPath)) {
+                $secureConfig = include $configPath;
+            } else {
+                $secureConfig = [];
+            }
+        }
+        
+        return $secureConfig[$key] ?? $default;
     }
     
     /**
