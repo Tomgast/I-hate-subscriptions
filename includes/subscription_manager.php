@@ -113,29 +113,72 @@ class SubscriptionManager {
         // Yearly cost
         $yearlyTotal = $monthlyTotal * 12;
         
-        // Next payment
-        $stmt = $this->pdo->prepare("
-            SELECT name, next_payment_date, cost, currency 
-            FROM subscriptions 
-            WHERE user_id = ? AND is_active = 1 
-            ORDER BY next_payment_date ASC 
-            LIMIT 1"
-        );
-        $stmt->execute([$userId]);
-        $nextPayment = $stmt->fetch();
+        // Next payment - handle missing next_payment_date column
+        $nextPayment = null;
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT name, next_payment_date, cost, currency 
+                FROM subscriptions 
+                WHERE user_id = ? AND is_active = 1 
+                ORDER BY next_payment_date ASC 
+                LIMIT 1"
+            );
+            $stmt->execute([$userId]);
+            $nextPayment = $stmt->fetch();
+        } catch (PDOException $e) {
+            // Column doesn't exist, try without next_payment_date
+            try {
+                $stmt = $this->pdo->prepare("
+                    SELECT name, cost, currency 
+                    FROM subscriptions 
+                    WHERE user_id = ? AND is_active = 1 
+                    ORDER BY created_at ASC 
+                    LIMIT 1"
+                );
+                $stmt->execute([$userId]);
+                $nextPayment = $stmt->fetch();
+                if ($nextPayment) {
+                    $nextPayment['next_payment_date'] = null;
+                }
+            } catch (PDOException $e2) {
+                // Even basic query failed, set null
+                $nextPayment = null;
+            }
+        }
         
-        // Category breakdown
-        $stmt = $this->pdo->prepare("
-            SELECT category, COUNT(*) as count, SUM(cost) as total_cost,
-                   c.icon, c.color
-            FROM subscriptions s
-            LEFT JOIN categories c ON s.category = c.name
-            WHERE s.user_id = ? AND s.is_active = 1
-            GROUP BY category, c.icon, c.color
-            ORDER BY total_cost DESC"
-        );
-        $stmt->execute([$userId]);
-        $categoryBreakdown = $stmt->fetchAll();
+        // Category breakdown - handle missing tables/columns
+        $categoryBreakdown = [];
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT category, COUNT(*) as count, SUM(cost) as total_cost,
+                       c.icon, c.color
+                FROM subscriptions s
+                LEFT JOIN categories c ON s.category = c.name
+                WHERE s.user_id = ? AND s.is_active = 1
+                GROUP BY category, c.icon, c.color
+                ORDER BY total_cost DESC"
+            );
+            $stmt->execute([$userId]);
+            $categoryBreakdown = $stmt->fetchAll();
+        } catch (PDOException $e) {
+            // Categories table or category column doesn't exist, try basic query
+            try {
+                $stmt = $this->pdo->prepare("
+                    SELECT 'Other' as category, COUNT(*) as count, SUM(cost) as total_cost,
+                           '📱' as icon, '#6B7280' as color
+                    FROM subscriptions s
+                    WHERE s.user_id = ? AND s.is_active = 1"
+                );
+                $stmt->execute([$userId]);
+                $result = $stmt->fetch();
+                if ($result && $result['count'] > 0) {
+                    $categoryBreakdown = [$result];
+                }
+            } catch (PDOException $e2) {
+                // Even basic query failed, return empty array
+                $categoryBreakdown = [];
+            }
+        }
         
         return [
             'total_active' => $totalActive,
@@ -148,21 +191,52 @@ class SubscriptionManager {
     
     // Get upcoming payments (next 30 days)
     public function getUpcomingPayments($userId, $days = 30) {
-        $sql = "SELECT * FROM subscriptions 
-                WHERE user_id = ? AND is_active = 1 
-                AND next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
-                ORDER BY next_payment_date ASC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$userId, $days]);
-        return $stmt->fetchAll();
+        try {
+            $sql = "SELECT * FROM subscriptions 
+                    WHERE user_id = ? AND is_active = 1 
+                    AND next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+                    ORDER BY next_payment_date ASC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$userId, $days]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            // next_payment_date column doesn't exist, return active subscriptions instead
+            try {
+                $sql = "SELECT * FROM subscriptions 
+                        WHERE user_id = ? AND is_active = 1 
+                        ORDER BY created_at ASC";
+                
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([$userId]);
+                return $stmt->fetchAll();
+            } catch (PDOException $e2) {
+                return [];
+            }
+        }
     }
     
     // Get all categories
     public function getCategories() {
-        $stmt = $this->pdo->prepare("SELECT * FROM categories ORDER BY name ASC");
-        $stmt->execute();
-        return $stmt->fetchAll();
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM categories ORDER BY name ASC");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            // Categories table doesn't exist, return default categories
+            return [
+                ['id' => 1, 'name' => 'Entertainment', 'icon' => '🎬', 'color' => '#EF4444'],
+                ['id' => 2, 'name' => 'Music', 'icon' => '🎵', 'color' => '#10B981'],
+                ['id' => 3, 'name' => 'Software', 'icon' => '💻', 'color' => '#3B82F6'],
+                ['id' => 4, 'name' => 'News', 'icon' => '📰', 'color' => '#F59E0B'],
+                ['id' => 5, 'name' => 'Fitness', 'icon' => '💪', 'color' => '#8B5CF6'],
+                ['id' => 6, 'name' => 'Food', 'icon' => '🍔', 'color' => '#F97316'],
+                ['id' => 7, 'name' => 'Shopping', 'icon' => '🛒', 'color' => '#EC4899'],
+                ['id' => 8, 'name' => 'Business', 'icon' => '💼', 'color' => '#6B7280'],
+                ['id' => 9, 'name' => 'Education', 'icon' => '📚', 'color' => '#059669'],
+                ['id' => 10, 'name' => 'Other', 'icon' => '📱', 'color' => '#6B7280']
+            ];
+        }
     }
     
     // Calculate next payment date based on billing cycle
