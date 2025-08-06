@@ -190,7 +190,7 @@ session_start();
                         
                         <div class="flex flex-col sm:flex-row gap-4 justify-center">
                             <a href="auth/signup.php" class="btn btn-primary btn-lg">
-                                🚀 Start Free Trial
+                                🚀 Get Started Free
                             </a>
                             <a href="upgrade.php" class="btn btn-secondary btn-lg">
                                 💎 Upgrade to Pro - €29/year
