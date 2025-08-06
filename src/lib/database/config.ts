@@ -138,6 +138,7 @@ export class DatabaseService {
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255),
         image VARCHAR(500),
+        password VARCHAR(255),
         is_paid BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

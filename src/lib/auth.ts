@@ -67,18 +67,38 @@ export const authOptions: NextAuthOptions = {
         } else {
           // Sign in logic with database (local or production)
           
+          console.log(`🔐 Auth: Attempting login for ${credentials.email} using ${getDatabaseType()} database`)
+          
           // Get user profile
           const userProfile = await databaseAdapter.getUserByEmail(credentials.email)
           if (!userProfile) {
-            throw new Error('No user found')
+            console.log(`❌ Auth: User not found: ${credentials.email}`)
+            throw new Error('Invalid email or password')
           }
 
-          // For now, we'll skip password verification since we're migrating from OAuth
-          // In a full implementation, you'd store and verify hashed passwords
-          // const isPasswordValid = await compare(credentials.password, userProfile.password)
-          // if (!isPasswordValid) {
-          //   throw new Error('Invalid credentials')
-          // }
+          console.log(`✅ Auth: User found: ${userProfile.email}`)
+
+          // For users migrated from OAuth or created without password, allow login without password verification
+          // This is a temporary solution for the migration period
+          if (!userProfile.password) {
+            console.log(`🔓 Auth: User ${credentials.email} has no password set (OAuth user), allowing login`)
+            
+            return {
+              id: userProfile.id,
+              email: userProfile.email,
+              name: userProfile.name || userProfile.email.split('@')[0],
+              isPaid: userProfile.is_paid || false,
+            }
+          }
+
+          // Verify password for users with stored passwords
+          const isPasswordValid = await compare(credentials.password, userProfile.password)
+          if (!isPasswordValid) {
+            console.log(`❌ Auth: Invalid password for ${credentials.email}`)
+            throw new Error('Invalid email or password')
+          }
+
+          console.log(`✅ Auth: Password verified for ${credentials.email}`)
 
           return {
             id: userProfile.id,

@@ -9,6 +9,7 @@ export interface User {
   email: string
   name?: string
   image?: string
+  password?: string
   is_paid: boolean
   created_at: string
   updated_at: string
@@ -71,9 +72,9 @@ export class DatabaseAdapter {
     const now = new Date().toISOString()
     
     await databaseService.query(
-      `INSERT INTO users (id, email, name, image, is_paid, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, userData.email, userData.name, userData.image, userData.is_paid, now, now]
+      `INSERT INTO users (id, email, name, image, password, is_paid, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userData.email, userData.name, userData.image, userData.password, userData.is_paid, now, now]
     )
 
     return {
