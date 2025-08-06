@@ -1,7 +1,39 @@
 <?php
 // Database configuration
 // Load secure configuration
-require_once __DIR__ . '/../secure-config.php';
+if (!function_exists('getSecureConfig')) {
+    // Try to load secure-config.php from various locations
+    $secureConfigPaths = [
+        __DIR__ . '/../secure-config.php',           // Project root
+        __DIR__ . '/../../secure-config.php',        // Parent of project root
+        $_SERVER['DOCUMENT_ROOT'] . '/../secure-config.php', // Outside web root
+        '/secure-config.php',                        // Server root
+        dirname($_SERVER['DOCUMENT_ROOT']) . '/secure-config.php' // Outside document root
+    ];
+    
+    $configLoaded = false;
+    foreach ($secureConfigPaths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            $configLoaded = true;
+            break;
+        }
+    }
+    
+    // If no secure config found, create fallback function
+    if (!$configLoaded && !function_exists('getSecureConfig')) {
+        function getSecureConfig($key) {
+            // Fallback to environment variables or hardcoded values for development
+            $fallbacks = [
+                'DB_PASSWORD' => $_ENV['DB_PASSWORD'] ?? 'Super-mannetje45',
+                'GOOGLE_CLIENT_SECRET' => $_ENV['GOOGLE_CLIENT_SECRET'] ?? '',
+                'TRUELAYER_CLIENT_SECRET' => $_ENV['TRUELAYER_CLIENT_SECRET'] ?? '',
+                'SMTP_PASSWORD' => $_ENV['SMTP_PASSWORD'] ?? 'Super-mannetje45'
+            ];
+            return $fallbacks[$key] ?? null;
+        }
+    }
+}
 
 define('DB_HOST', '45.82.188.227');
 define('DB_PORT', '3306');
