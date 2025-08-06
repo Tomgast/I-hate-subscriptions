@@ -52,29 +52,26 @@ if ($_POST) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - CashControl</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="w-full max-w-md">
+<body>
+    <div class="auth-container">
+        <div class="w-full" style="max-width: 28rem;">
             <!-- Logo and Header -->
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-                    <i data-lucide="credit-card" class="w-8 h-8 text-white"></i>
+                <div class="logo-icon">
+                    <span class="icon-credit-card" style="font-size: 2rem;"></span>
                 </div>
                 <h1 class="text-3xl font-bold text-gray-900">Welcome back</h1>
                 <p class="text-gray-600 mt-2">Sign in to your CashControl account</p>
             </div>
 
             <!-- Sign In Form -->
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="auth-card">
                 <?php if (isset($error)): ?>
-                    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <div class="flex items-center">
-                            <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 mr-2"></i>
-                            <span class="text-red-700"><?php echo htmlspecialchars($error); ?></span>
-                        </div>
+                    <div class="alert alert-error">
+                        <span class="icon-alert mr-2"></span>
+                        <span><?php echo htmlspecialchars($error); ?></span>
                     </div>
                 <?php endif; ?>
 
@@ -88,7 +85,7 @@ if ($_POST) {
                             id="email" 
                             name="email" 
                             value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="form-input"
                             placeholder="Enter your email"
                             required
                         >
@@ -102,7 +99,7 @@ if ($_POST) {
                             type="password" 
                             id="password" 
                             name="password" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="form-input"
                             placeholder="Enter your password"
                             required
                         >
@@ -110,7 +107,7 @@ if ($_POST) {
 
                     <button 
                         type="submit" 
-                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
+                        class="btn btn-primary w-full"
                     >
                         Sign In
                     </button>
@@ -126,16 +123,14 @@ if ($_POST) {
 
             <!-- Back to Home -->
             <div class="text-center mt-6">
-                <a href="../index.html" class="text-gray-600 hover:text-gray-800 inline-flex items-center">
-                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                <a href="../index.html" class="text-gray-600" style="text-decoration: none;">
+                    <span class="icon-arrow-left mr-2"></span>
                     Back to Home
                 </a>
             </div>
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-    </script>
+
 </body>
 </html>
