@@ -2,6 +2,61 @@
 // Test Login System Functionality
 echo "<h2>🔧 Login System Test</h2>";
 
+echo "<h3>🔍 Server Environment Debug</h3>";
+echo "<p><strong>Document Root:</strong> " . $_SERVER['DOCUMENT_ROOT'] . "</p>";
+echo "<p><strong>Current User:</strong> " . get_current_user() . "</p>";
+echo "<p><strong>HTTP Host:</strong> " . ($_SERVER['HTTP_HOST'] ?? 'unknown') . "</p>";
+echo "<p><strong>Script Directory:</strong> " . __DIR__ . "</p>";
+echo "<p><strong>Parent of Document Root:</strong> " . dirname($_SERVER['DOCUMENT_ROOT']) . "</p>";
+
+echo "<h3>🔍 Searching for secure-config.php</h3>";
+
+// Define the same paths as our secure loader
+$possiblePaths = [
+    dirname($_SERVER['DOCUMENT_ROOT']) . '/secure-config.php',
+    $_SERVER['DOCUMENT_ROOT'] . '/../secure-config.php',
+    __DIR__ . '/../secure-config.php',
+    __DIR__ . '/../../secure-config.php',
+    dirname(dirname($_SERVER['DOCUMENT_ROOT'])) . '/secure-config.php',
+    '/var/www/vhosts/' . $_SERVER['HTTP_HOST'] . '/secure-config.php',
+    '/home/' . get_current_user() . '/secure-config.php',
+    '/secure-config.php',
+    '/home/secure-config.php'
+];
+
+echo "<table border='1' style='border-collapse: collapse; width: 100%;'>";
+echo "<tr><th>Path</th><th>Exists</th><th>Readable</th><th>Status</th></tr>";
+
+$foundConfig = false;
+foreach ($possiblePaths as $path) {
+    $exists = file_exists($path);
+    $readable = $exists && is_readable($path);
+    $status = $readable ? '✅ FOUND' : ($exists ? '⚠️ EXISTS BUT NOT READABLE' : '❌ NOT FOUND');
+    
+    if ($readable) {
+        $foundConfig = $path;
+    }
+    
+    echo "<tr>";
+    echo "<td style='font-family: monospace; padding: 5px;'>" . htmlspecialchars($path) . "</td>";
+    echo "<td style='text-align: center; padding: 5px;'>" . ($exists ? '✅' : '❌') . "</td>";
+    echo "<td style='text-align: center; padding: 5px;'>" . ($readable ? '✅' : '❌') . "</td>";
+    echo "<td style='padding: 5px;'>" . $status . "</td>";
+    echo "</tr>";
+}
+echo "</table>";
+
+if ($foundConfig) {
+    echo "<p><strong>🎉 Found secure-config.php at:</strong> " . htmlspecialchars($foundConfig) . "</p>";
+} else {
+    echo "<p><strong>❌ secure-config.php not found in any expected location!</strong></p>";
+    echo "<p><strong>💡 Suggestion:</strong> Your secure-config.php should be placed at one of these locations:</p>";
+    echo "<ul>";
+    echo "<li><code>" . htmlspecialchars(dirname($_SERVER['DOCUMENT_ROOT']) . '/secure-config.php') . "</code> (recommended)</li>";
+    echo "<li><code>" . htmlspecialchars('/home/' . get_current_user() . '/secure-config.php') . "</code></li>";
+    echo "</ul>";
+}
+
 try {
     echo "<h3>1. Testing Configuration Loading</h3>";
     

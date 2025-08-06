@@ -23,18 +23,37 @@ if (!function_exists('getSecureConfig')) {
         __DIR__ . '/../secure-config.php',
         __DIR__ . '/../../secure-config.php',
         
+        // Common Plesk hosting paths
+        dirname(dirname($_SERVER['DOCUMENT_ROOT'])) . '/secure-config.php',
+        '/var/www/vhosts/' . $_SERVER['HTTP_HOST'] . '/secure-config.php',
+        '/home/' . get_current_user() . '/secure-config.php',
+        
         // Absolute server paths
         '/secure-config.php',
         '/home/secure-config.php'
     ];
     
     $configLoaded = false;
+    $debugInfo = [];
+    
     foreach ($possiblePaths as $path) {
+        $debugInfo[] = "Checking: $path - " . (file_exists($path) ? 'EXISTS' : 'NOT FOUND') . (file_exists($path) && is_readable($path) ? ' & READABLE' : '');
+        
         if (file_exists($path) && is_readable($path)) {
             require_once $path;
             $configLoaded = true;
-            error_log("CashControl: Loaded secure config from: $path");
+            error_log("CashControl: SUCCESS - Loaded secure config from: $path");
             break;
+        }
+    }
+    
+    // Log debug information if config not found
+    if (!$configLoaded) {
+        error_log("CashControl: DEBUG - Document root: " . $_SERVER['DOCUMENT_ROOT']);
+        error_log("CashControl: DEBUG - Current user: " . get_current_user());
+        error_log("CashControl: DEBUG - HTTP host: " . ($_SERVER['HTTP_HOST'] ?? 'unknown'));
+        foreach ($debugInfo as $info) {
+            error_log("CashControl: DEBUG - $info");
         }
     }
     

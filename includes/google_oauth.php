@@ -21,32 +21,6 @@ class GoogleOAuthService {
     }
     
     /**
-     * Securely load configuration values from multiple sources
-     * Priority: Plesk Environment Variables > Secure Config File > Default
-     */
-    private function getSecureConfig($key, $default = null) {
-        // Try Plesk environment variables first
-        $value = getenv($key) ?: $_SERVER[$key] ?? null;
-        
-        if ($value) {
-            return $value;
-        }
-        
-        // Try secure config file (outside web root)
-        static $secureConfig = null;
-        if ($secureConfig === null) {
-            $configPath = dirname(__DIR__) . '/../secure-config.php';
-            if (file_exists($configPath)) {
-                $secureConfig = include $configPath;
-            } else {
-                $secureConfig = [];
-            }
-        }
-        
-        return $secureConfig[$key] ?? $default;
-    }
-    
-    /**
      * Get Google OAuth authorization URL
      */
     public function getAuthorizationUrl($state = null) {
