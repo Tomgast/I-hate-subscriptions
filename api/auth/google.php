@@ -8,7 +8,11 @@ require_once '../../config/email.php';
 
 // Google OAuth configuration
 $googleClientId = '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
+<<<<<<< HEAD
+$googleClientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? getenv('GOOGLE_CLIENT_SECRET');
+=======
 $googleClientSecret = 'GOCSPX-your-client-secret'; // You'll need to add this to your .env
+>>>>>>> parent of f4b53a0 (Update google.php)
 
 $action = $_GET['action'] ?? 'signin';
 
