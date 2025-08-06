@@ -36,22 +36,33 @@ if (!function_exists('getSecureConfig')) {
     $configLoaded = false;
     $debugInfo = [];
     
+    // Make configData global so it can be accessed by the function
+    global $configData;
+    $configData = [];
+    
     foreach ($possiblePaths as $path) {
         $debugInfo[] = "Checking: $path - " . (file_exists($path) ? 'EXISTS' : 'NOT FOUND') . (file_exists($path) && is_readable($path) ? ' & READABLE' : '');
         
         if (file_exists($path) && is_readable($path)) {
             try {
-                require_once $path;
-                $configLoaded = true;
-                error_log("CashControl: SUCCESS - Loaded secure config from: $path");
+                // Try to load config as return array (user's format)
+                $loadedConfig = include $path;
                 
-                // Verify that getSecureConfig function is now available
-                if (function_exists('getSecureConfig')) {
-                    error_log("CashControl: SUCCESS - getSecureConfig function is available");
+                if (is_array($loadedConfig)) {
+                    $configData = $loadedConfig;
+                    $configLoaded = true;
+                    error_log("CashControl: SUCCESS - Loaded secure config array from: $path");
+                    error_log("CashControl: Config contains " . count($configData) . " keys");
+                    break;
                 } else {
-                    error_log("CashControl: WARNING - secure-config.php loaded but getSecureConfig function not found");
+                    // Fallback: try require_once in case it defines functions
+                    require_once $path;
+                    if (function_exists('getSecureConfig')) {
+                        $configLoaded = true;
+                        error_log("CashControl: SUCCESS - Loaded secure config function from: $path");
+                        break;
+                    }
                 }
-                break;
             } catch (Exception $e) {
                 error_log("CashControl: ERROR loading secure config from $path: " . $e->getMessage());
                 continue;
@@ -69,25 +80,34 @@ if (!function_exists('getSecureConfig')) {
         }
     }
     
-    // If secure config not found, create a fallback that logs the issue
-    if (!$configLoaded) {
-        error_log("CashControl: WARNING - secure-config.php not found in any expected location");
-        
-        // Create minimal fallback function
-        function getSecureConfig($key, $default = null) {
-            error_log("CashControl: getSecureConfig called for '$key' but secure-config.php not loaded");
+    // Create getSecureConfig function based on what we loaded
+    if (!function_exists('getSecureConfig')) {
+        if ($configLoaded && !empty($configData)) {
+            // Create function that uses the loaded config array
+            function getSecureConfig($key, $default = null) {
+                global $configData;
+                return $configData[$key] ?? $default;
+            }
+            error_log("CashControl: SUCCESS - Created getSecureConfig function with loaded config data");
+        } else {
+            // Create fallback function if config not found
+            error_log("CashControl: WARNING - secure-config.php not found in any expected location");
             
-            // Emergency fallback values (these should match your secure-config.php)
-            $emergencyFallbacks = [
-                'DB_PASSWORD' => 'Super-mannetje45',
-                'SMTP_PASSWORD' => 'Super-mannetje45',
-                'GOOGLE_CLIENT_SECRET' => '',
-                'TRUELAYER_CLIENT_SECRET' => '',
-                'STRIPE_SECRET_KEY' => '',
-                'STRIPE_WEBHOOK_SECRET' => ''
-            ];
-            
-            return $emergencyFallbacks[$key] ?? $default;
+            function getSecureConfig($key, $default = null) {
+                error_log("CashControl: getSecureConfig called for '$key' but secure-config.php not loaded");
+                
+                // Emergency fallback values
+                $emergencyFallbacks = [
+                    'DB_PASSWORD' => 'Super-mannetje45',
+                    'SMTP_PASSWORD' => 'Super-mannetje45',
+                    'GOOGLE_CLIENT_SECRET' => '',
+                    'TRUELAYER_CLIENT_SECRET' => '',
+                    'STRIPE_SECRET_KEY' => '',
+                    'STRIPE_WEBHOOK_SECRET' => ''
+                ];
+                
+                return $emergencyFallbacks[$key] ?? $default;
+            }
         }
     }
 }
