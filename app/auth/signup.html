@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - CashControl</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js" integrity="sha512-1uQjHqDkNl5B0Dh3SjHOW3rwhPwEtJ3QC1J9rIxkBuHicjPHVyFnY+VyJuKw0fSI2yGKVjOJuZLZ6YhZbJ8jEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="icon" href="/favicon.ico" />
     <style>
@@ -346,8 +346,25 @@
     </div>
 
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        // Initialize Lucide icons with fallback
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.warn('Lucide icons not loaded, using text fallbacks');
+                // Replace icon placeholders with text
+                document.querySelectorAll('[data-lucide]').forEach(el => {
+                    const iconName = el.getAttribute('data-lucide');
+                    if (iconName === 'eye') el.textContent = '👁';
+                    if (iconName === 'eye-off') el.textContent = '🙈';
+                    if (iconName === 'lock') el.textContent = '🔒';
+                    if (iconName === 'user') el.textContent = '👤';
+                    if (iconName === 'mail') el.textContent = '📧';
+                    if (iconName === 'check') el.textContent = '✓';
+                    if (iconName === 'loader-2') el.textContent = '⏳';
+                });
+            }
+        });
 
         // Password visibility toggles
         document.getElementById('togglePassword').addEventListener('click', function() {
