@@ -11,13 +11,16 @@ class EmailService {
     private $fromName;
     
     public function __construct() {
+        // Load secure configuration
+        require_once __DIR__ . '/../config/secure_loader.php';
+        
         // Load email configuration securely
-        $this->smtpHost = $this->getSecureConfig('SMTP_HOST', 'shared58.cloud86-host.nl');
-        $this->smtpPort = $this->getSecureConfig('SMTP_PORT', 587);
-        $this->smtpUsername = $this->getSecureConfig('SMTP_USERNAME', 'info@123cashcontrol.com');
-        $this->smtpPassword = $this->getSecureConfig('SMTP_PASSWORD');
-        $this->fromEmail = $this->getSecureConfig('FROM_EMAIL', 'info@123cashcontrol.com');
-        $this->fromName = $this->getSecureConfig('FROM_NAME', 'CashControl');
+        $this->smtpHost = getSecureConfig('SMTP_HOST') ?: 'shared58.cloud86-host.nl';
+        $this->smtpPort = getSecureConfig('SMTP_PORT') ?: 587;
+        $this->smtpUsername = getSecureConfig('SMTP_USERNAME') ?: 'info@123cashcontrol.com';
+        $this->smtpPassword = getSecureConfig('SMTP_PASSWORD');
+        $this->fromEmail = getSecureConfig('FROM_EMAIL') ?: 'info@123cashcontrol.com';
+        $this->fromName = getSecureConfig('FROM_NAME') ?: 'CashControl';
     }
     
     /**

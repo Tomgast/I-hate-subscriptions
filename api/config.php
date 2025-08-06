@@ -5,7 +5,7 @@ $port = '3306';
 $dbname = 'vxmjmwlj_';
 $username = '123cashcontrol';
 // Load secure configuration
-require_once __DIR__ . '/../secure-config.php';
+require_once __DIR__ . '/../config/secure_loader.php';
 $password = getSecureConfig('DB_PASSWORD');
 
 try {

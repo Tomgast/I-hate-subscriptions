@@ -9,12 +9,15 @@ class GoogleOAuthService {
     private $pdo;
     
     public function __construct() {
+        // Load secure configuration
+        require_once __DIR__ . '/../config/secure_loader.php';
+        
         $this->pdo = getDBConnection();
         
         // Load Google OAuth credentials securely
-        $this->clientId = $this->getSecureConfig('GOOGLE_CLIENT_ID', '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com');
-        $this->clientSecret = $this->getSecureConfig('GOOGLE_CLIENT_SECRET');
-        $this->redirectUri = $this->getSecureConfig('GOOGLE_REDIRECT_URI', 'https://123cashcontrol.com/auth/google-callback.php');
+        $this->clientId = getSecureConfig('GOOGLE_CLIENT_ID') ?: '267507492904-hr7q0qi2655ne01tv2si5ienpi6el4cm.apps.googleusercontent.com';
+        $this->clientSecret = getSecureConfig('GOOGLE_CLIENT_SECRET');
+        $this->redirectUri = getSecureConfig('GOOGLE_REDIRECT_URI') ?: 'https://123cashcontrol.com/auth/google-callback.php';
     }
     
     /**

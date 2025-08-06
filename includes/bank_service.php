@@ -9,12 +9,15 @@ class BankService {
     private $trueLayerEnvironment;
     
     public function __construct() {
+        // Load secure configuration
+        require_once __DIR__ . '/../config/secure_loader.php';
+        
         $this->pdo = getDBConnection();
         
         // Load TrueLayer credentials securely
-        $this->trueLayerClientId = $this->getSecureConfig('TRUELAYER_CLIENT_ID');
-        $this->trueLayerClientSecret = $this->getSecureConfig('TRUELAYER_CLIENT_SECRET');
-        $this->trueLayerEnvironment = $this->getSecureConfig('TRUELAYER_ENVIRONMENT', 'sandbox');
+        $this->trueLayerClientId = getSecureConfig('TRUELAYER_CLIENT_ID');
+        $this->trueLayerClientSecret = getSecureConfig('TRUELAYER_CLIENT_SECRET');
+        $this->trueLayerEnvironment = getSecureConfig('TRUELAYER_ENVIRONMENT') ?: 'sandbox';
     }
     
     /**

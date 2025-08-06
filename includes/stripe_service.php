@@ -8,12 +8,15 @@ class StripeService {
     private $webhookSecret;
     
     public function __construct() {
+        // Load secure configuration
+        require_once __DIR__ . '/../config/secure_loader.php';
+        
         $this->pdo = getDBConnection();
         
         // Load Stripe credentials securely
-        $this->stripeSecretKey = $this->getSecureConfig('STRIPE_SECRET_KEY');
-        $this->stripePublishableKey = $this->getSecureConfig('STRIPE_PUBLISHABLE_KEY');
-        $this->webhookSecret = $this->getSecureConfig('STRIPE_WEBHOOK_SECRET');
+        $this->stripeSecretKey = getSecureConfig('STRIPE_SECRET_KEY');
+        $this->stripePublishableKey = getSecureConfig('STRIPE_PUBLISHABLE_KEY');
+        $this->webhookSecret = getSecureConfig('STRIPE_WEBHOOK_SECRET');
     }
     
     /**
