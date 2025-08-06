@@ -1,13 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable static export for Plesk hosting
-  output: 'export',
-  trailingSlash: true,
-  
-  // Image optimization
-  images: {
-    unoptimized: true,
-  },
+  // Regular Next.js deployment for Plesk hosting with Node.js support
+  // Removed static export to enable API routes and server-side features
   
   // Environment variables
   env: {

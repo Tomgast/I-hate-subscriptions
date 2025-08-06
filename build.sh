@@ -6,15 +6,15 @@ echo "Starting build process..."
 # Install dependencies
 npm ci
 
-# Build the Next.js app for static export
+# Build the Next.js app
 npm run build
 
-# Copy static files to public directory for Plesk
-if [ -d "out" ]; then
-    echo "Static export successful - files ready for Plesk"
-    # Plesk should serve files from the 'out' directory
+# Check if build was successful
+if [ -d ".next" ]; then
+    echo "Next.js build successful - ready for Node.js deployment on Plesk"
+    echo "Make sure Plesk is configured to run: npm start"
 else
-    echo "Build failed - no output directory found"
+    echo "Build failed - no .next directory found"
     exit 1
 fi
 
