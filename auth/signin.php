@@ -14,11 +14,11 @@ if ($_POST) {
             $pdo = getDBConnection();
             
             // Get user by email
-            $stmt = $pdo->prepare("SELECT id, email, name, password, is_paid FROM users WHERE email = ?");
+            $stmt = $pdo->prepare("SELECT id, email, name, password_hash, is_pro FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
-            if ($user && password_verify($password, $user['password'])) {
+            if ($user && password_verify($password, $user['password_hash'])) {
                 // Create session
                 $sessionToken = bin2hex(random_bytes(32));
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
@@ -30,7 +30,7 @@ if ($_POST) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['name'];
-                $_SESSION['is_paid'] = $user['is_paid'];
+                $_SESSION['is_paid'] = $user['is_pro'];
                 $_SESSION['session_token'] = $sessionToken;
                 
                 // Redirect to dashboard

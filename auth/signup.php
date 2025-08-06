@@ -29,7 +29,7 @@ if ($_POST) {
                 // Create new user
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 
-                $stmt = $pdo->prepare("INSERT INTO users (email, name, password, is_paid) VALUES (?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO users (email, name, password_hash, is_pro) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$email, $name, $hashedPassword, false]);
                 
                 $userId = $pdo->lastInsertId();

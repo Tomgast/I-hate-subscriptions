@@ -10,7 +10,7 @@ try {
     
     // Test if user exists
     $email = 'support@origens.nl';
-    $stmt = $pdo->prepare("SELECT id, email, name, password, is_paid FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, name, password_hash, is_pro FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
@@ -19,13 +19,13 @@ try {
         echo "User ID: " . $user['id'] . "<br>";
         echo "Email: " . $user['email'] . "<br>";
         echo "Name: " . ($user['name'] ?: 'Not set') . "<br>";
-        echo "Has password: " . ($user['password'] ? 'Yes' : 'No') . "<br>";
-        echo "Is paid: " . ($user['is_paid'] ? 'Yes' : 'No') . "<br>";
+        echo "Has password: " . ($user['password_hash'] ? 'Yes' : 'No') . "<br>";
+        echo "Is pro: " . ($user['is_pro'] ? 'Yes' : 'No') . "<br>";
         
         // Test password verification
         $testPassword = '213412';
-        if ($user['password']) {
-            $isValid = password_verify($testPassword, $user['password']);
+        if ($user['password_hash']) {
+            $isValid = password_verify($testPassword, $user['password_hash']);
             echo "Password verification for '213412': " . ($isValid ? '✅ Valid' : '❌ Invalid') . "<br>";
         } else {
             echo "❌ No password set for this user<br>";

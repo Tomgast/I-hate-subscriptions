@@ -42,30 +42,31 @@ try {
     $user = $stmt->fetch();
     
     if ($user) {
-        echo "✅ User exists! Updating password...<br>";
-        $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE email = ?");
+        echo "✅ User exists! Updating password_hash...<br>";
+        $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE email = ?");
         $stmt->execute([$hashedPassword, $email]);
         echo "✅ Password updated for existing user!<br>";
     } else {
         echo "❌ User doesn't exist. Creating new user...<br>";
-        $stmt = $pdo->prepare("INSERT INTO users (email, name, password, is_paid) VALUES (?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO users (email, name, password_hash, is_pro) VALUES (?, ?, ?, ?)");
         $stmt->execute([$email, 'Support User', $hashedPassword, false]);
         echo "✅ New user created successfully!<br>";
     }
     
     // Verify the fix worked
     echo "<br><strong>Verification:</strong><br>";
-    $stmt = $pdo->prepare("SELECT id, email, name, password, is_paid FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, name, password_hash, is_pro FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
-    if ($user && $user['password']) {
-        $isValid = password_verify($password, $user['password']);
+    if ($user && $user['password_hash']) {
+        $isValid = password_verify($password, $user['password_hash']);
         echo "✅ User found with password!<br>";
         echo "✅ Password verification: " . ($isValid ? 'PASSED' : 'FAILED') . "<br>";
         echo "User ID: " . $user['id'] . "<br>";
         echo "Email: " . $user['email'] . "<br>";
         echo "Name: " . ($user['name'] ?: 'Not set') . "<br>";
+        echo "Is Pro: " . ($user['is_pro'] ? 'Yes' : 'No') . "<br>";
     } else {
         echo "❌ Something went wrong!<br>";
     }
