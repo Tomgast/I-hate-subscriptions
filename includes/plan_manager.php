@@ -4,7 +4,7 @@
  * Handles all plan-based access control and business logic for three-tier system
  */
 
-require_once __DIR__ . '/secure_loader.php';
+require_once __DIR__ . '/../config/secure_loader.php';
 
 class PlanManager {
     private $pdo;
