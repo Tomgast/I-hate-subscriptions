@@ -243,9 +243,9 @@ $categories = [
                     <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Unlimited Scans</span>
                 </div>
                 <?php if ($isPaid): ?>
-                    You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!
+                    <p>You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!</p>
                 <?php else: ?>
-                    You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease
+                    <p>You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease</p>
                 <a href="upgrade.php" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                     Upgrade to Pro for Bank Integration
                 </a>
@@ -451,8 +451,7 @@ $categories = [
                     <?php endif; ?>
                     
                     <div class="pt-4 border-t border-gray-100">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            <?php echo $subscription['is_active'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $subscription['is_active'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
                             <?php echo $subscription['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
                         </span>
                     </div>
