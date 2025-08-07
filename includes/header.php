@@ -2,10 +2,10 @@
 // Determine if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
 
-// Detect if we're in a subdirectory (like auth/) and adjust paths accordingly
-$currentDir = dirname($_SERVER['PHP_SELF']);
-$isInSubdir = $currentDir !== '/' && $currentDir !== '';
-$pathPrefix = $isInSubdir ? '../' : '';
+// Detect if we're in auth subdirectory by checking if current script contains 'auth/'
+$currentScript = $_SERVER['PHP_SELF'];
+$isInAuthDir = strpos($currentScript, '/auth/') !== false;
+$pathPrefix = $isInAuthDir ? '../' : '';
 
 $logoLink = $isLoggedIn ? $pathPrefix . 'dashboard.php' : $pathPrefix . 'index.html';
 $logoOnClick = $isLoggedIn ? '' : 'onclick="scrollToTop()"';
@@ -56,10 +56,10 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             </div>
             
             <div class="flex items-center space-x-4">
-                <a href="<?php echo $pathPrefix; ?>auth/signin.php" class="text-gray-600 hover:text-green-600 px-3 py-2 rounded-md font-medium transition-colors duration-200">
+                <a href="<?php echo $isInAuthDir ? 'signin.php' : 'auth/signin.php'; ?>" class="text-gray-600 hover:text-green-600 px-3 py-2 rounded-md font-medium transition-colors duration-200">
                     Sign In
                 </a>
-                <a href="<?php echo $pathPrefix; ?>auth/signup.php" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                <a href="<?php echo $isInAuthDir ? 'signup.php' : 'auth/signup.php'; ?>" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                     Start Free
                 </a>
             </div>
@@ -92,7 +92,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                 <?php else: ?>
                     <span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Pro</span>
                 <?php endif; ?>
-                <a href="<?php echo $pathPrefix; ?>auth/logout.php" class="text-gray-500 hover:text-red-500 transition-colors duration-200" title="Logout">
+                <a href="<?php echo $isInAuthDir ? 'logout.php' : 'auth/logout.php'; ?>" class="text-gray-500 hover:text-red-500 transition-colors duration-200" title="Logout">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
