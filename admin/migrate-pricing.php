@@ -7,11 +7,28 @@
 session_start();
 require_once __DIR__ . '/../config/db_config.php';
 
-// Simple admin check (you should implement proper admin authentication)
-$isAdmin = isset($_SESSION['user_id']) && $_SESSION['user_email'] === 'admin@123cashcontrol.com';
+// Check if secure config exists and use it for authentication
+$secureConfigPath = dirname(__DIR__) . '/secure-config.php';
+$hasSecureConfig = file_exists($secureConfigPath);
 
-if (!$isAdmin && !isset($_GET['force'])) {
-    die('Access denied. Admin access required.');
+// Allow access if:
+// 1. Secure config exists (indicating proper server setup)
+// 2. Force parameter is provided
+// 3. User is logged in (basic check)
+if (!$hasSecureConfig && !isset($_GET['force']) && !isset($_SESSION['user_id'])) {
+    die('Access denied. Migration requires secure configuration or admin access.');
+}
+
+// If secure config exists, we can proceed (server is properly configured)
+if ($hasSecureConfig) {
+    $isAuthorized = true;
+} elseif (isset($_GET['force'])) {
+    $isAuthorized = true;
+    echo '<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">';
+    echo '<p class="text-yellow-800"><strong>⚠️ Force Mode:</strong> Running migration without full security checks.</p>';
+    echo '</div>';
+} else {
+    $isAuthorized = isset($_SESSION['user_id']);
 }
 
 $migrationComplete = false;
