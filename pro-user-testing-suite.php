@@ -28,7 +28,7 @@ try {
     echo "<div style='background: green; color: white; padding: 10px; margin: 5px;'>✅ Database connection works</div>";
     
     echo "<p>Checking if user exists...</p>\n";
-    $stmt = $pdo->prepare("SELECT user_id, email, name FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, name FROM users WHERE email = ?");
     $stmt->execute([$testEmail]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -39,7 +39,7 @@ try {
         $userId = $pdo->lastInsertId();
         echo "<div style='background: green; color: white; padding: 10px; margin: 5px;'>✅ Created user: $testEmail (ID: $userId)</div>";
     } else {
-        $userId = $user['user_id'];
+        $userId = $user['id'];
         echo "<div style='background: blue; color: white; padding: 10px; margin: 5px;'>✅ Found existing user: {$user['email']} (ID: $userId)</div>";
     }
     
