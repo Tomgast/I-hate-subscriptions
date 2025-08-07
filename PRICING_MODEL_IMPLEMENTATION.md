@@ -95,8 +95,8 @@ Visit: `https://123cashcontrol.com/test/test-pricing-model.php`
 ### 3. Update Stripe Configuration
 Ensure your `secure-config.php` contains:
 ```php
-'STRIPE_PUBLISHABLE_KEY' => 'pk_live_...',
-'STRIPE_SECRET_KEY' => 'sk_live_...',
+'STRIPE_PUBLISHABLE_KEY' => 'YOUR_STRIPE_LIVE_PUBLISHABLE_KEY',
+'STRIPE_SECRET_KEY' => 'YOUR_STRIPE_LIVE_SECRET_KEY',
 'STRIPE_WEBHOOK_SECRET' => 'whsec_...',
 ```
 

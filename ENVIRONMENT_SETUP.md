@@ -6,7 +6,7 @@ Set these environment variables in your Plesk hosting control panel:
 
 ### Google OAuth
 ```
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
 ```
 
 ### Database (Already configured in code)
