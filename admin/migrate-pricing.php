@@ -54,15 +54,62 @@ if ($_POST && isset($_POST['run_migration'])) {
             $pdo->exec($sql);
         }
         
-        // Add plan_type column to checkout_sessions table
-        $checkoutSessionUpdate = "ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan'";
-        $migrationResults[] = "Adding plan_type to checkout_sessions...";
-        $pdo->exec($checkoutSessionUpdate);
+        // Create checkout_sessions table if it doesn't exist
+        $createCheckoutSessions = "
+            CREATE TABLE IF NOT EXISTS checkout_sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                stripe_session_id VARCHAR(255) NOT NULL UNIQUE,
+                session_data TEXT,
+                plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan',
+                status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_id (user_id),
+                INDEX idx_stripe_session (stripe_session_id),
+                INDEX idx_status (status)
+            )
+        ";
+        $migrationResults[] = "Creating checkout_sessions table...";
+        $pdo->exec($createCheckoutSessions);
         
-        // Add plan_type column to payment_history table
-        $paymentHistoryUpdate = "ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan'";
-        $migrationResults[] = "Adding plan_type to payment_history...";
-        $pdo->exec($paymentHistoryUpdate);
+        // Create payment_history table if it doesn't exist
+        $createPaymentHistory = "
+            CREATE TABLE IF NOT EXISTS payment_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                currency VARCHAR(3) DEFAULT 'EUR',
+                plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan',
+                payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'completed',
+                transaction_reference VARCHAR(255),
+                stripe_payment_intent_id VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_id (user_id),
+                INDEX idx_payment_date (payment_date),
+                INDEX idx_plan_type (plan_type)
+            )
+        ";
+        $migrationResults[] = "Creating payment_history table...";
+        $pdo->exec($createPaymentHistory);
+        
+        // Now add plan_type column to existing tables (if they exist but don't have the column)
+        try {
+            $pdo->exec("ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan'");
+            $migrationResults[] = "Added plan_type to existing checkout_sessions...";
+        } catch (Exception $e) {
+            // Column might already exist, that's fine
+        }
+        
+        try {
+            $pdo->exec("ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS plan_type ENUM('monthly', 'yearly', 'one_time_scan') DEFAULT 'one_time_scan'");
+            $migrationResults[] = "Added plan_type to existing payment_history...";
+        } catch (Exception $e) {
+            // Column might already exist, that's fine
+        }
         
         // Create subscription_history table
         $subscriptionHistoryTable = "
