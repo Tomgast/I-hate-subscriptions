@@ -75,8 +75,11 @@ class BankService {
             throw new Exception("Failed to initialize scan record.");
         }
         
-        // Generate authorization URL
-        return $this->getBankAuthorizationUrl($userId, 'https://123cashcontrol.com/bank/callback.php?scan_id=' . $scanId);
+        // Store scan ID in session for callback processing
+        $_SESSION['current_scan_id'] = $scanId;
+        
+        // Generate authorization URL (without scan_id to match TrueLayer console registration)
+        return $this->getBankAuthorizationUrl($userId);
     }
     
     /**
