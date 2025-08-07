@@ -1,7 +1,13 @@
 <?php
 // Determine if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
-$logoLink = $isLoggedIn ? 'dashboard.php' : 'index.php';
+
+// Detect directory context by checking the current script path
+$currentScript = $_SERVER['PHP_SELF'];
+$isInSubdir = strpos($currentScript, '/auth/') !== false || strpos($currentScript, '/payment/') !== false;
+$basePath = $isInSubdir ? '../' : '';
+
+$logoLink = $isLoggedIn ? $basePath . 'dashboard.php' : $basePath . 'index.php';
 $logoOnClick = $isLoggedIn ? '' : 'onclick="scrollToTop()"';
 
 // Get current page for navigation highlighting
@@ -29,50 +35,50 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center space-x-3">
                 <a href="<?php echo $logoLink; ?>" class="flex items-center space-x-2 hover:scale-105 transition-transform duration-200" <?php echo $logoOnClick; ?>>
-                    <img src="assets/images/logo.svg" alt="CashControl" class="h-8">
+                    <img src="<?php echo $basePath; ?>assets/images/logo.svg" alt="CashControl" class="h-8">
                 </a>
             </div>
             
             <?php if (!$isLoggedIn): ?>
             <div class="hidden md:flex items-center space-x-8">
-                <a href="index.php#features" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group">
+                <a href="<?php echo $basePath; ?>index.php#features" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group">
                     Features
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200"></span>
                 </a>
-                <a href="index.php#pricing" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group">
+                <a href="<?php echo $basePath; ?>index.php#pricing" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group">
                     Pricing
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200"></span>
                 </a>
-                <a href="demo.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'demo' ? 'text-green-600' : ''; ?>">
+                <a href="<?php echo $basePath; ?>demo.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'demo' ? 'text-green-600' : ''; ?>">
                     Demo
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'demo' ? 'w-full' : ''; ?>"></span>
                 </a>
             </div>
             
             <div class="flex items-center space-x-4">
-                <a href="auth/signin.php" class="text-gray-600 hover:text-green-600 px-3 py-2 rounded-md font-medium transition-colors duration-200">
+                <a href="<?php echo $basePath; ?>auth/signin.php" class="text-gray-600 hover:text-green-600 px-3 py-2 rounded-md font-medium transition-colors duration-200">
                     Sign In
                 </a>
-                <a href="auth/signup.php" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                <a href="<?php echo $basePath; ?>auth/signup.php" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                     Start Free
                 </a>
             </div>
             <?php else: ?>
             <div class="hidden md:flex items-center space-x-8">
-                <a href="index.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'index' ? 'text-green-600' : ''; ?>">
+                <a href="<?php echo $basePath; ?>index.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'index' ? 'text-green-600' : ''; ?>">
                     Home
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'index' ? 'w-full' : ''; ?>"></span>
                 </a>
-                <a href="dashboard.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'dashboard' ? 'text-green-600' : ''; ?>">
+                <a href="<?php echo $basePath; ?>dashboard.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'dashboard' ? 'text-green-600' : ''; ?>">
                     Dashboard
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'dashboard' ? 'w-full' : ''; ?>"></span>
                 </a>
-                <a href="settings.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'settings' ? 'text-green-600' : ''; ?>">
+                <a href="<?php echo $basePath; ?>settings.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'settings' ? 'text-green-600' : ''; ?>">
                     Settings
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'settings' ? 'w-full' : ''; ?>"></span>
                 </a>
                 <?php if (!($_SESSION['is_paid'] ?? false)): ?>
-                <a href="upgrade.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'upgrade' ? 'text-green-600' : ''; ?>">
+                <a href="<?php echo $basePath; ?>upgrade.php" class="text-gray-600 hover:text-green-600 font-medium transition-colors duration-200 relative group <?php echo $currentPage === 'upgrade' ? 'text-green-600' : ''; ?>">
                     Upgrade
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-200 <?php echo $currentPage === 'upgrade' ? 'w-full' : ''; ?>"></span>
                 </a>
@@ -86,7 +92,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                 <?php else: ?>
                     <span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Pro</span>
                 <?php endif; ?>
-                <a href="auth/logout.php" class="text-gray-500 hover:text-red-500 transition-colors duration-200" title="Logout">
+                <a href="<?php echo $basePath; ?>auth/logout.php" class="text-gray-500 hover:text-red-500 transition-colors duration-200" title="Logout">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
