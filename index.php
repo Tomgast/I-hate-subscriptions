@@ -87,7 +87,6 @@
                     <span class="gradient-text block">Made Simple</span>
                 </h1>
                 <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                    Take control of your subscriptions with our intelligent tracking system. 
                     Connect your bank account once to discover all your subscriptions and manage them effortlessly.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -95,17 +94,15 @@
                         <a href="dashboard.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                             Go to Dashboard
                         </a>
-                        <a href="upgrade.php" class="bg-white text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
-                            <?php echo ($_SESSION['is_paid'] ?? false) ? 'Manage Account' : 'Upgrade to Pro'; ?>
-                        </a>
                     <?php else: ?>
-                        <a href="auth/signup.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                            Start Free Today
+                        <a href="#pricing" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                            Choose Your Plan
                         </a>
-                        <a href="demo.php" class="bg-white text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
+                        <a href="demo.php" class="bg-white text-green-600 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-green-600 shadow-lg hover:shadow-xl hover:bg-green-50 transform hover:-translate-y-1 transition-all duration-200">
                             View Demo
                         </a>
                     <?php endif; ?>
+                </div>
             </div>
         </div>
     </section>
@@ -156,17 +153,17 @@
     <section id="pricing" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
-                <p class="text-xl text-gray-600">Choose the plan that works best for you</p>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
+                <p class="text-xl text-gray-600">Professional subscription management for everyone</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <!-- Free Plan -->
-                <div class="plan-card bg-white p-8 rounded-xl shadow-sm border-2 border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Monthly Plan -->
+                <div class="plan-card bg-white p-8 rounded-xl shadow-sm border-2 border-gray-200 hover:border-green-500 transition-all duration-300">
                     <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                        <div class="text-4xl font-bold text-gray-900 mb-2">€0</div>
-                        <p class="text-gray-600">Forever free</p>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Monthly</h3>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">€3</div>
+                        <p class="text-gray-600">per month</p>
                     </div>
                     
                     <ul class="space-y-4 mb-8">
@@ -174,47 +171,19 @@
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Manual subscription tracking
+                            Unlimited bank scans
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Basic dashboard
+                            Real-time analytics
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Up to 10 subscriptions
-                        </li>
-                    </ul>
-                    
-                    <a href="auth/signup.php" class="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold text-center block hover:bg-gray-200 transition-colors duration-200">
-                        Get Started Free
-                    </a>
-                </div>
-                
-                <!-- Pro Plan -->
-                <div class="plan-card featured bg-white p-8 rounded-xl shadow-sm">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                        <div class="text-4xl font-bold text-gray-900 mb-2">€29</div>
-                        <p class="text-gray-600">One-time payment</p>
-                    </div>
-                    
-                    <ul class="space-y-4 mb-8">
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Everything in Free
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Bank integration (one-time scan)
+                            Advanced dashboard
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,18 +195,108 @@
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Unlimited subscriptions
+                            Subscription management
+                        </li>
+                    </ul>
+                    
+                    <a href="upgrade.php?plan=monthly" class="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold text-center block hover:bg-gray-200 transition-colors duration-200">
+                        Choose Monthly
+                    </a>
+                </div>
+                
+                <!-- Yearly Plan (Featured) -->
+                <div class="plan-card featured bg-white p-8 rounded-xl shadow-lg border-2 border-green-500 transform scale-105">
+                    <div class="text-center mb-8">
+                        <div class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold mb-4 inline-block">
+                            BEST VALUE - Save 30%
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Yearly</h3>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">€25</div>
+                        <p class="text-gray-600">per year</p>
+                        <p class="text-sm text-green-600 font-semibold">Save €11 vs monthly</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Everything in Monthly
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Lifetime access
+                            30% discount
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Priority support
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Advanced reporting
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Best value guarantee
                         </li>
                     </ul>
                     
-                    <a href="upgrade.php" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-semibold text-center block hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
-                        Upgrade to Pro
+                    <a href="upgrade.php?plan=yearly" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-semibold text-center block hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                        Choose Yearly
+                    </a>
+                </div>
+                
+                <!-- One-Time Plan -->
+                <div class="plan-card bg-white p-8 rounded-xl shadow-sm border-2 border-gray-200 hover:border-blue-500 transition-all duration-300">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">One-Time Scan</h3>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">€25</div>
+                        <p class="text-gray-600">one-time payment</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Single bank scan
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Complete subscription audit
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            PDF/CSV export
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Unsubscribe guides
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Perfect for quick audit
+                        </li>
+                    </ul>
+                    
+                    <a href="upgrade.php?plan=onetime" class="w-full bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-semibold text-center block hover:bg-blue-200 transition-colors duration-200">
+                        Get One-Time Scan
                     </a>
                 </div>
             </div>
