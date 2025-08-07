@@ -92,7 +92,7 @@ $pageTitle = 'Payment Cancelled';
                     </li>
                     <li class="flex items-start">
                         <i class="fas fa-dot-circle text-gray-400 mr-3 mt-1 text-xs"></i>
-                        Your browser's back button was used during payment
+                        Your browser&rsquo;s back button was used during payment
                     </li>
                     <li class="flex items-start">
                         <i class="fas fa-dot-circle text-gray-400 mr-3 mt-1 text-xs"></i>

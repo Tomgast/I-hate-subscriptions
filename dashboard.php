@@ -17,11 +17,19 @@ $userEmail = $_SESSION['user_email'] ?? '';
 $planManager = getPlanManager();
 $userPlan = $planManager->getUserPlan($userId);
 
-// Check if user has an active plan
+// DEBUG: Check if user has an active plan
 if (!$userPlan || !$userPlan['is_active']) {
-    // No active plan - redirect to upgrade
-    header('Location: upgrade.php?reason=no_plan');
-    exit;
+    // TEMPORARY: Show debug info instead of redirecting
+    echo "<div style='background: red; color: white; padding: 20px; margin: 20px;'>";
+    echo "<h3>DEBUG: Plan Detection Issue</h3>";
+    echo "<p>User Plan: " . print_r($userPlan, true) . "</p>";
+    echo "<p>User ID: $userId</p>";
+    echo "<p>Session: " . print_r($_SESSION, true) . "</p>";
+    echo "<p><a href='upgrade.php?reason=no_plan' style='color: yellow;'>Continue to Upgrade Page</a></p>";
+    echo "</div>";
+    // Temporarily comment out the redirect
+    // header('Location: upgrade.php?reason=no_plan');
+    // exit;
 }
 
 // Route to appropriate dashboard based on plan type

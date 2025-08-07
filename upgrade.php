@@ -57,7 +57,7 @@ if ($userPlan && $userPlan['is_active']) {
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Upgrade Your <span class="gradient-text">CashControl Plan</span>
             </h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">You're currently on the <strong><?php echo ucfirst($currentPlan); ?></strong> plan. Upgrade for more features!</p>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">You&rsquo;re currently on the <strong><?php echo ucfirst($currentPlan); ?></strong> plan. Upgrade for more features!</p>
             <?php else: ?>
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Choose Your <span class="gradient-text">CashControl Plan</span>
@@ -356,7 +356,7 @@ if ($userPlan && $userPlan['is_active']) {
                         </svg>
                     </button>
                     <div id="faq-content-3" class="hidden px-6 pb-4">
-                        <p class="text-gray-600">We believe in honest pricing. Pay once, own it forever. No recurring charges, no surprise bills, no subscription fatigue. It's ironic to charge a subscription for a tool that helps you manage subscriptions!</p>
+                        <p class="text-gray-600">We believe in honest pricing. Pay once, own it forever. No recurring charges, no surprise bills, no subscription fatigue. It&rsquo;s ironic to charge a subscription for a tool that helps you manage subscriptions!</p>
                     </div>
                 </div>
 

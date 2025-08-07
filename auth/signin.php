@@ -165,7 +165,7 @@ if ($_POST) {
 
                 <div class="mt-8 text-center">
                     <p class="text-gray-600">
-                        Don't have an account? 
+                        Don&rsquo;t have an account? 
                         <a href="signup.php" class="text-green-600 hover:text-green-700 font-semibold transition-colors duration-200">Create one now</a>
                     </p>
                 </div>

@@ -195,7 +195,7 @@ try {
                     <!-- Error Content -->
                     <div class="px-8 py-8 text-center">
                         <div class="mb-8">
-                            <p class="text-gray-600 text-lg mb-4">Don't worry, no charges were made to your account.</p>
+                            <p class="text-gray-600 text-lg mb-4">Don&rsquo;t worry, no charges were made to your account.</p>
                             <p class="text-gray-500">Please try again or contact support if the problem persists.</p>
                         </div>
 
