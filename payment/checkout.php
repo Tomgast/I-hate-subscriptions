@@ -12,6 +12,40 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
 
+// Get selected plan type from URL parameter
+$planType = $_GET['plan'] ?? 'yearly';
+$validPlans = ['monthly', 'yearly', 'one_time_scan'];
+if (!in_array($planType, $validPlans)) {
+    $planType = 'yearly'; // Default to yearly if invalid plan
+}
+
+// Define plan details for display
+$planDetails = [
+    'monthly' => [
+        'name' => 'CashControl Pro - Monthly',
+        'description' => 'Monthly subscription with full access',
+        'price' => '€3.00',
+        'billing' => 'per month',
+        'features' => 'Full access to all Pro features'
+    ],
+    'yearly' => [
+        'name' => 'CashControl Pro - Yearly',
+        'description' => 'Yearly subscription (save 31%)',
+        'price' => '€25.00',
+        'billing' => 'per year',
+        'features' => 'Full access + save €11 vs monthly'
+    ],
+    'one_time_scan' => [
+        'name' => 'CashControl - One-Time Scan',
+        'description' => 'Bank scan with 1-year reminder access',
+        'price' => '€25.00',
+        'billing' => 'one-time payment',
+        'features' => 'Bank scan + export + 1 year reminders'
+    ]
+];
+
+$currentPlan = $planDetails[$planType];
+
 // Initialize Stripe service
 $stripeService = new StripeService();
 
@@ -26,6 +60,7 @@ if ($_POST && isset($_POST['checkout'])) {
     $session = $stripeService->createCheckoutSession(
         $userId, 
         $userEmail,
+        $planType,
         'https://123cashcontrol.com/payment/success.php',
         'https://123cashcontrol.com/upgrade.php?cancelled=1'
     );
@@ -74,8 +109,8 @@ if ($_POST && isset($_POST['checkout'])) {
                 <!-- Header -->
                 <div class="gradient-bg px-8 py-6 text-center">
                     <div class="text-white">
-                        <h1 class="text-3xl font-bold mb-2">Upgrade to CashControl Pro</h1>
-                        <p class="text-green-100">Lifetime access for a one-time payment</p>
+                        <h1 class="text-3xl font-bold mb-2"><?php echo htmlspecialchars($currentPlan['name']); ?></h1>
+                        <p class="text-green-100"><?php echo htmlspecialchars($currentPlan['description']); ?></p>
                     </div>
                 </div>
 
@@ -95,9 +130,9 @@ if ($_POST && isset($_POST['checkout'])) {
                     <!-- Price Display -->
                     <div class="text-center mb-8">
                         <div class="text-5xl font-bold text-gray-900 mb-2">
-                            <span class="text-green-600">€29</span>
+                            <span class="text-green-600"><?php echo htmlspecialchars($currentPlan['price']); ?></span>
                         </div>
-                        <div class="text-gray-600 text-lg">One-time payment • Lifetime access</div>
+                        <div class="text-gray-600 text-lg"><?php echo htmlspecialchars($currentPlan['billing']); ?> • <?php echo htmlspecialchars($currentPlan['features']); ?></div>
                     </div>
 
                     <!-- Features List -->
@@ -143,10 +178,10 @@ if ($_POST && isset($_POST['checkout'])) {
                         
                         <div class="bg-gray-50 rounded-lg p-4">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-700 font-medium">CashControl Pro - Lifetime</span>
-                                <span class="text-gray-900 font-bold">€29.00</span>
+                                <span class="text-gray-700 font-medium"><?php echo htmlspecialchars($currentPlan['name']); ?></span>
+                                <span class="text-gray-900 font-bold"><?php echo htmlspecialchars($currentPlan['price']); ?></span>
                             </div>
-                            <div class="text-sm text-gray-600">One-time payment • No recurring charges</div>
+                            <div class="text-sm text-gray-600"><?php echo htmlspecialchars($currentPlan['billing']); ?> • <?php echo htmlspecialchars($currentPlan['features']); ?></div>
                         </div>
                         
                         <button type="submit" class="w-full gradient-bg text-white px-6 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center">

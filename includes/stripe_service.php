@@ -44,9 +44,14 @@ class StripeService {
     }
     
     /**
-     * Create a Stripe Checkout session for €29 one-time payment
+     * Create a Stripe Checkout session for different pricing plans
+     * @param string $userId User ID
+     * @param string $userEmail User email
+     * @param string $planType Plan type: 'monthly', 'yearly', or 'one_time_scan'
+     * @param string $successUrl Success URL
+     * @param string $cancelUrl Cancel URL
      */
-    public function createCheckoutSession($userId, $userEmail, $successUrl = null, $cancelUrl = null) {
+    public function createCheckoutSession($userId, $userEmail, $planType = 'one_time_scan', $successUrl = null, $cancelUrl = null) {
         try {
             if (!$successUrl) {
                 $successUrl = 'https://123cashcontrol.com/payment/success.php';
@@ -55,43 +60,83 @@ class StripeService {
                 $cancelUrl = 'https://123cashcontrol.com/payment/cancel.php';
             }
             
+            // Define pricing plans
+            $plans = [
+                'monthly' => [
+                    'name' => 'CashControl Pro - Monthly Subscription',
+                    'description' => 'Monthly subscription with full access to all Pro features',
+                    'amount' => 300, // €3.00 in cents
+                    'mode' => 'subscription',
+                    'recurring' => ['interval' => 'month']
+                ],
+                'yearly' => [
+                    'name' => 'CashControl Pro - Yearly Subscription',
+                    'description' => 'Yearly subscription with full access to all Pro features (save 31%)',
+                    'amount' => 2500, // €25.00 in cents
+                    'mode' => 'subscription',
+                    'recurring' => ['interval' => 'year']
+                ],
+                'one_time_scan' => [
+                    'name' => 'CashControl - One-Time Bank Scan',
+                    'description' => 'One-time bank scan with overview, export, and 1-year reminder access',
+                    'amount' => 2500, // €25.00 in cents
+                    'mode' => 'payment',
+                    'recurring' => null
+                ]
+            ];
+            
+            if (!isset($plans[$planType])) {
+                throw new Exception("Invalid plan type: $planType");
+            }
+            
+            $plan = $plans[$planType];
+            
+            $lineItem = [
+                'price_data' => [
+                    'currency' => 'eur',
+                    'product_data' => [
+                        'name' => $plan['name'],
+                        'description' => $plan['description'],
+                        'images' => ['https://123cashcontrol.com/assets/images/logo.svg']
+                    ],
+                    'unit_amount' => $plan['amount'],
+                ],
+                'quantity' => 1,
+            ];
+            
+            // Add recurring data for subscriptions
+            if ($plan['recurring']) {
+                $lineItem['price_data']['recurring'] = $plan['recurring'];
+            }
+            
             $data = [
                 'payment_method_types' => ['card', 'ideal', 'bancontact'],
-                'line_items' => [
-                    [
-                        'price_data' => [
-                            'currency' => 'eur',
-                            'product_data' => [
-                                'name' => 'CashControl Pro - Lifetime Access',
-                                'description' => 'One-time payment for lifetime access to all Pro features',
-                                'images' => ['https://123cashcontrol.com/images/logo.png']
-                            ],
-                            'unit_amount' => 2900, // €29.00 in cents
-                        ],
-                        'quantity' => 1,
-                    ],
-                ],
-                'mode' => 'payment',
+                'line_items' => [$lineItem],
+                'mode' => $plan['mode'],
                 'success_url' => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => $cancelUrl,
                 'customer_email' => $userEmail,
                 'metadata' => [
                     'user_id' => $userId,
-                    'product' => 'cashcontrol_pro_lifetime'
-                ],
-                'payment_intent_data' => [
-                    'metadata' => [
-                        'user_id' => $userId,
-                        'product' => 'cashcontrol_pro_lifetime'
-                    ]
+                    'plan_type' => $planType
                 ]
             ];
+            
+            // Add payment intent metadata for one-time payments
+            if ($plan['mode'] === 'payment') {
+                $data['payment_intent_data'] = [
+                    'metadata' => [
+                        'user_id' => $userId,
+                        'plan_type' => $planType
+                    ]
+                ];
+            }
             
             $response = $this->makeStripeRequest('POST', 'checkout/sessions', $data);
             
             if ($response && isset($response['id'])) {
                 // Save checkout session to database
-                $this->saveCheckoutSession($userId, $response['id'], $response);
+                $this->saveCheckoutSession($userId, $response['id'], $response, $planType);
                 return $response;
             }
             
@@ -116,7 +161,7 @@ class StripeService {
     }
     
     /**
-     * Handle successful payment and upgrade user to Pro
+     * Handle successful payment and upgrade user based on plan type
      */
     public function handleSuccessfulPayment($sessionId) {
         try {
@@ -127,31 +172,37 @@ class StripeService {
             }
             
             $userId = $session['metadata']['user_id'] ?? null;
+            $planType = $session['metadata']['plan_type'] ?? 'one_time_scan';
+            
             if (!$userId) {
                 error_log("No user_id in session metadata");
                 return false;
             }
             
-            // Upgrade user to Pro
-            $stmt = $this->pdo->prepare("
-                UPDATE users 
-                SET is_premium = 1, premium_expires_at = NULL, updated_at = NOW() 
-                WHERE id = ?
-            ");
-            $upgraded = $stmt->execute([$userId]);
-            
-            if ($upgraded) {
-                // Record payment in payment history
-                $this->recordPayment($userId, $session);
-                
-                // Send upgrade confirmation email
-                $this->sendUpgradeConfirmationEmail($userId, $session);
-                
-                error_log("User $userId successfully upgraded to Pro");
-                return true;
+            // Handle different plan types
+            switch ($planType) {
+                case 'monthly':
+                    $this->upgradeUserToSubscription($userId, 'monthly', $session);
+                    break;
+                case 'yearly':
+                    $this->upgradeUserToSubscription($userId, 'yearly', $session);
+                    break;
+                case 'one_time_scan':
+                    $this->upgradeUserToOneTimeScan($userId, $session);
+                    break;
+                default:
+                    error_log("Unknown plan type: $planType");
+                    return false;
             }
             
-            return false;
+            // Record payment in payment history
+            $this->recordPayment($userId, $session, $planType);
+            
+            // Send upgrade confirmation email
+            $this->sendUpgradeConfirmationEmail($userId, $session);
+            
+            error_log("User $userId successfully upgraded with plan: $planType");
+            return true;
             
         } catch (Exception $e) {
             error_log("Payment handling error: " . $e->getMessage());
@@ -208,42 +259,132 @@ class StripeService {
     /**
      * Save checkout session to database
      */
-    private function saveCheckoutSession($userId, $sessionId, $sessionData) {
+    private function saveCheckoutSession($userId, $sessionId, $sessionData, $planType = 'one_time_scan') {
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO checkout_sessions 
-                (user_id, stripe_session_id, session_data, status, created_at) 
-                VALUES (?, ?, ?, 'pending', NOW())
-                ON DUPLICATE KEY UPDATE 
-                session_data = VALUES(session_data), 
-                updated_at = NOW()
+                (user_id, stripe_session_id, session_data, plan_type, status, created_at) 
+                VALUES (?, ?, ?, ?, 'pending', NOW())
             ");
             
             $stmt->execute([
                 $userId,
                 $sessionId,
-                json_encode($sessionData)
+                json_encode($sessionData),
+                $planType
             ]);
             
+            return true;
+            
         } catch (Exception $e) {
-            error_log("Checkout session save error: " . $e->getMessage());
+            error_log("Save checkout session error: " . $e->getMessage());
+            return false;
         }
     }
     
     /**
-     * Check if user has Pro access
+     * Check if user has Pro access (any type)
      */
     public function hasProAccess($userId) {
         try {
-            $stmt = $this->pdo->prepare("SELECT is_premium FROM users WHERE id = ?");
+            $stmt = $this->pdo->prepare("
+                SELECT is_premium, subscription_type, subscription_status, 
+                       premium_expires_at, has_scan_access, reminder_access_expires_at
+                FROM users WHERE id = ?
+            ");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            return $user && $user['is_premium'] == 1;
+            if (!$user) return false;
+            
+            // Check for active subscription
+            if ($user['subscription_type'] && $user['subscription_status'] === 'active') {
+                // Check if subscription hasn't expired
+                if (!$user['premium_expires_at'] || strtotime($user['premium_expires_at']) > time()) {
+                    return true;
+                }
+            }
+            
+            // Check for one-time scan access
+            if ($user['has_scan_access']) {
+                return true;
+            }
+            
+            // Legacy premium check
+            return $user['is_premium'] == 1;
             
         } catch (Exception $e) {
             error_log("Pro access check error: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Check if user has reminder access
+     */
+    public function hasReminderAccess($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT subscription_type, subscription_status, premium_expires_at, 
+                       reminder_access_expires_at, has_scan_access
+                FROM users WHERE id = ?
+            ");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user) return false;
+            
+            // Active subscription users have reminder access
+            if ($user['subscription_type'] && $user['subscription_status'] === 'active') {
+                if (!$user['premium_expires_at'] || strtotime($user['premium_expires_at']) > time()) {
+                    return true;
+                }
+            }
+            
+            // One-time scan users have reminder access for 1 year
+            if ($user['has_scan_access'] && $user['reminder_access_expires_at']) {
+                return strtotime($user['reminder_access_expires_at']) > time();
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Reminder access check error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get user's subscription details
+     */
+    public function getUserSubscriptionDetails($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT subscription_type, subscription_status, premium_expires_at,
+                       has_scan_access, scan_access_type, reminder_access_expires_at,
+                       is_premium
+                FROM users WHERE id = ?
+            ");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user) return null;
+            
+            return [
+                'subscription_type' => $user['subscription_type'],
+                'subscription_status' => $user['subscription_status'],
+                'premium_expires_at' => $user['premium_expires_at'],
+                'has_scan_access' => (bool)$user['has_scan_access'],
+                'scan_access_type' => $user['scan_access_type'],
+                'reminder_access_expires_at' => $user['reminder_access_expires_at'],
+                'is_premium' => (bool)$user['is_premium'],
+                'has_pro_access' => $this->hasProAccess($userId),
+                'has_reminder_access' => $this->hasReminderAccess($userId)
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Get subscription details error: " . $e->getMessage());
+            return null;
         }
     }
     
@@ -351,22 +492,15 @@ class StripeService {
                 return false;
             }
             
-            // Update user to Pro status
-            $stmt = $this->pdo->prepare("UPDATE users SET is_pro = 1, is_premium = 1 WHERE id = ?");
-            $stmt->execute([$userId]);
-            
             // Record the payment in payment history
-            $stmt = $this->pdo->prepare("
-                INSERT INTO payment_history 
-                (user_id, amount, currency, payment_date, status, transaction_reference) 
-                VALUES (?, ?, ?, NOW(), 'completed', ?)
-            ");
-            $stmt->execute([
-                $userId,
-                29.00, // €29 one-time payment
-                'EUR',
-                $sessionId
-            ]);
+            $this->recordPayment($userId, $session, $session['metadata']['plan_type'] ?? 'one_time_scan');
+            
+            // Update user to Pro status
+            if ($session['metadata']['plan_type'] === 'one_time_scan') {
+                $this->upgradeUserToOneTimeScan($userId, $session);
+            } else {
+                $this->upgradeUserToSubscription($userId, $session['metadata']['plan_type'], $session);
+            }
             
             // Update checkout session status
             $stmt = $this->pdo->prepare("
@@ -377,7 +511,7 @@ class StripeService {
             $stmt->execute([$sessionId]);
             
             // Send upgrade confirmation email
-            $this->sendUpgradeConfirmationEmail($userId);
+            $this->sendUpgradeConfirmationEmail($userId, $session);
             
             return true;
             

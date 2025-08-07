@@ -53,42 +53,98 @@ if ($isPaid) {
             <p class="text-xl text-gray-600 max-w-3xl mx-auto">Unlock powerful features and take complete control of your subscription spending</p>
         </div>
 
-        <!-- Pricing Card -->
-        <div class="max-w-lg mx-auto mb-16">
-            <div class="bg-white rounded-2xl shadow-xl border-2 border-green-200 overflow-hidden relative">
-                <!-- Popular Badge -->
-                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div class="gradient-bg text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
-                        🚀 Most Popular
+        <!-- Pricing Cards -->
+        <div class="max-w-6xl mx-auto mb-16">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Monthly Plan -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden relative">
+                    <div class="px-6 py-8 text-center">
+                        <div class="mb-6">
+                            <div class="text-4xl mb-4">📅</div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Monthly</h3>
+                            <p class="text-gray-600">Perfect for trying out Pro features</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="text-4xl font-bold text-gray-900 mb-2">
+                                <span class="gradient-text">€3</span>
+                            </div>
+                            <div class="text-gray-600">per month</div>
+                            <div class="text-sm text-gray-500 mt-1">Cancel anytime</div>
+                        </div>
+                        
+                        <button onclick="startUpgrade('monthly')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
+                            Choose Monthly
+                        </button>
+                        
+                        <div class="text-xs text-gray-500">
+                            Full access to all features
+                        </div>
                     </div>
                 </div>
                 
-                <div class="px-8 py-10 text-center">
-                    <div class="mb-6">
-                        <div class="text-6xl mb-4">💎</div>
-                        <h2 class="text-3xl font-bold text-gray-900 mb-2">CashControl Pro</h2>
-                        <p class="text-gray-600">Lifetime access to all premium features</p>
-                    </div>
-                    
-                    <div class="mb-8">
-                        <div class="text-6xl font-bold text-gray-900 mb-2">
-                            <span class="gradient-text">€29</span>
+                <!-- Yearly Plan -->
+                <div class="bg-white rounded-2xl shadow-xl border-2 border-green-200 overflow-hidden relative">
+                    <!-- Popular Badge -->
+                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <div class="gradient-bg text-white px-4 py-1 rounded-full text-xs font-semibold shadow-lg">
+                            🚀 Best Value
                         </div>
-                        <div class="text-lg text-gray-600">One-time payment • No recurring fees</div>
-                        <div class="text-sm text-green-600 font-medium mt-2">✨ Lifetime access guaranteed</div>
                     </div>
                     
-                    <button onclick="startUpgrade()" class="w-full gradient-bg text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 mb-4">
-                        🎯 Upgrade to Pro Now
-                    </button>
-                    
-                    <div class="flex items-center justify-center text-sm text-gray-500">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                        </svg>
-                        Secure payment with Stripe
+                    <div class="px-6 py-8 text-center">
+                        <div class="mb-6">
+                            <div class="text-4xl mb-4">💎</div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Yearly</h3>
+                            <p class="text-gray-600">Save 31% with annual billing</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="text-4xl font-bold text-gray-900 mb-2">
+                                <span class="gradient-text">€25</span>
+                            </div>
+                            <div class="text-gray-600">per year</div>
+                            <div class="text-sm text-green-600 font-medium mt-1">Save €11 vs monthly</div>
+                        </div>
+                        
+                        <button onclick="startUpgrade('yearly')" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 mb-4">
+                            Choose Yearly
+                        </button>
+                        
+                        <div class="text-xs text-gray-500">
+                            Full access to all features
+                        </div>
                     </div>
                 </div>
+                
+                <!-- One-Time Scan -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden relative">
+                    <div class="px-6 py-8 text-center">
+                        <div class="mb-6">
+                            <div class="text-4xl mb-4">🔍</div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">One-Time Scan</h3>
+                            <p class="text-gray-600">Bank scan + 1 year reminders</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="text-4xl font-bold text-gray-900 mb-2">
+                                <span class="gradient-text">€25</span>
+                            </div>
+                            <div class="text-gray-600">one-time</div>
+                            <div class="text-sm text-gray-500 mt-1">Includes export & reminders</div>
+                        </div>
+                        
+                        <button onclick="startUpgrade('one_time_scan')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
+                            Get One-Time Scan
+                        </button>
+                        
+                        <div class="text-xs text-gray-500">
+                            Bank scan + reminders for 1 year
+                        </div>
+                    </div>
+                </div>
+                
             </div>
         </div>
 
@@ -341,8 +397,8 @@ if ($isPaid) {
     </div>
 
     <script>
-        function startUpgrade() {
-            window.location.href = '/payment/checkout.php';
+        function startUpgrade(planType = 'yearly') {
+            window.location.href = '/payment/checkout.php?plan=' + planType;
         }
 
         function toggleFAQ(id) {
