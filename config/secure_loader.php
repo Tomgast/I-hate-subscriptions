@@ -84,8 +84,13 @@ if (!function_exists('getSecureConfig')) {
     if (!function_exists('getSecureConfig')) {
         if ($configLoaded && !empty($configData)) {
             // Create function that uses the loaded config array
-            function getSecureConfig($key, $default = null) {
+            function getSecureConfig($key = null, $default = null) {
                 global $configData;
+                // If no key specified, return entire config array
+                if ($key === null) {
+                    return $configData;
+                }
+                // If key specified, return that specific value
                 return $configData[$key] ?? $default;
             }
             error_log("CashControl: SUCCESS - Created getSecureConfig function with loaded config data");
@@ -93,7 +98,7 @@ if (!function_exists('getSecureConfig')) {
             // Create fallback function if config not found
             error_log("CashControl: WARNING - secure-config.php not found in any expected location");
             
-            function getSecureConfig($key, $default = null) {
+            function getSecureConfig($key = null, $default = null) {
                 error_log("CashControl: getSecureConfig called for '$key' but secure-config.php not loaded");
                 
                 // Emergency fallback values
@@ -105,6 +110,11 @@ if (!function_exists('getSecureConfig')) {
                     'STRIPE_SECRET_KEY' => '',
                     'STRIPE_WEBHOOK_SECRET' => ''
                 ];
+                
+                // If no key specified, return entire fallback array
+                if ($key === null) {
+                    return $emergencyFallbacks;
+                }
                 
                 return $emergencyFallbacks[$key] ?? $default;
             }
