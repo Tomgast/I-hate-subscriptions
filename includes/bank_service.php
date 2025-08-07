@@ -143,10 +143,10 @@ class BankService {
             'providers' => 'uk-ob-all uk-oauth-all'
         ];
         
-        // Use correct TrueLayer OAuth endpoint
+        // Use correct TrueLayer authorization endpoint
         $baseUrl = $this->trueLayerEnvironment === 'live' 
-            ? 'https://auth.truelayer.com/oauth/authorize' 
-            : 'https://auth.truelayer-sandbox.com/oauth/authorize';
+            ? 'https://auth.truelayer.com' 
+            : 'https://auth.truelayer-sandbox.com';
             
         return $baseUrl . '?' . http_build_query($params);
     }
