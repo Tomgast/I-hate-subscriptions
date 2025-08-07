@@ -26,8 +26,24 @@ try {
     
     // Verify state parameter
     $stateData = json_decode(base64_decode($state), true);
-    if (!$stateData || $stateData['user_id'] != $userId) {
-        throw new Exception('Invalid state parameter - security check failed');
+    
+    // Debug logging for state parameter issues
+    error_log("Callback state validation - Session User ID: $userId, State User ID: " . ($stateData['user_id'] ?? 'null'));
+    
+    if (!$stateData) {
+        throw new Exception('Invalid state parameter - could not decode state data');
+    }
+    
+    if (!isset($stateData['user_id'])) {
+        throw new Exception('Invalid state parameter - missing user_id in state');
+    }
+    
+    // Convert both to integers for comparison to handle string vs int issues
+    $sessionUserId = (int)$userId;
+    $stateUserId = (int)$stateData['user_id'];
+    
+    if ($stateUserId !== $sessionUserId) {
+        throw new Exception("Invalid state parameter - user ID mismatch (session: $sessionUserId, state: $stateUserId)");
     }
     
     // Exchange code for access token
