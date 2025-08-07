@@ -160,55 +160,7 @@ class StripeService {
         }
     }
     
-    /**
-     * Handle successful payment and upgrade user based on plan type
-     */
-    public function handleSuccessfulPayment($sessionId) {
-        try {
-            $session = $this->getCheckoutSession($sessionId);
-            
-            if (!$session || $session['payment_status'] !== 'paid') {
-                return false;
-            }
-            
-            $userId = $session['metadata']['user_id'] ?? null;
-            $planType = $session['metadata']['plan_type'] ?? 'one_time_scan';
-            
-            if (!$userId) {
-                error_log("No user_id in session metadata");
-                return false;
-            }
-            
-            // Handle different plan types
-            switch ($planType) {
-                case 'monthly':
-                    $this->upgradeUserToSubscription($userId, 'monthly', $session);
-                    break;
-                case 'yearly':
-                    $this->upgradeUserToSubscription($userId, 'yearly', $session);
-                    break;
-                case 'one_time_scan':
-                    $this->upgradeUserToOneTimeScan($userId, $session);
-                    break;
-                default:
-                    error_log("Unknown plan type: $planType");
-                    return false;
-            }
-            
-            // Record payment in payment history
-            $this->recordPayment($userId, $session, $planType);
-            
-            // Send upgrade confirmation email
-            $this->sendUpgradeConfirmationEmail($userId, $session);
-            
-            error_log("User $userId successfully upgraded with plan: $planType");
-            return true;
-            
-        } catch (Exception $e) {
-            error_log("Payment handling error: " . $e->getMessage());
-            return false;
-        }
-    }
+
     
     /**
      * Record payment in database
