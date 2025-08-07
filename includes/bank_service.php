@@ -127,8 +127,10 @@ class BankService {
             $redirectUri = 'https://123cashcontrol.com/bank/callback.php';
         }
         
+        // Create state parameter with user ID and timestamp
         $state = base64_encode(json_encode(['user_id' => $userId, 'timestamp' => time()]));
         
+        // Build OAuth parameters
         $params = [
             'response_type' => 'code',
             'client_id' => $this->trueLayerClientId,
@@ -138,9 +140,10 @@ class BankService {
             'providers' => 'uk-ob-all uk-oauth-all'
         ];
         
+        // Use correct TrueLayer OAuth endpoint
         $baseUrl = $this->trueLayerEnvironment === 'live' 
-            ? 'https://auth.truelayer.com' 
-            : 'https://auth.truelayer-sandbox.com';
+            ? 'https://auth.truelayer.com/oauth/authorize' 
+            : 'https://auth.truelayer-sandbox.com/oauth/authorize';
             
         return $baseUrl . '?' . http_build_query($params);
     }
