@@ -1,18 +1,24 @@
 <?php
-// Bank Integration Service for CashControl - European Banks via PSD2
+/**
+ * PHASE 3C.2: ENHANCED BANK SERVICE
+ * Bank Integration Service for CashControl with plan-based usage tracking
+ */
 require_once __DIR__ . '/../config/db_config.php';
+require_once __DIR__ . '/plan_manager.php';
 
 class BankService {
     private $pdo;
     private $trueLayerClientId;
     private $trueLayerClientSecret;
     private $trueLayerEnvironment;
+    private $planManager;
     
     public function __construct() {
         // Load secure configuration
         require_once __DIR__ . '/../config/secure_loader.php';
         
         $this->pdo = getDBConnection();
+        $this->planManager = getPlanManager();
         
         // Load TrueLayer credentials securely
         $this->trueLayerClientId = getSecureConfig('TRUELAYER_CLIENT_ID');
@@ -44,6 +50,73 @@ class BankService {
         }
         
         return $secureConfig[$key] ?? $default;
+    }
+    
+    /**
+     * Initiate bank connection with plan-based access control
+     * @param int $userId User ID
+     * @param string $planType User's plan type
+     * @return string|false Authorization URL or false if not allowed
+     */
+    public function initiateBankConnection($userId, $planType) {
+        // Check if user can perform bank scan
+        if (!$this->planManager->canAccessFeature($userId, 'bank_scan')) {
+            throw new Exception("Bank scan not available with your current plan.");
+        }
+        
+        if (!$this->planManager->hasScansRemaining($userId)) {
+            throw new Exception("You have reached your scan limit for this plan.");
+        }
+        
+        // Create scan record
+        $scanId = $this->createScanRecord($userId, $planType);
+        
+        if (!$scanId) {
+            throw new Exception("Failed to initialize scan record.");
+        }
+        
+        // Generate authorization URL
+        return $this->getBankAuthorizationUrl($userId, 'https://123cashcontrol.com/bank/callback.php?scan_id=' . $scanId);
+    }
+    
+    /**
+     * Create scan record in database
+     * @param int $userId User ID
+     * @param string $planType Plan type
+     * @return int|false Scan ID or false on failure
+     */
+    private function createScanRecord($userId, $planType) {
+        try {
+            // Create bank_scans table if it doesn't exist
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS bank_scans (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    plan_type VARCHAR(50) NOT NULL,
+                    status ENUM('initiated', 'in_progress', 'completed', 'failed') DEFAULT 'initiated',
+                    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP NULL,
+                    subscriptions_found INT DEFAULT 0,
+                    total_monthly_cost DECIMAL(10,2) DEFAULT 0,
+                    scan_data JSON NULL,
+                    error_message TEXT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_user_scans (user_id, started_at)
+                )
+            ");
+            
+            // Insert scan record
+            $stmt = $this->pdo->prepare("
+                INSERT INTO bank_scans (user_id, plan_type, status) 
+                VALUES (?, ?, 'initiated')
+            ");
+            $stmt->execute([$userId, $planType]);
+            
+            return $this->pdo->lastInsertId();
+        } catch (Exception $e) {
+            error_log("Error creating scan record: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
@@ -419,6 +492,206 @@ class BankService {
             
         } catch (Exception $e) {
             error_log("Error saving bank connection: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Complete bank scan and update usage tracking
+     * @param int $scanId Scan ID
+     * @param array $subscriptions Found subscriptions
+     * @return bool Success
+     */
+    public function completeScan($scanId, $subscriptions) {
+        try {
+            $this->pdo->beginTransaction();
+            
+            // Get scan record
+            $stmt = $this->pdo->prepare("SELECT * FROM bank_scans WHERE id = ?");
+            $stmt->execute([$scanId]);
+            $scan = $stmt->fetch();
+            
+            if (!$scan) {
+                throw new Exception("Scan record not found");
+            }
+            
+            // Calculate totals
+            $monthlyTotal = 0;
+            foreach ($subscriptions as $sub) {
+                $monthlyCost = $this->calculateMonthlyCost($sub['cost'], $sub['billing_cycle']);
+                $monthlyTotal += $monthlyCost;
+            }
+            
+            // Update scan record
+            $stmt = $this->pdo->prepare("
+                UPDATE bank_scans SET
+                    status = 'completed',
+                    completed_at = NOW(),
+                    subscriptions_found = ?,
+                    total_monthly_cost = ?,
+                    scan_data = ?
+                WHERE id = ?
+            ");
+            
+            $stmt->execute([
+                count($subscriptions),
+                $monthlyTotal,
+                json_encode($subscriptions),
+                $scanId
+            ]);
+            
+            // Increment user's scan count (for plan tracking)
+            $this->planManager->incrementScanCount($scan['user_id']);
+            
+            // Save subscriptions to user's account
+            foreach ($subscriptions as $sub) {
+                $this->saveSubscription($scan['user_id'], $sub, $scanId);
+            }
+            
+            $this->pdo->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->pdo->rollback();
+            error_log("Error completing scan: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get scan results for user
+     * @param int $userId User ID
+     * @param int|null $scanId Specific scan ID (optional)
+     * @return array|null Scan results
+     */
+    public function getScanResults($userId, $scanId = null) {
+        try {
+            if ($scanId) {
+                $stmt = $this->pdo->prepare("
+                    SELECT * FROM bank_scans 
+                    WHERE id = ? AND user_id = ?
+                ");
+                $stmt->execute([$scanId, $userId]);
+            } else {
+                $stmt = $this->pdo->prepare("
+                    SELECT * FROM bank_scans 
+                    WHERE user_id = ? AND status = 'completed'
+                    ORDER BY completed_at DESC 
+                    LIMIT 1
+                ");
+                $stmt->execute([$userId]);
+            }
+            
+            $scan = $stmt->fetch();
+            
+            if (!$scan || $scan['status'] !== 'completed') {
+                return null;
+            }
+            
+            // Get associated subscriptions
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM subscriptions 
+                WHERE user_id = ? AND scan_id = ?
+                ORDER BY cost DESC
+            ");
+            $stmt->execute([$userId, $scan['id']]);
+            $subscriptions = $stmt->fetchAll();
+            
+            return [
+                'scan_id' => $scan['id'],
+                'scan_date' => $scan['completed_at'],
+                'plan_type' => $scan['plan_type'],
+                'subscriptions_found' => $scan['subscriptions_found'],
+                'monthly_total' => $scan['total_monthly_cost'],
+                'yearly_total' => $scan['total_monthly_cost'] * 12,
+                'subscriptions' => $subscriptions
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error getting scan results: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Save subscription from scan to user's account
+     * @param int $userId User ID
+     * @param array $subscription Subscription data
+     * @param int $scanId Scan ID
+     * @return bool Success
+     */
+    private function saveSubscription($userId, $subscription, $scanId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO subscriptions (
+                    user_id, name, cost, billing_cycle, category, 
+                    next_billing_date, is_active, source, scan_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, 1, 'bank_scan', ?, NOW())
+            ");
+            
+            $nextBilling = $this->calculateNextPaymentDate(
+                $subscription['last_payment'] ?? date('Y-m-d'),
+                $subscription['billing_cycle']
+            );
+            
+            $stmt->execute([
+                $userId,
+                $subscription['name'],
+                $subscription['cost'],
+                $subscription['billing_cycle'],
+                $subscription['category'] ?? 'Other',
+                $nextBilling,
+                $scanId
+            ]);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Error saving subscription: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Calculate monthly cost from any billing cycle
+     * @param float $cost Cost amount
+     * @param string $billingCycle Billing cycle
+     * @return float Monthly cost
+     */
+    private function calculateMonthlyCost($cost, $billingCycle) {
+        switch ($billingCycle) {
+            case 'monthly':
+                return $cost;
+            case 'yearly':
+                return $cost / 12;
+            case 'weekly':
+                return $cost * 4.33; // Average weeks per month
+            case 'daily':
+                return $cost * 30; // Average days per month
+            default:
+                return $cost; // Assume monthly if unknown
+        }
+    }
+    
+    /**
+     * Mark scan as failed
+     * @param int $scanId Scan ID
+     * @param string $errorMessage Error message
+     * @return bool Success
+     */
+    public function markScanFailed($scanId, $errorMessage) {
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE bank_scans SET
+                    status = 'failed',
+                    completed_at = NOW(),
+                    error_message = ?
+                WHERE id = ?
+            ");
+            
+            $stmt->execute([$errorMessage, $scanId]);
+            return true;
+        } catch (Exception $e) {
+            error_log("Error marking scan as failed: " . $e->getMessage());
             return false;
         }
     }

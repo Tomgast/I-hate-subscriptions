@@ -14,7 +14,7 @@ $userEmail = $_SESSION['user_email'] ?? '';
 
 // Get selected plan type from URL parameter
 $planType = $_GET['plan'] ?? 'yearly';
-$validPlans = ['monthly', 'yearly', 'one_time_scan'];
+$validPlans = ['monthly', 'yearly', 'onetime'];
 if (!in_array($planType, $validPlans)) {
     $planType = 'yearly'; // Default to yearly if invalid plan
 }
@@ -26,21 +26,21 @@ $planDetails = [
         'description' => 'Monthly subscription with full access',
         'price' => '€3.00',
         'billing' => 'per month',
-        'features' => 'Full access to all Pro features'
+        'features' => 'Unlimited bank scans + real-time analytics + email notifications'
     ],
     'yearly' => [
         'name' => 'CashControl Pro - Yearly',
-        'description' => 'Yearly subscription (save 31%)',
+        'description' => 'Best value - save €11 per year!',
         'price' => '€25.00',
         'billing' => 'per year',
-        'features' => 'Full access + save €11 vs monthly'
+        'features' => 'All monthly features + priority support + advanced reporting'
     ],
-    'one_time_scan' => [
+    'onetime' => [
         'name' => 'CashControl - One-Time Scan',
-        'description' => 'Bank scan with 1-year reminder access',
+        'description' => 'Perfect for subscription audit',
         'price' => '€25.00',
         'billing' => 'one-time payment',
-        'features' => 'Bank scan + export + 1 year reminders'
+        'features' => 'Single bank scan + PDF/CSV export + unsubscribe guides'
     ]
 ];
 

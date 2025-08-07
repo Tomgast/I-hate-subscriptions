@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config/db_config.php';
+require_once 'includes/plan_manager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -11,7 +12,10 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
-$isPaid = $_SESSION['is_paid'] ?? false;
+
+// Get user's current plan
+$planManager = getPlanManager();
+$userPlan = $planManager->getUserPlan($userId);
 
 // Handle form submission
 if ($_POST) {
@@ -234,18 +238,20 @@ try {
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                    <?php echo $isPaid ? 'Pro Plan' : 'Free Plan'; ?>
-                                    <?php if ($isPaid): ?>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
-                                        Active
-                                    </span>
-                                    <?php endif; ?>
+                                    <?php 
+                                    if ($userPlan && $userPlan['is_active']) {
+                                        echo ucfirst($userPlan['plan_type']) . ' Plan';
+                                        echo '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">Active</span>';
+                                    } else {
+                                        echo 'No Active Plan';
+                                    }
+                                    ?>
                                 </h3>
                                 <p class="text-gray-600 mb-4">
-                                    <?php if ($isPaid): ?>
+                                    <?php if ($userPlan && $userPlan['is_active']): ?>
                                         Access to all premium features including bank integration and advanced analytics
                                     <?php else: ?>
-                                        Basic subscription tracking with manual entry - upgrade for more features
+                                        No active plan - upgrade to access premium features
                                     <?php endif; ?>
                                 </p>
                                 <?php if ($isPaid): ?>

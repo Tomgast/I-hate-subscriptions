@@ -187,7 +187,9 @@ require_once __DIR__ . '/config/secure_loader.php';
                     echo "</div>";
                     
                     // Commit transaction
-                    $pdo->commit();
+                    if ($pdo->inTransaction()) {
+                        $pdo->commit();
+                    }
                     
                     echo "<div class='bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-lg mb-6'>";
                     echo "<h3 class='font-bold mb-2'>🎉 Migration Completed Successfully!</h3>";

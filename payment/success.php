@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../includes/stripe_service.php';
+require_once '../includes/plan_manager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -26,10 +27,32 @@ try {
     $success = $stripeService->handleSuccessfulPayment($sessionId);
     
     if ($success) {
+        // Get updated plan information
+        $planManager = getPlanManager();
+        $userPlan = $planManager->getUserPlan($userId);
+        
         // Update session
         $_SESSION['is_premium'] = true;
         $_SESSION['is_paid'] = true;
-        $message = "Welcome to CashControl Pro! Your €29 lifetime access has been activated.";
+        
+        // Set success message based on plan type
+        if ($userPlan && isset($userPlan['plan_type'])) {
+            switch ($userPlan['plan_type']) {
+                case 'monthly':
+                    $message = "Welcome to CashControl Pro! Your monthly subscription (€3/month) has been activated.";
+                    break;
+                case 'yearly':
+                    $message = "Welcome to CashControl Pro! Your yearly subscription (€25/year) has been activated. You saved 31%!";
+                    break;
+                case 'onetime':
+                    $message = "Welcome to CashControl! Your one-time bank scan (€25) has been activated.";
+                    break;
+                default:
+                    $message = "Welcome to CashControl Pro! Your subscription has been activated.";
+            }
+        } else {
+            $message = "Welcome to CashControl Pro! Your subscription has been activated.";
+        }
     } else {
         $error = "Payment verification failed. Please contact support.";
     }
@@ -84,7 +107,7 @@ try {
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                Payment Confirmed - €29.00
+                                Payment Confirmed
                             </div>
                             <p class="text-gray-600 text-lg">You now have lifetime access to all Pro features!</p>
                         </div>

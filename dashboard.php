@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config/db_config.php';
+require_once 'includes/plan_manager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -11,7 +12,31 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
-$isPaid = $_SESSION['is_paid'] ?? false;
+
+// Get user's plan information using new Plan Manager
+$planManager = getPlanManager();
+$userPlan = $planManager->getUserPlan($userId);
+
+// Check if user has an active plan
+if (!$userPlan || !$userPlan['is_active']) {
+    // No active plan - redirect to upgrade
+    header('Location: upgrade.php?reason=no_plan');
+    exit;
+}
+
+// Route to appropriate dashboard based on plan type
+if ($userPlan['plan_type'] === 'onetime') {
+    // One-time users get limited dashboard
+    header('Location: dashboard-onetime.php');
+    exit;
+} elseif (in_array($userPlan['plan_type'], ['monthly', 'yearly'])) {
+    // Subscription users get full dashboard - continue with current page
+    $isPaid = true; // Legacy compatibility
+} else {
+    // Unknown plan type - redirect to upgrade
+    header('Location: upgrade.php?reason=unknown_plan');
+    exit;
+}
 
 // Handle form submissions
 if ($_POST && isset($_POST['action'])) {
@@ -205,16 +230,22 @@ $categories = [
             <!-- Dashboard Header -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                    Welcome back, <span class="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"><?php echo htmlspecialchars($userName); ?></span>! 👋
+                    Welcome back, <?php echo htmlspecialchars($userName); ?>! 👋
                 </h1>
-                <p class="text-xl text-gray-600 mb-6">
-                    <?php if ($isPaid): ?>
-                        You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!
-                    <?php else: ?>
-                        You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease
-                    <?php endif; ?>
+                <p class="text-xl text-gray-600 mb-4">
+                    Your Premium CashControl Dashboard
                 </p>
-                <?php if (!$isPaid): ?>
+                <div class="flex items-center justify-center space-x-4">
+                    <?php echo getUserPlanBadge($userId); ?>
+                    <?php if ($userPlan['plan_type'] === 'yearly'): ?>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Priority Support</span>
+                    <?php endif; ?>
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Unlimited Scans</span>
+                </div>
+                <?php if ($isPaid): ?>
+                    You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!
+                <?php else: ?>
+                    You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease
                 <a href="upgrade.php" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                     Upgrade to Pro for Bank Integration
                 </a>
@@ -534,9 +565,12 @@ $categories = [
         }
 
         function startBankScan() {
-            <?php if ($isPaid): ?>
-            alert('Bank scan feature coming soon! This will connect to your bank to automatically discover subscriptions.');
+            // Check if user can perform bank scan
+            <?php if (userCanAccess($userId, 'bank_scan')): ?>
+            // Redirect to bank integration with unlimited access
+            window.location.href = 'bank/scan.php?plan=<?php echo $userPlan['plan_type']; ?>';
             <?php else: ?>
+            alert('Bank scan not available with your current plan. Please upgrade.');
             window.location.href = 'upgrade.php';
             <?php endif; ?>
         }

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config/db_config.php';
+require_once 'includes/plan_manager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -11,12 +12,17 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
-$isPaid = $_SESSION['is_paid'] ?? false;
 
-// If already pro, redirect to dashboard
-if ($isPaid) {
-    header('Location: dashboard.php');
-    exit;
+// Get user's current plan
+$planManager = getPlanManager();
+$userPlan = $planManager->getUserPlan($userId);
+
+// If user already has an active plan, show upgrade options or redirect to dashboard
+if ($userPlan && $userPlan['is_active']) {
+    // Allow viewing upgrade options for plan changes
+    $currentPlan = $userPlan['plan_type'];
+} else {
+    $currentPlan = null;
 }
 ?>
 <!DOCTYPE html>
@@ -47,10 +53,17 @@ if ($isPaid) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Hero Section -->
         <div class="text-center mb-12">
+            <?php if ($currentPlan): ?>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Upgrade Your <span class="gradient-text">CashControl Plan</span>
+            </h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">You're currently on the <strong><?php echo ucfirst($currentPlan); ?></strong> plan. Upgrade for more features!</p>
+            <?php else: ?>
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Choose Your <span class="gradient-text">CashControl Plan</span>
             </h1>
             <p class="text-xl text-gray-600 max-w-3xl mx-auto">Professional subscription management with bank integration and advanced analytics</p>
+            <?php endif; ?>
         </div>
 
         <!-- Pricing Cards -->
@@ -74,8 +87,8 @@ if ($isPaid) {
                             <div class="text-sm text-gray-500 mt-1">Cancel anytime</div>
                         </div>
                         
-                        <button onclick="startUpgrade('monthly')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
-                            Choose Monthly
+                        <button onclick="startUpgrade('monthly')" class="w-full <?php echo $currentPlan === 'monthly' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'monthly' ? 'disabled' : ''; ?>>
+                            <?php echo $currentPlan === 'monthly' ? 'Current Plan' : 'Choose Monthly'; ?>
                         </button>
                         
                         <div class="text-xs text-gray-500">
@@ -108,8 +121,8 @@ if ($isPaid) {
                             <div class="text-sm text-green-600 font-semibold mt-1">Save €11 vs monthly</div>
                         </div>
                         
-                        <button onclick="startUpgrade('yearly')" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 mb-4">
-                            Choose Yearly
+                        <button onclick="startUpgrade('yearly')" class="w-full <?php echo $currentPlan === 'yearly' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'gradient-bg text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'yearly' ? 'disabled' : ''; ?>>
+                            <?php echo $currentPlan === 'yearly' ? 'Current Plan' : 'Choose Yearly - Save 31%'; ?>
                         </button>
                         
                         <div class="text-xs text-gray-500">
@@ -135,8 +148,8 @@ if ($isPaid) {
                             <div class="text-sm text-gray-500 mt-1">Single scan + export + guides</div>
                         </div>
                         
-                        <button onclick="startUpgrade('onetime')" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
-                            Get One-Time Scan
+                        <button onclick="startUpgrade('onetime')" class="w-full <?php echo $currentPlan === 'onetime' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'onetime' ? 'disabled' : ''; ?>>
+                            <?php echo $currentPlan === 'onetime' ? 'Current Plan' : 'Choose One-Time Scan'; ?>
                         </button>
                         
                         <div class="text-xs text-gray-500">
@@ -150,52 +163,46 @@ if ($isPaid) {
 
         <!-- Features Comparison -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-            <!-- Free Plan -->
+            <!-- Monthly vs Yearly Comparison -->
             <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-xl font-bold text-gray-900">Free Plan</h3>
-                    <p class="text-gray-600 text-sm mt-1">Perfect for getting started</p>
+                <div class="bg-green-50 px-6 py-4 border-b border-green-200">
+                    <h3 class="text-xl font-bold text-green-900">Subscription Plans</h3>
+                    <p class="text-green-700 text-sm mt-1">Full access with ongoing features</p>
                 </div>
                 <div class="p-6">
-                    <div class="text-3xl font-bold text-gray-900 mb-4">
-                        €0 <span class="text-lg font-normal text-gray-500">forever</span>
+                    <div class="text-2xl font-bold text-green-900 mb-4">
+                        Monthly: €3/mo • Yearly: €25/yr
                     </div>
                     <ul class="space-y-4">
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <li class="flex items-center text-green-700">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            <span class="text-gray-700">Manual subscription tracking</span>
+                            Unlimited bank scans
                         </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <li class="flex items-center text-green-700">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            <span class="text-gray-700">Basic dashboard with monthly/yearly totals</span>
+                            Advanced analytics dashboard
                         </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <li class="flex items-center text-green-700">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            <span class="text-gray-700">Unlimited subscriptions</span>
+                            PDF/CSV export
                         </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-gray-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <li class="flex items-center text-green-700">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            <span class="text-gray-400">Bank account integration</span>
+                            Email notifications
                         </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-gray-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <li class="flex items-center text-green-700">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            <span class="text-gray-400">Email reminders</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-gray-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            <span class="text-gray-400">Data export (CSV, PDF)</span>
+                            Unsubscribe guides
                         </li>
                     </ul>
                     <div class="mt-6">
@@ -206,18 +213,22 @@ if ($isPaid) {
                 </div>
             </div>
 
-            <!-- Pro Plan -->
-            <div class="bg-white rounded-2xl shadow-xl border-2 border-green-300 overflow-hidden relative">
-                <div class="absolute top-0 right-0 bg-green-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
-                    RECOMMENDED
-                </div>
-                <div class="gradient-bg px-6 py-4 border-b border-green-200">
-                    <h3 class="text-xl font-bold text-white">Pro Plan</h3>
-                    <p class="text-green-100 text-sm mt-1">Everything you need to master subscriptions</p>
+            <!-- One-Time Plan -->
+            <div class="bg-white rounded-2xl shadow-xl border-2 border-blue-200 overflow-hidden">
+                <div class="bg-blue-50 px-6 py-4 border-b border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-blue-900">One-Time Plan</h3>
+                            <p class="text-blue-700 text-sm mt-1">Perfect for a quick analysis</p>
+                        </div>
+                        <div class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                            Single Use
+                        </div>
+                    </div>
                 </div>
                 <div class="p-6">
-                    <div class="text-3xl font-bold text-gray-900 mb-1">
-                        €29 <span class="text-lg font-normal text-gray-500">one-time</span>
+                    <div class="text-3xl font-bold text-blue-900 mb-4">
+                        €25 <span class="text-lg font-normal text-blue-700">one-time</span>
                     </div>
                     <div class="text-sm text-green-600 font-medium mb-6">🎯 Lifetime access</div>
                     <ul class="space-y-4">
@@ -225,7 +236,7 @@ if ($isPaid) {
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-gray-700 font-medium">Everything in Free Plan</span>
+                            <span class="text-gray-700 font-medium">All core features included</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,11 +396,11 @@ if ($isPaid) {
                     Join thousands of users who have saved money and gained peace of mind with CashControl Pro.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <button onclick="startUpgrade()" class="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                        🚀 Upgrade to Pro - €29
+                    <button onclick="startUpgrade('yearly')" class="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                        🚀 Get Started - €25/year
                     </button>
                     <div class="text-green-100 text-sm">
-                        ✓ One-time payment • ✓ Lifetime access • ✓ 30-second setup
+                        ✓ Best value • ✓ Full features • ✓ Cancel anytime
                     </div>
                 </div>
             </div>

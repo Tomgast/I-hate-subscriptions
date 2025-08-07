@@ -427,25 +427,31 @@ session_start();
                     
                     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                         <a href="auth/signup.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                            🚀 Get Started Free
+                            🚀 Get Started Today
                         </a>
                         <a href="upgrade.php" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all duration-200">
-                            💎 Upgrade to Pro - €29
+                            💎 View Plans & Pricing
                         </a>
                     </div>
                     
-                    <div class="flex items-center justify-center space-x-8 text-sm text-gray-500">
-                        <div class="flex items-center">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 max-w-4xl mx-auto">
+                        <div class="flex items-center justify-center">
                             <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Free plan includes basic tracking
+                            Monthly: €3/month - Full access
                         </div>
-                        <div class="flex items-center">
+                        <div class="flex items-center justify-center">
                             <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Pro adds bank integration & smart reminders
+                            Yearly: €25/year - Save 31%
+                        </div>
+                        <div class="flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            One-time: €25 - Single scan
                         </div>
                     </div>
                 </div>

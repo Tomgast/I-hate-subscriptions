@@ -341,10 +341,10 @@ session_start();
                     
                     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                         <a href="auth/signup.php" class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                            🚀 Get Started Free
+                            🚀 Get Started Today
                         </a>
                         <a href="upgrade.php" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all duration-200">
-                            💎 Upgrade to Pro - €29
+                            💎 View Plans & Pricing
                         </a>
                     </div>
                     

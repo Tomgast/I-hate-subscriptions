@@ -159,7 +159,7 @@ class EmailService {
                     </div>
                     
                     <div class='feature'>
-                        <h3>🚀 Premium Features (€29 one-time):</h3>
+                        <h3>🚀 Premium Features:</h3>
                         <ul>
                             <li><strong>Bank Integration:</strong> Automatically scan for subscriptions</li>
                             <li><strong>Smart Reminders:</strong> Customizable email notifications</li>

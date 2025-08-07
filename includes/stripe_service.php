@@ -47,11 +47,11 @@ class StripeService {
      * Create a Stripe Checkout session for different pricing plans
      * @param string $userId User ID
      * @param string $userEmail User email
-     * @param string $planType Plan type: 'monthly', 'yearly', or 'one_time_scan'
+     * @param string $planType Plan type: 'monthly', 'yearly', or 'onetime'
      * @param string $successUrl Success URL
      * @param string $cancelUrl Cancel URL
      */
-    public function createCheckoutSession($userId, $userEmail, $planType = 'one_time_scan', $successUrl = null, $cancelUrl = null) {
+    public function createCheckoutSession($userId, $userEmail, $planType = 'onetime', $successUrl = null, $cancelUrl = null) {
         try {
             if (!$successUrl) {
                 $successUrl = 'https://123cashcontrol.com/payment/success.php';
@@ -64,21 +64,21 @@ class StripeService {
             $plans = [
                 'monthly' => [
                     'name' => 'CashControl Pro - Monthly Subscription',
-                    'description' => 'Monthly subscription with full access to all Pro features',
+                    'description' => 'Monthly subscription with unlimited bank scans and real-time analytics',
                     'amount' => 300, // €3.00 in cents
                     'mode' => 'subscription',
                     'recurring' => ['interval' => 'month']
                 ],
                 'yearly' => [
                     'name' => 'CashControl Pro - Yearly Subscription',
-                    'description' => 'Yearly subscription with full access to all Pro features (save 31%)',
+                    'description' => 'Yearly subscription with all features plus priority support (save €11)',
                     'amount' => 2500, // €25.00 in cents
                     'mode' => 'subscription',
                     'recurring' => ['interval' => 'year']
                 ],
-                'one_time_scan' => [
+                'onetime' => [
                     'name' => 'CashControl - One-Time Bank Scan',
-                    'description' => 'One-time bank scan with overview, export, and 1-year reminder access',
+                    'description' => 'Single bank scan with PDF/CSV export and unsubscribe guides',
                     'amount' => 2500, // €25.00 in cents
                     'mode' => 'payment',
                     'recurring' => null
@@ -173,11 +173,19 @@ class StripeService {
                 VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
             
+            // Get amount from session data
+            $amount = 0;
+            if (isset($session['amount_total'])) {
+                $amount = $session['amount_total'];
+            } elseif (isset($session['line_items']['data'][0]['amount_total'])) {
+                $amount = $session['line_items']['data'][0]['amount_total'];
+            }
+            
             $stmt->execute([
                 $userId,
                 $session['id'],
                 $session['payment_intent'] ?? null,
-                2900, // €29.00 in cents
+                $amount, // Dynamic amount from session
                 'eur',
                 'completed'
             ]);
