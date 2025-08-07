@@ -25,6 +25,9 @@ function getDBConnection() {
     }
 }
 
+// Create global $pdo variable for backward compatibility
+$pdo = getDBConnection();
+
 // Initialize database tables if they don't exist
 function initializeTables() {
     $pdo = getDBConnection();
