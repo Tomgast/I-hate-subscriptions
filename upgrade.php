@@ -48,9 +48,9 @@ if ($isPaid) {
         <!-- Hero Section -->
         <div class="text-center mb-12">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                Upgrade to <span class="gradient-text">CashControl Pro</span>
+                Choose Your <span class="gradient-text">CashControl Plan</span>
             </h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Unlock powerful features and take complete control of your subscription spending</p>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Professional subscription management with bank integration and advanced analytics</p>
         </div>
 
         <!-- Pricing Cards -->
@@ -105,7 +105,7 @@ if ($isPaid) {
                                 <span class="gradient-text">€25</span>
                             </div>
                             <div class="text-gray-600">per year</div>
-                            <div class="text-sm text-green-600 font-medium mt-1">Save €11 vs monthly</div>
+                            <div class="text-sm text-green-600 font-semibold mt-1">Save €11 vs monthly</div>
                         </div>
                         
                         <button onclick="startUpgrade('yearly')" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 mb-4">
@@ -124,23 +124,23 @@ if ($isPaid) {
                         <div class="mb-6">
                             <div class="text-4xl mb-4">🔍</div>
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">One-Time Scan</h3>
-                            <p class="text-gray-600">Bank scan + 1 year reminders</p>
+                            <p class="text-gray-600">Perfect for subscription audit</p>
                         </div>
                         
                         <div class="mb-6">
                             <div class="text-4xl font-bold text-gray-900 mb-2">
                                 <span class="gradient-text">€25</span>
                             </div>
-                            <div class="text-gray-600">one-time</div>
-                            <div class="text-sm text-gray-500 mt-1">Includes export & reminders</div>
+                            <div class="text-gray-600">one-time payment</div>
+                            <div class="text-sm text-gray-500 mt-1">Single scan + export + guides</div>
                         </div>
                         
-                        <button onclick="startUpgrade('one_time_scan')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
+                        <button onclick="startUpgrade('onetime')" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4">
                             Get One-Time Scan
                         </button>
                         
                         <div class="text-xs text-gray-500">
-                            Bank scan + reminders for 1 year
+                            Single bank scan + PDF/CSV export + unsubscribe guides
                         </div>
                     </div>
                 </div>
