@@ -124,7 +124,7 @@ class BankService {
      */
     public function getBankAuthorizationUrl($userId, $redirectUri = null) {
         if (!$redirectUri) {
-            $redirectUri = 'https://I-hate-subscriptions.com/bank/callback.php';
+            $redirectUri = 'https://123cashcontrol.com/bank/callback.php';
         }
         
         $state = base64_encode(json_encode(['user_id' => $userId, 'timestamp' => time()]));
