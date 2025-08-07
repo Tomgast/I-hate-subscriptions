@@ -8,6 +8,5 @@
   <path d="M4 15 Q12 7 20 15 T36 15" stroke="#34d399" stroke-width="1.5" fill="none"/>
   
   <!-- Text -->
-  <text x="45" y="18" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">CashControl</text>
-  <text x="45" y="30" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">Subscription Tracker</text>
+  <text x="45" y="24" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">CashControl</text>
 </svg>

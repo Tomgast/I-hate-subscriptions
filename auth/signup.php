@@ -58,9 +58,16 @@ if ($_POST) {
                 header('Location: ../dashboard.php');
                 exit;
             }
+        } catch (PDOException $e) {
+            error_log("Signup PDO error: " . $e->getMessage());
+            if ($e->getCode() == 23000) {
+                $error = "An account with this email already exists. Please try signing in instead.";
+            } else {
+                $error = "Database error occurred. Please try again later.";
+            }
         } catch (Exception $e) {
             error_log("Signup error: " . $e->getMessage());
-            $error = "Account creation failed. Please try again.";
+            $error = "Account creation failed: " . $e->getMessage() . ". Please try again or contact support.";
         }
     }
 }
