@@ -43,11 +43,16 @@ try {
         echo "<div style='background: blue; color: white; padding: 10px; margin: 5px;'>✅ Found existing user: {$user['email']} (ID: $userId)</div>";
     }
     
-    echo "<p>Setting up Pro plan...</p>\n";
+    // Assign Pro Monthly Plan to test user using users table columns
+    echo "<p>Assigning Pro Monthly plan to test user...</p>\n";
     $stmt = $pdo->prepare("
-        INSERT INTO user_plans (user_id, plan_type, is_active, expires_at, created_at, updated_at)
-        VALUES (?, 'monthly', 1, DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW(), NOW())
-        ON DUPLICATE KEY UPDATE plan_type = 'monthly', is_active = 1, expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH), updated_at = NOW()
+        UPDATE users SET 
+            plan_type = 'monthly',
+            plan_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH),
+            scan_count = 0,
+            max_scans = 999999,
+            plan_purchased_at = NOW()
+        WHERE id = ?
     ");
     $stmt->execute([$userId]);
     echo "<div style='background: darkgreen; color: white; padding: 10px; margin: 5px;'>✅ Pro Monthly Plan activated</div>";
