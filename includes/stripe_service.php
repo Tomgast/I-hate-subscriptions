@@ -142,12 +142,12 @@ class StripeService {
     /**
      * Record payment in database
      */
-    private function recordPayment($userId, $session) {
+    private function recordPayment($userId, $session, $planType = 'one_time_scan') {
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO payment_history 
-                (user_id, stripe_session_id, stripe_payment_intent_id, amount, currency, status, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
+                (user_id, stripe_session_id, stripe_payment_intent_id, amount, currency, status, plan_type, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             
             // Get amount from session data
@@ -164,11 +164,84 @@ class StripeService {
                 $session['payment_intent'] ?? null,
                 $amount, // Dynamic amount from session
                 'eur',
-                'completed'
+                'completed',
+                $planType
             ]);
             
         } catch (Exception $e) {
             error_log("Payment recording error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upgrade user to one-time scan access
+     */
+    private function upgradeUserToOneTimeScan($userId, $session) {
+        try {
+            // Set reminder access to 1 year from now for one-time scan users
+            $reminderExpiresAt = date('Y-m-d H:i:s', strtotime('+1 year'));
+            
+            $stmt = $this->pdo->prepare("
+                UPDATE users 
+                SET subscription_type = 'one_time', 
+                    subscription_status = 'active',
+                    reminder_access_expires_at = ?,
+                    stripe_customer_id = ?,
+                    updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $stmt->execute([
+                $reminderExpiresAt,
+                $session['customer'] ?? null,
+                $userId
+            ]);
+            
+            error_log("User $userId upgraded to one-time scan access");
+            
+        } catch (Exception $e) {
+            error_log("One-time scan upgrade error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Upgrade user to subscription access (monthly/yearly)
+     */
+    private function upgradeUserToSubscription($userId, $planType, $session) {
+        try {
+            // Calculate subscription expiration based on plan type
+            $expiresAt = null;
+            if ($planType === 'monthly') {
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+1 month'));
+            } elseif ($planType === 'yearly') {
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+1 year'));
+            }
+            
+            $stmt = $this->pdo->prepare("
+                UPDATE users 
+                SET subscription_type = ?, 
+                    subscription_status = 'active',
+                    subscription_expires_at = ?,
+                    reminder_access_expires_at = ?,
+                    stripe_customer_id = ?,
+                    updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $stmt->execute([
+                $planType,
+                $expiresAt,
+                $expiresAt, // Subscription users get reminder access for the same period
+                $session['customer'] ?? null,
+                $userId
+            ]);
+            
+            error_log("User $userId upgraded to $planType subscription");
+            
+        } catch (Exception $e) {
+            error_log("Subscription upgrade error: " . $e->getMessage());
+            throw $e;
         }
     }
     
