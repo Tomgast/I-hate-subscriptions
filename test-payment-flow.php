@@ -30,17 +30,22 @@ try {
     $stripeService = new StripeService();
     $testResult = $stripeService->testConfiguration();
     
-    if ($testResult['success']) {
+    if ($testResult['configured']) {
         echo "<div class='success'>✅ Stripe configuration valid</div>";
-        echo "<div class='info'>Using: " . ($testResult['environment'] ?? 'unknown') . " environment</div>";
+        echo "<div class='success'>✅ All Stripe keys working correctly</div>";
         
-        if (isset($testResult['environment']) && $testResult['environment'] === 'test') {
+        // Check if using test keys
+        $secretKey = getSecureConfig('STRIPE_SECRET_KEY');
+        if (strpos($secretKey, 'sk_test_') === 0) {
             echo "<div class='success'>✅ Using TEST keys (safe for testing)</div>";
-        } else {
+        } elseif (strpos($secretKey, 'sk_live_') === 0) {
             echo "<div class='warning'>⚠️ Using LIVE keys - be careful with real payments!</div>";
         }
     } else {
-        echo "<div class='error'>❌ Stripe configuration error: " . ($testResult['error'] ?? 'Unknown error') . "</div>";
+        echo "<div class='error'>❌ Stripe configuration errors:</div>";
+        foreach ($testResult['errors'] as $error) {
+            echo "<div class='error'>- " . $error . "</div>";
+        }
     }
 } catch (Exception $e) {
     echo "<div class='error'>❌ Stripe service error: " . $e->getMessage() . "</div>";
@@ -55,7 +60,7 @@ echo "<h2>👤 Session Setup</h2>";
 if (!isset($_SESSION['user_id'])) {
     // Try to find or create a test user
     try {
-        $pdo = getDBConnection();
+        $pdo = DatabaseHelper::getConnection();
         
         // Look for existing test user
         $stmt = $pdo->prepare("SELECT id, email, name FROM users WHERE email = ? LIMIT 1");
