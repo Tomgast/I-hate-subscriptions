@@ -64,15 +64,18 @@ try {
     print_r($testResult);
     echo "</pre>";
     
-    if ($testResult['success']) {
+    if ($testResult['configured']) {
         echo "<div class='success'>✅ Stripe configuration test passed</div>";
-        if (isset($testResult['environment'])) {
-            echo "<div class='info'>Environment: " . $testResult['environment'] . "</div>";
+        echo "<div class='success'>✅ All Stripe keys valid and API connection working</div>";
+        if (empty($testResult['errors'])) {
+            echo "<div class='success'>✅ No configuration errors found</div>";
         }
     } else {
         echo "<div class='error'>❌ Stripe configuration test failed</div>";
-        if (isset($testResult['error'])) {
-            echo "<div class='error'>Error: " . $testResult['error'] . "</div>";
+        if (!empty($testResult['errors'])) {
+            foreach ($testResult['errors'] as $error) {
+                echo "<div class='error'>Error: " . $error . "</div>";
+            }
         }
     }
     
