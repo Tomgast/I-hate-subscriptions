@@ -164,8 +164,8 @@ class BankService {
         
         // Use correct TrueLayer authorization endpoint
         $baseUrl = $this->trueLayerEnvironment === 'live' 
-            ? 'https://auth.truelayer.com' 
-            : 'https://auth.truelayer-sandbox.com';
+            ? 'https://auth.truelayer.com/connect/authorize' 
+            : 'https://auth.truelayer-sandbox.com/connect/authorize';
             
         return $baseUrl . '?' . http_build_query($params);
     }

@@ -245,17 +245,58 @@ if ($_POST && isset($_POST['action'])) {
                 break;
                 
             case 'set_expiration_dates':
-                $stmt = $pdo->prepare("
-                    UPDATE users SET 
-                        plan_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR),
-                        subscription_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR)
-                    WHERE id = ?
-                ");
+                // Get current user data to determine proper expiration dates
+                $stmt = $pdo->prepare("SELECT plan_type, subscription_type FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $userData = $stmt->fetch();
+                
+                // Set expiration based on actual plan type
+                $planType = $userData['plan_type'] ?: $userData['subscription_type'];
+                
+                if ($planType === 'monthly') {
+                    // Monthly plans expire in 1 month
+                    $stmt = $pdo->prepare("
+                        UPDATE users SET 
+                            plan_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH),
+                            subscription_expires_at = DATE_ADD(NOW(), INTERVAL 1 MONTH)
+                        WHERE id = ?
+                    ");
+                    $expirationText = "1 month from now (monthly plan)";
+                } elseif ($planType === 'yearly') {
+                    // Yearly plans expire in 1 year
+                    $stmt = $pdo->prepare("
+                        UPDATE users SET 
+                            plan_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR),
+                            subscription_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR)
+                        WHERE id = ?
+                    ");
+                    $expirationText = "1 year from now (yearly plan)";
+                } elseif ($planType === 'onetime') {
+                    // One-time plans don't expire but set far future date
+                    $stmt = $pdo->prepare("
+                        UPDATE users SET 
+                            plan_expires_at = DATE_ADD(NOW(), INTERVAL 10 YEAR),
+                            subscription_expires_at = DATE_ADD(NOW(), INTERVAL 10 YEAR)
+                        WHERE id = ?
+                    ");
+                    $expirationText = "10 years from now (one-time plan - effectively never expires)";
+                } else {
+                    // Default to 1 year if plan type unclear
+                    $stmt = $pdo->prepare("
+                        UPDATE users SET 
+                            plan_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR),
+                            subscription_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR)
+                        WHERE id = ?
+                    ");
+                    $expirationText = "1 year from now (default)";
+                }
+                
                 $stmt->execute([$userId]);
                 
                 echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; color: #155724; margin: 20px 0;'>";
                 echo "<strong>✅ Expiration Dates Set!</strong><br>";
-                echo "Both plan_expires_at and subscription_expires_at set to 1 year from now.";
+                echo "Plan expires: {$expirationText}<br>";
+                echo "Plan type: {$planType}";
                 echo "</div>";
                 break;
                 
