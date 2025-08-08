@@ -100,84 +100,127 @@ class EmailService {
         <head>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Welcome to CashControl</title>
+            <title>Welcome to CashControl - Start Saving Today!</title>
             <style>
                 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #374151; background: #f9fafb; margin: 0; padding: 20px; }
-                .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 40px 30px; text-align: center; position: relative; }
-                .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.1); }
-                .header h1 { margin: 0 0 10px 0; font-size: 28px; font-weight: 700; position: relative; z-index: 1; }
-                .header p { margin: 0; font-size: 16px; opacity: 0.9; position: relative; z-index: 1; }
-                .content { padding: 40px 30px; }
-                .content h2 { color: #1f2937; font-size: 24px; margin: 0 0 20px 0; font-weight: 600; }
-                .button { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; margin: 20px 0; font-size: 16px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s ease; }
-                .button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
-                .pricing-grid { display: flex; gap: 15px; margin: 25px 0; flex-wrap: wrap; }
-                .pricing-card { flex: 1; min-width: 150px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; }
-                .pricing-card.featured { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
-                .price { font-size: 24px; font-weight: 700; color: #10b981; margin: 10px 0; }
-                .price-label { font-size: 14px; color: #6b7280; }
-                .feature-list { background: #f8fafc; border-radius: 12px; padding: 25px; margin: 25px 0; }
-                .feature-list h3 { color: #1f2937; font-size: 18px; margin: 0 0 15px 0; font-weight: 600; }
-                .feature-list ul { margin: 0; padding: 0; list-style: none; }
-                .feature-list li { padding: 8px 0; color: #4b5563; display: flex; align-items: center; }
-                .feature-list li::before { content: '✅'; margin-right: 12px; font-size: 14px; }
-                .cta-section { text-align: center; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 30px; margin: 30px 0; }
-                .footer { text-align: center; padding: 30px; background: #f9fafb; color: #6b7280; font-size: 14px; }
-                .footer p { margin: 5px 0; }
-                @media (max-width: 600px) { .pricing-grid { flex-direction: column; } .container { margin: 10px; } .content, .header { padding: 30px 20px; } }
+                .container { max-width: 650px; margin: 0 auto; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 50px 40px; text-align: center; position: relative; }
+                .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff" opacity="0.1"><path d="M0,0 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,0 Z"/></svg>'); }
+                .header h1 { margin: 0 0 15px 0; font-size: 36px; font-weight: 800; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .header p { margin: 0; font-size: 18px; opacity: 0.95; position: relative; z-index: 1; font-weight: 500; }
+                .content { padding: 50px 40px; }
+                .hero-cta { text-align: center; margin: 40px 0; }
+                .hero-button { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px 40px; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 18px; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3); transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px; }
+                .hero-button:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4); }
+                .features-section { margin: 50px 0; }
+                .features-title { color: #1f2937; font-size: 32px; margin: 0 0 30px 0; font-weight: 700; text-align: center; }
+                .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin: 30px 0; }
+                .feature-card { background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #d1fae5; border-radius: 16px; padding: 30px; text-align: center; transition: all 0.3s ease; }
+                .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15); }
+                .feature-icon { font-size: 48px; margin-bottom: 15px; display: block; }
+                .feature-title { font-size: 20px; font-weight: 700; color: #059669; margin: 0 0 10px 0; }
+                .feature-desc { font-size: 16px; color: #4b5563; line-height: 1.5; }
+                .pricing-section { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 20px; padding: 40px; margin: 40px 0; }
+                .pricing-title { color: #1f2937; font-size: 28px; margin: 0 0 30px 0; font-weight: 700; text-align: center; }
+                .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin: 30px 0; }
+                .pricing-card { background: white; border: 3px solid #e2e8f0; border-radius: 16px; padding: 30px 20px; text-align: center; transition: all 0.3s ease; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+                .pricing-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); border-color: #10b981; }
+                .pricing-card.featured { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); position: relative; }
+                .pricing-card.featured::before { content: 'BEST VALUE'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #059669; color: white; padding: 6px 20px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+                .plan-icon { font-size: 32px; margin-bottom: 15px; }
+                .plan-price { font-size: 36px; font-weight: 800; color: #10b981; margin: 15px 0 5px 0; }
+                .plan-period { font-size: 16px; color: #6b7280; margin-bottom: 15px; }
+                .plan-savings { font-size: 14px; color: #059669; font-weight: 700; background: #d1fae5; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
+                .plan-cta { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 15px; display: inline-block; text-decoration: none; }
+                .final-cta { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: white; padding: 40px; text-align: center; border-radius: 20px; margin: 40px 0; }
+                .final-cta h3 { color: white; font-size: 24px; margin: 0 0 15px 0; font-weight: 700; }
+                .final-cta p { color: #d1d5db; margin: 0 0 25px 0; font-size: 16px; }
+                .final-button { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+                .footer { background: #f8fafc; padding: 30px; text-align: center; color: #6b7280; font-size: 14px; }
+                @media (max-width: 600px) {
+                    .content { padding: 30px 20px; }
+                    .features-grid { grid-template-columns: 1fr; }
+                    .pricing-grid { grid-template-columns: 1fr; }
+                }
             </style>
         </head>
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1>🎉 Welcome to CashControl!</h1>
-                    <p>Your subscription management journey starts here</p>
+                    <h1>🚀 Welcome to CashControl, {$userName}!</h1>
+                    <p>Join thousands saving €100s per year on subscriptions</p>
                 </div>
                 <div class='content'>
-                    <h2>Hi {$userName}!</h2>
-                    <p>Welcome to CashControl! Your account has been created successfully. Now it's time to choose the perfect plan to start managing your subscriptions like a pro.</p>
-                    
-                    <div class='feature-list'>
-                        <h3>🎯 What CashControl offers:</h3>
-                        <ul>
-                            <li>Bank integration with 3000+ European banks</li>
-                            <li>Automatic subscription discovery</li>
-                            <li>Smart renewal reminders</li>
-                            <li>Advanced spending analytics</li>
-                            <li>PDF/CSV export capabilities</li>
-                            <li>Unsubscribe guides and tools</li>
-                        </ul>
+                    <div class='hero-cta'>
+                        <a href='https://123cashcontrol.com/upgrade.php' class='hero-button'>🎯 Start Saving Money Now</a>
                     </div>
                     
-                    <div class='cta-section'>
-                        <h3 style='color: #059669; margin: 0 0 15px 0;'>Choose Your Plan</h3>
-                        <p style='margin: 0 0 20px 0; color: #374151;'>Professional subscription management with no free tier - all plans include full access to premium features.</p>
-                        
-                        <div class='pricing-grid'>
-                            <div class='pricing-card'>
-                                <div style='font-size: 20px; margin-bottom: 10px;'>📅</div>
-                                <div class='price'>€3</div>
-                                <div class='price-label'>per month</div>
+                    <div class='features-section'>
+                        <h2 class='features-title'>🎉 What CashControl Delivers</h2>
+                        <div class='features-grid'>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>🏦</span>
+                                <h3 class='feature-title'>Bank Integration</h3>
+                                <p class='feature-desc'>Connect 3000+ European banks instantly and discover all subscriptions</p>
                             </div>
-                            <div class='pricing-card featured'>
-                                <div style='font-size: 20px; margin-bottom: 10px;'>💎</div>
-                                <div class='price'>€25</div>
-                                <div class='price-label'>per year<br><small style='color: #059669; font-weight: 600;'>Save 31%!</small></div>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>🤖</span>
+                                <h3 class='feature-title'>AI Detection</h3>
+                                <p class='feature-desc'>Automatically find hidden subscriptions you forgot about</p>
                             </div>
-                            <div class='pricing-card'>
-                                <div style='font-size: 20px; margin-bottom: 10px;'>🔍</div>
-                                <div class='price'>€25</div>
-                                <div class='price-label'>one-time scan</div>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>💰</span>
+                                <h3 class='feature-title'>Money Savings</h3>
+                                <p class='feature-desc'>Track spending and identify subscriptions to cancel</p>
+                            </div>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>📧</span>
+                                <h3 class='feature-title'>Smart Alerts</h3>
+                                <p class='feature-desc'>Get renewal reminders before you're charged</p>
+                            </div>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>📊</span>
+                                <h3 class='feature-title'>Analytics</h3>
+                                <p class='feature-desc'>Beautiful reports and spending insights</p>
+                            </div>
+                            <div class='feature-card'>
+                                <span class='feature-icon'>🔒</span>
+                                <h3 class='feature-title'>100% Secure</h3>
+                                <p class='feature-desc'>Bank-grade security, your data stays private</p>
                             </div>
                         </div>
-                        
-                        <a href='https://123cashcontrol.com/upgrade.php?welcome=1' class='button'>Choose Your Plan →</a>
                     </div>
                     
-                    <p>Questions? Just reply to this email - we're here to help you save money and take control of your subscriptions!</p>
+                    <div class='pricing-section'>
+                        <h2 class='pricing-title'>💎 Choose Your Money-Saving Plan</h2>
+                        <div class='pricing-grid'>
+                            <a href='https://123cashcontrol.com/upgrade.php?plan=monthly' class='pricing-card'>
+                                <div class='plan-icon'>📅</div>
+                                <div class='plan-price'>€3</div>
+                                <div class='plan-period'>per month</div>
+                                <div class='plan-cta'>Choose Monthly</div>
+                            </a>
+                            <a href='https://123cashcontrol.com/upgrade.php?plan=yearly' class='pricing-card featured'>
+                                <div class='plan-icon'>💎</div>
+                                <div class='plan-price'>€25</div>
+                                <div class='plan-period'>per year</div>
+                                <div class='plan-savings'>Save 31%!</div>
+                                <div class='plan-cta'>Choose Yearly</div>
+                            </a>
+                            <a href='https://123cashcontrol.com/upgrade.php?plan=onetime' class='pricing-card'>
+                                <div class='plan-icon'>🔍</div>
+                                <div class='plan-price'>€25</div>
+                                <div class='plan-period'>one-time scan</div>
+                                <div class='plan-cta'>Choose One-Time</div>
+                            </a>
+                        </div>
+                    </div>
                     
-                    <p style='margin-top: 30px;'>Best regards,<br><strong>The CashControl Team</strong></p>
+                    <div class='final-cta'>
+                        <h3>⚡ Ready to Save Money?</h3>
+                        <p>Join thousands of users already saving hundreds of euros per year</p>
+                        <a href='https://123cashcontrol.com/upgrade.php' class='final-button'>🎯 Start Your Money-Saving Journey</a>
+                    </div>
                 </div>
                 <div class='footer'>
                     <p><strong>CashControl</strong> - Professional Subscription Management</p>
