@@ -27,24 +27,32 @@ try {
     $success = $stripeService->handleSuccessfulPayment($sessionId);
     
     if ($success) {
-        // Get updated plan information
-        $planManager = getPlanManager();
-        $userPlan = $planManager->getUserPlan($userId);
+        // Get updated plan information directly from database
+        require_once '../includes/database_helper.php';
+        $pdo = DatabaseHelper::getConnection();
+        
+        $stmt = $pdo->prepare("
+            SELECT subscription_type, subscription_status 
+            FROM users 
+            WHERE id = ?
+        ");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
         
         // Update session
         $_SESSION['is_premium'] = true;
         $_SESSION['is_paid'] = true;
         
         // Set success message based on plan type
-        if ($userPlan && isset($userPlan['plan_type'])) {
-            switch ($userPlan['plan_type']) {
+        if ($user && isset($user['subscription_type'])) {
+            switch ($user['subscription_type']) {
                 case 'monthly':
                     $message = "Welcome to CashControl Pro! Your monthly subscription (€3/month) has been activated.";
                     break;
                 case 'yearly':
                     $message = "Welcome to CashControl Pro! Your yearly subscription (€25/year) has been activated. You saved 31%!";
                     break;
-                case 'onetime':
+                case 'one_time':
                     $message = "Welcome to CashControl! Your one-time bank scan (€25) has been activated.";
                     break;
                 default:
