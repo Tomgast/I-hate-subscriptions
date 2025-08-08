@@ -59,9 +59,8 @@ class BankProviderRouter {
         $service = $this->getProviderService($provider);
         
         if ($provider === 'gocardless') {
-            $country = $options['country'] ?? 'NL';
-            $institutionId = $options['institution_id'] ?? null;
-            return $service->createBankConnectionSession($userId, $country, $institutionId);
+            // Pass the full options array to GoCardless service
+            return $service->createBankConnectionSession($userId, $options);
         } else {
             return $service->createBankConnectionSession($userId);
         }
