@@ -57,14 +57,21 @@ try {
     echo json_encode($banks, JSON_PRETTY_PRINT);
     
 } catch (Exception $e) {
-    // Log error for debugging
-    error_log("Get Banks Error: " . $e->getMessage());
+    // Log detailed error for debugging
+    error_log("Get Banks Error for country '$country': " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     
-    // Return error response
+    // Return detailed error response for debugging
     http_response_code(500);
     echo json_encode([
         'error' => true,
         'message' => $e->getMessage(),
+        'country' => $country,
+        'debug_info' => [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ],
         'banks' => []
     ], JSON_PRETTY_PRINT);
 }

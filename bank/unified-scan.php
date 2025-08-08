@@ -358,38 +358,28 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                                         <i class="fas fa-university text-primary me-2"></i>
                                         European Banks
                                     </h4>
-                                    <p class="text-center text-muted mb-4">Select your country to see available banks</p>
+                                    <p class="text-center text-muted mb-4">Select your country to see available banks (31+ countries supported)</p>
                                     
-                                    <div class="country-grid">
-                                        <div class="country-btn" data-country="NL">
-                                            <div class="fw-bold">🇳🇱 Netherlands</div>
-                                            <small class="text-muted">ING, ABN AMRO, Rabobank</small>
-                                        </div>
-                                        <div class="country-btn" data-country="DE">
-                                            <div class="fw-bold">🇩🇪 Germany</div>
-                                            <small class="text-muted">Deutsche Bank, Commerzbank</small>
-                                        </div>
-                                        <div class="country-btn" data-country="FR">
-                                            <div class="fw-bold">🇫🇷 France</div>
-                                            <small class="text-muted">BNP Paribas, Crédit Agricole</small>
-                                        </div>
-                                        <div class="country-btn" data-country="ES">
-                                            <div class="fw-bold">🇪🇸 Spain</div>
-                                            <small class="text-muted">Santander, BBVA</small>
-                                        </div>
-                                        <div class="country-btn" data-country="IT">
-                                            <div class="fw-bold">🇮🇹 Italy</div>
-                                            <small class="text-muted">UniCredit, Intesa Sanpaolo</small>
-                                        </div>
-                                        <div class="country-btn" data-country="GB">
-                                            <div class="fw-bold">🇬🇧 United Kingdom</div>
-                                            <small class="text-muted">Barclays, HSBC, Lloyds</small>
-                                        </div>
+                                    <!-- Country Loading -->
+                                    <div id="countryLoading" class="text-center py-4">
+                                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                        <p class="mt-2 text-muted">Loading countries...</p>
+                                    </div>
+                                    
+                                    <!-- Countries by Region -->
+                                    <div id="countriesByRegion" style="display: none;">
+                                        <!-- Dynamically populated -->
                                     </div>
                                     
                                     <!-- Bank Selection (shown after country selection) -->
                                     <div id="bankSelection" style="display: none; margin-top: 30px;">
-                                        <h5 class="text-center mb-3">Choose Your Bank</h5>
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <h5 class="mb-0">Choose Your Bank</h5>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="goBackToCountries()">
+                                                <i class="fas fa-arrow-left me-1"></i> Back to Countries
+                                            </button>
+                                        </div>
+                                        <div id="selectedCountryInfo" class="alert alert-info mb-3"></div>
                                         <div id="bankGrid" class="row g-3"></div>
                                     </div>
                                     
@@ -472,6 +462,8 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 // Show/hide country selection
                 if (provider === 'gocardless') {
                     document.getElementById('euBanksSection').style.display = 'block';
+                    // Load countries when EU section is shown
+                    loadAllCountries();
                     updateConnectButton();
                 } else {
                     document.getElementById('euBanksSection').style.display = 'none';
@@ -480,52 +472,131 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 }
             }
             
-            // Country selection for EU banks
-            document.querySelectorAll('.country-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Remove selected class from all country buttons
-                    document.querySelectorAll('.country-btn').forEach(b => b.classList.remove('selected'));
+            // Load countries when EU banks section is shown
+            let countriesLoaded = false;
+            
+            // Function to load all countries
+            async function loadAllCountries() {
+                if (countriesLoaded) return;
+                
+                const countryLoading = document.getElementById('countryLoading');
+                const countriesByRegion = document.getElementById('countriesByRegion');
+                
+                try {
+                    const response = await fetch('get-all-countries-banks.php?action=countries');
+                    const data = await response.json();
                     
-                    // Add selected class to clicked button
-                    this.classList.add('selected');
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to load countries');
+                    }
                     
-                    // Set the selected country
-                    const country = this.dataset.country;
-                    document.getElementById('selectedCountry').value = country;
+                    // Hide loading, show countries
+                    countryLoading.style.display = 'none';
+                    countriesByRegion.style.display = 'block';
                     
-                    // Load banks for selected country
-                    loadBanksForCountry(country);
-                });
-            });
+                    // Build countries by region
+                    let html = '';
+                    Object.keys(data.regions).forEach(region => {
+                        html += `
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-3">${region}</h6>
+                                <div class="country-grid">
+                        `;
+                        
+                        data.regions[region].forEach(country => {
+                            html += `
+                                <div class="country-btn" data-country="${country.code}">
+                                    <div class="fw-bold">${country.flag} ${country.name}</div>
+                                    <small class="text-muted">${country.code}</small>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    countriesByRegion.innerHTML = html;
+                    
+                    // Add click handlers for country selection
+                    document.querySelectorAll('.country-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            // Remove selected class from all country buttons
+                            document.querySelectorAll('.country-btn').forEach(b => b.classList.remove('selected'));
+                            
+                            // Add selected class to clicked button
+                            this.classList.add('selected');
+                            
+                            // Set the selected country
+                            const country = this.dataset.country;
+                            document.getElementById('selectedCountry').value = country;
+                            
+                            // Load banks for selected country
+                            loadBanksForCountry(country);
+                        });
+                    });
+                    
+                    countriesLoaded = true;
+                    
+                } catch (error) {
+                    console.error('Error loading countries:', error);
+                    countryLoading.innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p>Error loading countries: ${error.message}</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                                <i class="fas fa-refresh me-1"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
             
             // Function to load banks for a country
             async function loadBanksForCountry(country) {
                 const bankGrid = document.getElementById('bankGrid');
                 const bankSelection = document.getElementById('bankSelection');
+                const selectedCountryInfo = document.getElementById('selectedCountryInfo');
+                const countriesByRegion = document.getElementById('countriesByRegion');
                 
-                // Show loading
-                bankGrid.innerHTML = '<div class="col-12 text-center"><i class="fas fa-spinner fa-spin"></i> Loading banks...</div>';
+                // Hide countries, show bank selection
+                countriesByRegion.style.display = 'none';
                 bankSelection.style.display = 'block';
                 
+                // Show loading
+                bankGrid.innerHTML = '<div class="col-12 text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2">Loading banks...</p></div>';
+                
                 try {
-                    const response = await fetch('get-banks.php?country=' + country);
-                    const banks = await response.json();
+                    const response = await fetch(`get-all-countries-banks.php?action=banks&country=${country}`);
+                    const data = await response.json();
                     
-                    if (banks.length === 0) {
-                        bankGrid.innerHTML = '<div class="col-12 text-center text-muted">No banks available for this country</div>';
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to load banks');
+                    }
+                    
+                    // Update country info
+                    selectedCountryInfo.innerHTML = `
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>${data.country.flag} ${data.country.name}</strong> - ${data.total_banks} banks available
+                    `;
+                    
+                    if (data.total_banks === 0) {
+                        bankGrid.innerHTML = '<div class="col-12 text-center text-muted py-4">No banks available for this country</div>';
                         return;
                     }
                     
                     // Display banks
                     bankGrid.innerHTML = '';
-                    banks.forEach(bank => {
+                    data.banks.forEach(bank => {
                         const bankDiv = document.createElement('div');
-                        bankDiv.className = 'col-md-4 col-sm-6';
+                        bankDiv.className = 'col-lg-3 col-md-4 col-sm-6';
                         bankDiv.innerHTML = `
                             <div class="bank-btn" data-institution-id="${bank.id}">
                                 <img src="${bank.logo}" alt="${bank.name}" class="bank-logo" onerror="this.style.display='none'">
                                 <div class="fw-bold">${bank.name}</div>
-                                <small class="text-muted">${bank.bic || ''}</small>
+                                <small class="text-muted">${bank.bic || bank.id.split('_')[0]}</small>
                             </div>
                         `;
                         bankGrid.appendChild(bankDiv);
@@ -551,8 +622,27 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                     
                 } catch (error) {
                     console.error('Error loading banks:', error);
-                    bankGrid.innerHTML = '<div class="col-12 text-center text-danger">Error loading banks. Please try again.</div>';
+                    bankGrid.innerHTML = `
+                        <div class="col-12 text-center text-danger py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p>Error loading banks: ${error.message}</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadBanksForCountry('${country}')">
+                                <i class="fas fa-refresh me-1"></i> Retry
+                            </button>
+                        </div>
+                    `;
                 }
+            }
+            
+            // Function to go back to countries
+            window.goBackToCountries = function() {
+                document.getElementById('bankSelection').style.display = 'none';
+                document.getElementById('countriesByRegion').style.display = 'block';
+                document.getElementById('connectEuBtn').disabled = true;
+                document.getElementById('institutionId').value = '';
+                
+                // Remove bank selection
+                document.querySelectorAll('.bank-btn').forEach(b => b.classList.remove('selected'));
             }
             
             function updateConnectButton() {
