@@ -467,13 +467,17 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                     setTimeout(() => loadAllCountries(), 100); // Small delay to ensure DOM is ready
                     updateConnectButton();
                 } else if (provider === 'stripe') {
-                    // Hide EU banks section and immediately connect to Stripe
+                    // Hide EU banks section and connect to Stripe
                     document.getElementById('euBanksSection').style.display = 'none';
                     selectedCountryInput.value = '';
                     
-                    // Immediately submit form for Stripe connection
+                    // Show visual feedback and then submit form for Stripe connection
                     console.log('Connecting to Stripe Financial Connections...');
-                    document.getElementById('scanForm').submit();
+                    
+                    // Add a brief delay to show the selection visually before submitting
+                    setTimeout(() => {
+                        document.getElementById('scanForm').submit();
+                    }, 300); // 300ms delay to show selection
                 } else {
                     document.getElementById('euBanksSection').style.display = 'none';
                     selectedCountryInput.value = '';
