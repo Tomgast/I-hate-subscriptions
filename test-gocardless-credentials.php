@@ -22,15 +22,37 @@ echo "<h2>📋 Step 1: Load Secure Configuration</h2>";
 
 try {
     // Load secure config the same way as the service
-    $configPath = dirname(__DIR__) . '/../secure-config.php';
-    if (file_exists($configPath)) {
-        $secureConfig = include $configPath;
+    // Try multiple possible paths for secure config
+    $possiblePaths = [
+        dirname(__DIR__) . '/../secure-config.php',  // Standard path
+        '/var/www/vhosts/123cashcontrol.com/secure-config.php',  // Live server path
+        dirname($_SERVER['DOCUMENT_ROOT']) . '/secure-config.php'  // Alternative live path
+    ];
+    
+    $secureConfig = null;
+    $configPath = null;
+    
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $secureConfig = include $path;
+            $configPath = $path;
+            break;
+        }
+    }
+    
+    if ($secureConfig && $configPath) {
         echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; color: #155724; margin: 10px 0;'>";
         echo "<strong>✅ Secure Config Loaded</strong><br>";
         echo "Config file found at: " . $configPath;
         echo "</div>";
     } else {
-        throw new Exception('Secure config file not found at: ' . $configPath);
+        echo "<div style='background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; color: #856404; margin: 10px 0;'>";
+        echo "<strong>⚠️ Secure Config Paths Checked:</strong><br>";
+        foreach ($possiblePaths as $path) {
+            echo "• " . $path . " - " . (file_exists($path) ? 'EXISTS' : 'NOT FOUND') . "<br>";
+        }
+        echo "</div>";
+        throw new Exception('Secure config file not found in any expected location');
     }
 } catch (Exception $e) {
     echo "<div style='background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; color: #721c24; margin: 10px 0;'>";

@@ -603,11 +603,19 @@ class GoCardlessFinancialService {
         // Try secure config file (outside web root)
         static $secureConfig = null;
         if ($secureConfig === null) {
-            $configPath = dirname(__DIR__) . '/../secure-config.php';
-            if (file_exists($configPath)) {
-                $secureConfig = include $configPath;
-            } else {
-                $secureConfig = [];
+            // Try multiple possible paths for secure config
+            $possiblePaths = [
+                dirname(__DIR__) . '/../secure-config.php',  // Standard path
+                '/var/www/vhosts/123cashcontrol.com/secure-config.php',  // Live server path
+                dirname($_SERVER['DOCUMENT_ROOT']) . '/secure-config.php'  // Alternative live path
+            ];
+            
+            $secureConfig = [];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    $secureConfig = include $path;
+                    break;
+                }
             }
         }
         
