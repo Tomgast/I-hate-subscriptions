@@ -171,6 +171,14 @@ class BankService {
     }
     
     /**
+     * Generate authorization URL (alias for getBankAuthorizationUrl)
+     * This method is used by debug tools and external integrations
+     */
+    public function generateAuthUrl($userId, $redirectUri = null) {
+        return $this->getBankAuthorizationUrl($userId, $redirectUri);
+    }
+    
+    /**
      * Exchange authorization code for access token
      */
     public function exchangeCodeForToken($code, $redirectUri = null) {
