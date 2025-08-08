@@ -420,7 +420,7 @@ if ($userPlan && $userPlan['is_active']) {
 
     <script>
         function startUpgrade(planType = 'yearly') {
-            window.location.href = '/payment/checkout.php?plan=' + planType;
+            window.location.href = 'payment/checkout.php?plan=' + planType;
         }
 
         function toggleFAQ(id) {
