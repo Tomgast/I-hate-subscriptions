@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../config/secure_loader.php';
+require_once '../config/db_config.php';
 
 // Handle form submission
 if ($_POST) {
@@ -17,13 +17,7 @@ if ($_POST) {
         $error = "Password must be at least 6 characters long.";
     } else {
         try {
-            $config = loadSecureConfig();
-            $pdo = new PDO(
-                "mysql:host={$config['db_host']};port={$config['db_port']};dbname={$config['db_name']};charset=utf8mb4",
-                $config['db_user'],
-                $config['db_password'],
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
+            $pdo = getDBConnection();
             
             // Check if user already exists
             $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
