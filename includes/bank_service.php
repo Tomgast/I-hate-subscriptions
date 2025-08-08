@@ -96,15 +96,34 @@ class BankService {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
                     plan_type VARCHAR(50) NOT NULL,
-                    status ENUM('initiated', 'in_progress', 'completed', 'failed') DEFAULT 'initiated',
+                    status ENUM('initiated', 'in_progress', 'completed', 'failed', 'scheduled') DEFAULT 'initiated',
                     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     completed_at TIMESTAMP NULL,
                     subscriptions_found INT DEFAULT 0,
                     total_monthly_cost DECIMAL(10,2) DEFAULT 0,
                     scan_data JSON NULL,
                     error_message TEXT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                     INDEX idx_user_scans (user_id, started_at)
+                )
+            ");
+            
+            // Create bank_connections table if it doesn't exist
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS bank_connections (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    access_token TEXT NOT NULL,
+                    refresh_token TEXT NULL,
+                    bank_name VARCHAR(255) NULL,
+                    account_data JSON NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_user_active (user_id, is_active)
                 )
             ");
             
@@ -459,39 +478,36 @@ class BankService {
     
     /**
      * Save bank connection for user
+     * @param int $userId User ID
+     * @param string $accessToken Access token
+     * @param string $refreshToken Refresh token
+     * @param string $bankName Bank name
+     * @param array $accounts Account data
+     * @return int|false Connection ID or false on failure
      */
     public function saveBankConnection($userId, $accessToken, $refreshToken, $bankName, $accounts) {
         try {
-            // Create bank_connections table if it doesn't exist
-            $this->pdo->exec("
-                CREATE TABLE IF NOT EXISTS bank_connections (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
-                    bank_name VARCHAR(255),
-                    access_token TEXT,
-                    refresh_token TEXT,
-                    expires_at TIMESTAMP,
-                    connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_sync TIMESTAMP NULL,
-                    is_active BOOLEAN DEFAULT TRUE,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-            ");
-            
-            // Save connection
+            // Deactivate existing connections
             $stmt = $this->pdo->prepare("
-                INSERT INTO bank_connections (user_id, bank_name, access_token, refresh_token, expires_at) 
-                VALUES (?, ?, ?, ?, ?)
+                UPDATE bank_connections SET is_active = 0 
+                WHERE user_id = ?
             ");
+            $stmt->execute([$userId]);
             
-            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour')); // TrueLayer tokens typically expire in 1 hour
+            // Save new connection
+            $stmt = $this->pdo->prepare("
+                INSERT INTO bank_connections (
+                    user_id, access_token, refresh_token, bank_name, 
+                    account_data, is_active, created_at, expires_at
+                ) VALUES (?, ?, ?, ?, ?, 1, NOW(), DATE_ADD(NOW(), INTERVAL 90 DAY))
+            ");
             
             $stmt->execute([
                 $userId,
-                $bankName,
                 $accessToken,
                 $refreshToken,
-                $expiresAt
+                $bankName,
+                json_encode($accounts)
             ]);
             
             return $this->pdo->lastInsertId();
@@ -499,6 +515,30 @@ class BankService {
         } catch (Exception $e) {
             error_log("Error saving bank connection: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Get active bank connection for user
+     * @param int $userId User ID
+     * @return array|null Connection data or null
+     */
+    public function getActiveBankConnection($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM bank_connections 
+                WHERE user_id = ? AND is_active = 1 
+                AND (expires_at IS NULL OR expires_at > NOW())
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ");
+            
+            $stmt->execute([$userId]);
+            return $stmt->fetch();
+            
+        } catch (Exception $e) {
+            error_log("Error getting bank connection: " . $e->getMessage());
+            return null;
         }
     }
     
@@ -698,6 +738,37 @@ class BankService {
             return true;
         } catch (Exception $e) {
             error_log("Error marking scan as failed: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update bank connection token
+     * @param int $userId User ID
+     * @param string $newAccessToken New access token
+     * @param string $newRefreshToken New refresh token (optional)
+     * @return bool Success
+     */
+    public function updateBankToken($userId, $newAccessToken, $newRefreshToken = null) {
+        try {
+            $sql = "UPDATE bank_connections SET access_token = ?, updated_at = NOW()";
+            $params = [$newAccessToken];
+            
+            if ($newRefreshToken) {
+                $sql .= ", refresh_token = ?";
+                $params[] = $newRefreshToken;
+            }
+            
+            $sql .= " WHERE user_id = ? AND is_active = 1";
+            $params[] = $userId;
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error updating bank token: " . $e->getMessage());
             return false;
         }
     }

@@ -325,6 +325,103 @@ $categories = [
         </div>
     </div>
 
+    <!-- Bank Connection Status for Subscription Users -->
+    <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly'])): ?>
+    <?php
+    // Check bank connection status
+    $bankConnectionStatus = null;
+    $lastScanDate = null;
+    $nextScanDate = null;
+    try {
+        $pdo = getDBConnection();
+        
+        // Check for active bank connection
+        $stmt = $pdo->prepare("
+            SELECT bc.*, MAX(bs.completed_at) as last_scan_date
+            FROM bank_connections bc
+            LEFT JOIN bank_scans bs ON bc.user_id = bs.user_id AND bs.status = 'completed'
+            WHERE bc.user_id = ? AND bc.is_active = 1
+            GROUP BY bc.id
+            ORDER BY bc.created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$userId]);
+        $bankConnection = $stmt->fetch();
+        
+        if ($bankConnection) {
+            $bankConnectionStatus = 'connected';
+            $lastScanDate = $bankConnection['last_scan_date'];
+            if ($lastScanDate) {
+                $nextScanDate = date('Y-m-d', strtotime($lastScanDate . ' +7 days'));
+            }
+        } else {
+            $bankConnectionStatus = 'not_connected';
+        }
+    } catch (Exception $e) {
+        error_log("Bank connection status error: " . $e->getMessage());
+        $bankConnectionStatus = 'error';
+    }
+    ?>
+    <section class="py-8 bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-lg <?php echo $bankConnectionStatus === 'connected' ? 'bg-green-100' : 'bg-gray-100'; ?>">
+                            <?php if ($bankConnectionStatus === 'connected'): ?>
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <?php else: ?>
+                            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2-16h2m2 16V7a2 2 0 00-2-2h-2m2-2V3a2 2 0 00-2-2H7a2 2 0 00-2 2v2m2 14h2m-2 0h-2m2 0v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2"></path>
+                            </svg>
+                            <?php endif; ?>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                <?php if ($bankConnectionStatus === 'connected'): ?>
+                                🏦 Bank Connected - Automatic Weekly Scans
+                                <?php else: ?>
+                                🏦 Connect Your Bank Account
+                                <?php endif; ?>
+                            </h3>
+                            <div class="text-gray-600">
+                                <?php if ($bankConnectionStatus === 'connected'): ?>
+                                    <p class="mb-1">✅ Your bank account is connected and will be scanned automatically every week</p>
+                                    <?php if ($lastScanDate): ?>
+                                    <p class="text-sm">Last scan: <?php echo date('M j, Y', strtotime($lastScanDate)); ?></p>
+                                    <p class="text-sm">Next scan: <?php echo $nextScanDate ? date('M j, Y', strtotime($nextScanDate)) : 'Within 7 days'; ?></p>
+                                    <?php else: ?>
+                                    <p class="text-sm">Initial scan will run within 24 hours</p>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <p class="mb-1">Connect once and we'll automatically scan for new subscriptions every week</p>
+                                    <p class="text-sm text-blue-600">• No manual scanning needed • Always up-to-date • Secure bank-grade encryption</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <?php if ($bankConnectionStatus === 'connected'): ?>
+                        <div class="text-center">
+                            <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2">
+                                Manual Scan Now
+                            </button>
+                            <p class="text-xs text-gray-500">Or wait for automatic scan</p>
+                        </div>
+                        <?php else: ?>
+                        <button onclick="startBankScan()" class="bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-green-700 transform hover:-translate-y-1 transition-all duration-200">
+                            Connect Bank Account
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <!-- Subscriptions Section -->
     <section class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

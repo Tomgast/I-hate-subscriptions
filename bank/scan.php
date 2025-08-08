@@ -18,25 +18,75 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 
-// Get user's plan information
+// Get user's plan information using both systems for reliability
 $planManager = getPlanManager();
 $userPlan = $planManager->getUserPlan($userId);
 
-// Verify user has an active plan
-if (!$userPlan || !$userPlan['is_active']) {
+// Also use UserPlanHelper as backup verification
+require_once '../includes/user_plan_helper.php';
+$userPlanHelper = UserPlanHelper::getUserPlanStatus($userId);
+
+// Enhanced plan verification - check both systems
+$hasValidPlan = false;
+$planType = null;
+
+// Check PlanManager first
+if ($userPlan && $userPlan['is_active'] && in_array($userPlan['plan_type'], ['monthly', 'yearly', 'onetime'])) {
+    $hasValidPlan = true;
+    $planType = $userPlan['plan_type'];
+}
+// Fallback to UserPlanHelper
+elseif ($userPlanHelper && $userPlanHelper['is_paid'] && in_array($userPlanHelper['plan_type'], ['monthly', 'yearly', 'one_time'])) {
+    $hasValidPlan = true;
+    $planType = $userPlanHelper['plan_type'] === 'one_time' ? 'onetime' : $userPlanHelper['plan_type'];
+}
+// Direct database check as final fallback
+else {
+    try {
+        $pdo = getDBConnection();
+        $stmt = $pdo->prepare("
+            SELECT subscription_type, subscription_status, subscription_expires_at, plan_type 
+            FROM users 
+            WHERE id = ? AND (
+                (subscription_type IN ('monthly', 'yearly') AND subscription_status = 'active') OR
+                (plan_type = 'onetime')
+            )
+        ");
+        $stmt->execute([$userId]);
+        $dbPlan = $stmt->fetch();
+        
+        if ($dbPlan) {
+            $hasValidPlan = true;
+            $planType = $dbPlan['plan_type'] ?: $dbPlan['subscription_type'];
+        }
+    } catch (Exception $e) {
+        error_log("Bank scan plan check error: " . $e->getMessage());
+    }
+}
+
+// Verify user has a valid plan for bank scanning
+if (!$hasValidPlan) {
     header('Location: ../upgrade.php?reason=no_plan');
     exit;
 }
 
-// Check if user can perform bank scan
-if (!$planManager->canAccessFeature($userId, 'bank_scan')) {
-    header('Location: ../upgrade.php?reason=no_bank_access');
+// Subscription users (monthly/yearly) get unlimited bank scans
+// One-time users get limited scans with verification
+if (!in_array($planType, ['monthly', 'yearly', 'onetime'])) {
+    header('Location: ../upgrade.php?reason=invalid_plan');
     exit;
 }
 
-// Check scan limitations
-$canScan = $planManager->hasScansRemaining($userId);
-$scansRemaining = $userPlan['scans_remaining'];
+// Check scan limitations based on plan type
+if (in_array($planType, ['monthly', 'yearly'])) {
+    // Subscription users have unlimited scans
+    $canScan = true;
+    $scansRemaining = 'unlimited';
+} else {
+    // One-time users have limited scans
+    $canScan = $planManager->hasScansRemaining($userId);
+    $scansRemaining = $userPlan['scans_remaining'] ?? 0;
+}
 
 // Get plan type from URL parameter (for tracking)
 $planType = $_GET['plan'] ?? $userPlan['plan_type'];
