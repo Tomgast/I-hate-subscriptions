@@ -1,13 +1,14 @@
 <?php
 /**
- * PHASE 3C.1: BANK SCAN CONTROLLER
- * Handles plan-based bank scanning with proper limitations and usage tracking
+ * BANK SCAN REDIRECT
+ * Redirects to unified scan page that supports both Stripe (US) and GoCardless (EU)
  */
 
 session_start();
-require_once '../config/db_config.php';
-require_once '../includes/plan_manager.php';
-require_once '../includes/bank_service.php';
+
+// Redirect to unified scan page
+header('Location: unified-scan.php');
+exit;
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -92,7 +93,7 @@ if (in_array($planType, ['monthly', 'yearly'])) {
 $planType = $_GET['plan'] ?? $userPlan['plan_type'];
 
 // Initialize Stripe financial service
-require_once '../includes/stripe_financial_service.php';
+$pdo = getDBConnection();
 $stripeService = new StripeFinancialService($pdo);
 
 // Handle form submissions
