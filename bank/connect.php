@@ -12,7 +12,9 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 
 try {
-    $bankService = new BankService();
+    require_once '../includes/stripe_financial_service.php';
+    $pdo = getDBConnection();
+    $stripeService = new StripeFinancialService($pdo);
     $planManager = getPlanManager();
     
     // Check if user has access to bank scan feature
@@ -31,12 +33,16 @@ try {
     $userPlan = $planManager->getUserPlan($userId);
     $planType = $userPlan['plan_type'] ?? 'one_time_scan';
     
-    // Initiate bank connection and get authorization URL
-    $authUrl = $bankService->initiateBankConnection($userId, $planType);
+    // Initiate Stripe Financial Connections session
+    $result = $stripeService->createBankConnectionSession($userId);
     
-    // Redirect to TrueLayer authorization
-    header('Location: ' . $authUrl);
-    exit;
+    if ($result['success']) {
+        // Redirect to Stripe Financial Connections authorization
+        header('Location: ' . $result['auth_url']);
+        exit;
+    } else {
+        throw new Exception($result['error'] ?? 'Failed to create bank connection session');
+    }
     
 } catch (Exception $e) {
     error_log('Bank connection error: ' . $e->getMessage());

@@ -68,7 +68,9 @@ if (!$isAuthenticated) {
 // Handle admin actions
 $message = '';
 $scheduler = new BankScheduler();
-$bankService = new BankService();
+require_once '../includes/stripe_financial_service.php';
+$pdo = getDBConnection();
+$stripeService = new StripeFinancialService($pdo);
 
 if ($_POST && isset($_POST['action'])) {
     switch ($_POST['action']) {

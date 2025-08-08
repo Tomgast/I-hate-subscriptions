@@ -11,105 +11,71 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$bankService = new BankService();
+require_once '../includes/stripe_financial_service.php';
+$pdo = getDBConnection();
+$stripeService = new StripeFinancialService($pdo);
 $emailService = new EmailService();
 $subscriptionManager = new SubscriptionManager();
 
 try {
-    // Get authorization code from callback
-    $code = $_GET['code'] ?? null;
-    $state = $_GET['state'] ?? null;
+    // Get Stripe Financial Connections session ID from callback
+    $sessionId = $_GET['session_id'] ?? null;
     
-    if (!$code) {
-        throw new Exception('Authorization failed - no authorization code received');
+    if (!$sessionId) {
+        throw new Exception('Authorization failed - no session ID received from Stripe');
     }
     
-    // Verify state parameter
-    $stateData = json_decode(base64_decode($state), true);
+    // Handle the Stripe Financial Connections callback
+    $result = $stripeService->handleCallback($sessionId);
     
-    // Debug logging for state parameter issues
-    error_log("Callback state validation - Session User ID: $userId, State User ID: " . ($stateData['user_id'] ?? 'null'));
-    
-    if (!$stateData) {
-        throw new Exception('Invalid state parameter - could not decode state data');
+    if (!$result['success']) {
+        throw new Exception($result['error'] ?? 'Failed to process bank connection');
     }
     
-    if (!isset($stateData['user_id'])) {
-        throw new Exception('Invalid state parameter - missing user_id in state');
-    }
+    // Log successful callback
+    error_log("Stripe Financial Connections callback successful - User ID: $userId, Session ID: $sessionId");
     
-    // Convert both to integers for comparison to handle string vs int issues
-    $sessionUserId = (int)$userId;
-    $stateUserId = (int)$stateData['user_id'];
-    
-    if ($stateUserId !== $sessionUserId) {
-        throw new Exception("Invalid state parameter - user ID mismatch (session: $sessionUserId, state: $stateUserId)");
-    }
-    
-    // Exchange code for access token
-    $tokenData = $bankService->exchangeCodeForToken($code);
-    
-    if (!$tokenData || !isset($tokenData['access_token'])) {
-        throw new Exception('Failed to exchange authorization code for access token');
-    }
-    
-    $accessToken = $tokenData['access_token'];
-    $refreshToken = $tokenData['refresh_token'] ?? null;
-    
-    // Get user's bank accounts
-    $accounts = $bankService->getBankAccounts($accessToken);
-    
-    if ($accounts === false || empty($accounts)) {
-        throw new Exception('Failed to retrieve bank accounts or no accounts found');
-    }
-    
-    $connectedAccounts = 0;
-    $totalDetectedSubscriptions = 0;
-    $allDetectedSubscriptions = [];
-    
-    foreach ($accounts as $account) {
-        $connectedAccounts++;
+    // Check if bank accounts were connected successfully
+    if ($result['status'] === 'completed' && isset($result['accounts_connected'])) {
+        $connectedAccounts = $result['accounts_connected'];
         
-        // Get recent transactions for subscription detection (last 3 months)
-        $fromDate = date('Y-m-d', strtotime('-90 days'));
-        $toDate = date('Y-m-d');
+        // Perform subscription scan on connected accounts
+        $scanResult = $stripeService->scanForSubscriptions($userId);
         
-        $transactions = $bankService->getAccountTransactions($accessToken, $account['account_id'], $fromDate, $toDate);
-        
-        if ($transactions && !empty($transactions)) {
-            // Detect potential subscriptions from transaction patterns
-            $detectedSubscriptions = $bankService->detectSubscriptions($transactions);
+        if ($scanResult['success']) {
+            $totalDetectedSubscriptions = $scanResult['subscriptions_found'];
+            $allDetectedSubscriptions = $scanResult['subscriptions'];
             
-            // Add detected subscriptions to user's account
-            foreach ($detectedSubscriptions as $subscription) {
-                // Only add high-confidence subscriptions automatically
-                if ($subscription['confidence'] >= 70) {
-                    try {
-                        $subscriptionManager->addSubscription($userId, [
-                            'name' => $subscription['name'],
-                            'description' => 'Auto-detected from bank transactions',
-                            'cost' => $subscription['amount'],
-                            'currency' => $subscription['currency'],
-                            'billing_cycle' => $subscription['billing_cycle'],
-                            'next_payment_date' => $subscription['next_payment_date'],
-                            'category' => 'Other',
-                            'website_url' => '',
-                            'logo_url' => ''
-                        ]);
-                        
-                        $totalDetectedSubscriptions++;
-                        $allDetectedSubscriptions[] = $subscription;
-                    } catch (Exception $e) {
-                        error_log("Failed to add detected subscription: " . $e->getMessage());
-                    }
-                }
-            }
+            // Success message
+            $successMessage = "Successfully connected $connectedAccounts bank account(s) and detected $totalDetectedSubscriptions subscription(s).";
+        } else {
+            // Connection successful but scan failed
+            $successMessage = "Successfully connected $connectedAccounts bank account(s). Subscription scan will be processed shortly.";
+            $totalDetectedSubscriptions = 0;
+            $allDetectedSubscriptions = [];
+        }
+    } else {
+        throw new Exception('Bank connection was not completed successfully');
+    }
+    
+    // Add detected subscriptions to user's account (if any were found)
+    foreach ($allDetectedSubscriptions as $subscription) {
+        try {
+            $subscriptionManager->addSubscription($userId, [
+                'name' => $subscription['name'],
+                'description' => 'Auto-detected from Stripe bank scan',
+                'cost' => $subscription['amount'],
+                'currency' => $subscription['currency'] ?? 'USD',
+                'billing_cycle' => $subscription['billing_cycle'],
+                'next_payment_date' => $subscription['next_payment_date'],
+                'category' => 'Other',
+                'website_url' => '',
+                'logo_url' => ''
+            ]);
+        } catch (Exception $e) {
+            error_log("Failed to add detected subscription: " . $e->getMessage());
         }
     }
-    
-    // Save bank connection details
-    $bankName = 'Connected Bank'; // TrueLayer doesn't always provide bank name
-    $connectionId = $bankService->saveBankConnection($userId, $accessToken, $refreshToken, $bankName, $accounts);
     
     if (!$connectionId) {
         error_log("Warning: Failed to save bank connection details for user $userId");

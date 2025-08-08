@@ -91,8 +91,9 @@ if (in_array($planType, ['monthly', 'yearly'])) {
 // Get plan type from URL parameter (for tracking)
 $planType = $_GET['plan'] ?? $userPlan['plan_type'];
 
-// Initialize bank service
-$bankService = new BankService();
+// Initialize Stripe financial service
+require_once '../includes/stripe_financial_service.php';
+$stripeService = new StripeFinancialService($pdo);
 
 // Handle form submissions
 $error = null;
@@ -108,24 +109,24 @@ if ($_POST && isset($_POST['action'])) {
                     throw new Exception("You have reached your scan limit for this plan.");
                 }
                 
-                // Start TrueLayer bank connection process
-                $authUrl = $bankService->initiateBankConnection($userId, $planType);
+                // Start Stripe Financial Connections process
+                $result = $stripeService->createBankConnectionSession($userId);
                 
-                if ($authUrl) {
-                    // Redirect to TrueLayer authorization
-                    header('Location: ' . $authUrl);
+                if ($result['success']) {
+                    // Redirect to Stripe Financial Connections authorization
+                    header('Location: ' . $result['auth_url']);
                     exit;
                 } else {
-                    throw new Exception("Failed to initiate bank connection. Please try again.");
+                    throw new Exception($result['error'] ?? "Failed to initiate bank connection. Please try again.");
                 }
                 break;
                 
             case 'retry_scan':
                 // Allow retry for failed scans (doesn't count against limit)
-                $authUrl = $bankService->initiateBankConnection($userId, $planType);
+                $result = $stripeService->createBankConnectionSession($userId);
                 
-                if ($authUrl) {
-                    header('Location: ' . $authUrl);
+                if ($result['success']) {
+                    header('Location: ' . $result['auth_url']);
                     exit;
                 } else {
                     throw new Exception("Failed to retry bank connection. Please contact support.");

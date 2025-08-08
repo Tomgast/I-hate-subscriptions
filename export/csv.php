@@ -32,16 +32,26 @@ if (!$userPlan || !$userPlan['is_active'] || !$planManager->canAccessFeature($us
 $scanId = $_GET['scan_id'] ?? null;
 $format = $_GET['format'] ?? 'detailed'; // 'detailed' or 'summary'
 
-// Initialize bank service and get data
-$bankService = new BankService();
+// Initialize Stripe financial service and get data
+require_once '../includes/stripe_financial_service.php';
+$pdo = getDBConnection();
+$stripeService = new StripeFinancialService($pdo);
 $exportData = null;
 
-if ($scanId) {
-    // Export specific scan
-    $exportData = $bankService->getScanResults($userId, $scanId);
+// Get bank connections and scan data from Stripe service
+$connections = $stripeService->getUserBankConnections($userId);
+$connectionStatus = $stripeService->getConnectionStatus($userId);
+
+if (!empty($connections)) {
+    // Prepare export data from Stripe connections
+    $exportData = [
+        'connections' => $connections,
+        'scan_count' => $connectionStatus['scan_count'],
+        'last_scan' => $connectionStatus['last_scan'],
+        'has_data' => true
+    ];
 } else {
-    // Export latest scan results
-    $exportData = $bankService->getScanResults($userId);
+    $exportData = null;
 }
 
 if (!$exportData) {

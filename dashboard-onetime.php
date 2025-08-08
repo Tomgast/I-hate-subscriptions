@@ -23,14 +23,14 @@ if (!$userPlan || $userPlan['plan_type'] !== 'onetime' || !$userPlan['is_active'
     exit;
 }
 
-// Initialize bank service for verification
-require_once 'includes/bank_service.php';
-$bankService = new BankService();
+// Initialize Stripe financial service for verification
+require_once 'includes/stripe_financial_service.php';
+$stripeService = new StripeFinancialService($pdo);
 
-// Verify one-time scan status
-$scanVerification = $bankService->verifyOnetimeScanSuccess($userId);
-$hasSuccessfulScan = $scanVerification['has_successful_scan'];
-$canRetry = $scanVerification['can_retry'];
+// Verify one-time scan status using Stripe service
+$connectionStatus = $stripeService->getConnectionStatus($userId);
+$hasSuccessfulScan = $connectionStatus['has_connections'];
+$canRetry = !$hasSuccessfulScan; // Can retry if no successful connections
 $canScan = $planManager->hasScansRemaining($userId) || $canRetry;
 
 // Handle bank scan request
@@ -41,12 +41,12 @@ if ($_POST && isset($_POST['action'])) {
             $planManager->incrementScanCount($userId);
         }
         
-        // Redirect to bank integration (TrueLayer)
-        header('Location: bank/scan.php?plan=onetime');
+        // Redirect to Stripe bank integration
+        header('Location: bank/stripe-scan.php?plan=onetime');
         exit;
     } elseif ($_POST['action'] === 'retry_scan' && $canRetry) {
         // Retry failed scan without incrementing count
-        header('Location: bank/scan.php?plan=onetime&retry=1');
+        header('Location: bank/stripe-scan.php?plan=onetime&retry=1');
         exit;
     } else {
         $error = "You have already completed your one-time bank scan successfully.";
@@ -56,13 +56,20 @@ if ($_POST && isset($_POST['action'])) {
 // Get existing scan results if available
 $scanResults = [];
 $exportData = null;
-$scanStats = $bankService->getScanStatistics($userId);
+// Get scan statistics from Stripe service
+$scanStats = [
+    'total_scans' => $connectionStatus['scan_count'],
+    'successful_scans' => $connectionStatus['has_connections'] ? 1 : 0,
+    'failed_scans' => 0,
+    'last_scan_date' => $connectionStatus['last_scan'],
+    'total_subscriptions_found' => 0
+];
 
 try {
     $pdo = getDBConnection();
     
-    // Get scan results from bank service
-    $scanResults = $bankService->getScanResults($userId);
+    // Get scan results from Stripe service
+    $scanResults = $stripeService->getUserBankConnections($userId);
     
     // Check for existing bank scan results
     $stmt = $pdo->prepare("SELECT * FROM bank_scans WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");

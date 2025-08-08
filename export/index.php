@@ -28,10 +28,16 @@ if (!$userPlan || !$userPlan['is_active'] || !$planManager->canAccessFeature($us
     exit;
 }
 
-// Initialize bank service and get available scans
-$bankService = new BankService();
-$availableScans = $bankService->getUserScans($userId);
-$latestScan = $bankService->getScanResults($userId);
+// Initialize Stripe financial service and get data
+require_once '../includes/stripe_financial_service.php';
+$pdo = getDBConnection();
+$stripeService = new StripeFinancialService($pdo);
+// Get bank connections and scan data from Stripe service
+$connections = $stripeService->getUserBankConnections($userId);
+$connectionStatus = $stripeService->getConnectionStatus($userId);
+
+$availableScans = $connections; // Use connections as available scans
+$latestScan = !empty($connections) ? $connections[0] : null;
 
 // Handle export requests
 if ($_POST && isset($_POST['export_type'])) {
