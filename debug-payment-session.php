@@ -64,6 +64,7 @@ try {
     
     $sessionData = $stripeService->createCheckoutSession(
         $_SESSION['user_id'],
+        $_SESSION['user_email'],
         'monthly',
         'https://123cashcontrol.com/payment/success.php',
         'https://123cashcontrol.com/payment/cancel.php'
@@ -88,6 +89,7 @@ try {
             try {
                 $testSession = $stripeService->createCheckoutSession(
                     $_SESSION['user_id'],
+                    $_SESSION['user_email'],
                     $plan,
                     'https://123cashcontrol.com/payment/success.php',
                     'https://123cashcontrol.com/payment/cancel.php'
