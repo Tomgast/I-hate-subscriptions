@@ -1,6 +1,7 @@
 <?php
 // Email Service for CashControl - Plesk SMTP Integration
 require_once __DIR__ . '/../config/db_config.php';
+require_once __DIR__ . '/../config/secure_loader.php';
 
 class EmailService {
     private $smtpHost;
@@ -11,40 +12,16 @@ class EmailService {
     private $fromName;
     
     public function __construct() {
-        // Load email configuration securely using consistent system
+        // Load email configuration securely using global getSecureConfig function
         $this->smtpHost = getSecureConfig('SMTP_HOST') ?: 'shared58.cloud86-host.nl';
         $this->smtpPort = getSecureConfig('SMTP_PORT') ?: 587;
-        $this->smtpUsername = getSecureConfig('SMTP_USERNAME') ?: 'noreply@123cashcontrol.com';
+        $this->smtpUsername = getSecureConfig('SMTP_USERNAME') ?: 'info@123cashcontrol.com';
         $this->smtpPassword = getSecureConfig('SMTP_PASSWORD');
-        $this->fromEmail = getSecureConfig('FROM_EMAIL') ?: 'noreply@123cashcontrol.com';
+        $this->fromEmail = getSecureConfig('FROM_EMAIL') ?: 'info@123cashcontrol.com';
         $this->fromName = getSecureConfig('FROM_NAME') ?: 'CashControl';
     }
     
-    /**
-     * Securely load configuration values from multiple sources
-     * Priority: Plesk Environment Variables > Secure Config File > Default
-     */
-    private function getSecureConfig($key, $default = null) {
-        // Try Plesk environment variables first
-        $value = getenv($key) ?: $_SERVER[$key] ?? null;
-        
-        if ($value) {
-            return $value;
-        }
-        
-        // Try secure config file (outside web root - confirmed working path)
-        static $secureConfig = null;
-        if ($secureConfig === null) {
-            $configPath = dirname(__DIR__) . '/../secure-config.php';
-            if (file_exists($configPath)) {
-                $secureConfig = include $configPath;
-            } else {
-                $secureConfig = [];
-            }
-        }
-        
-        return $secureConfig[$key] ?? $default;
-    }
+    // Removed private getSecureConfig method - now using global function from secure_loader.php
     
     /**
      * Send email using PHP mail() function with SMTP headers
@@ -306,6 +283,50 @@ class EmailService {
         ";
     }
     
+    /**
+     * Send a test email to verify configuration
+     */
+    public function sendTestEmail($toEmail, $userName = 'User') {
+        $subject = "CashControl Email Test - Configuration Working!";
+        $body = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Email Test</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; text-align: center; border-radius: 8px; }
+                .content { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>✅ Email Test Successful!</h1>
+                </div>
+                <div class='content'>
+                    <h2>Hi {$userName}!</h2>
+                    <p>This is a test email from CashControl to verify that email delivery is working correctly.</p>
+                    <p><strong>Email Configuration Details:</strong></p>
+                    <ul>
+                        <li>SMTP Host: {$this->smtpHost}</li>
+                        <li>SMTP Port: {$this->smtpPort}</li>
+                        <li>From Email: {$this->fromEmail}</li>
+                        <li>From Name: {$this->fromName}</li>
+                    </ul>
+                    <p>If you received this email, your email configuration is working properly!</p>
+                    <p>Best regards,<br>CashControl Email Service</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+        
+        return $this->sendEmail($toEmail, $subject, $body);
+    }
+
     /**
      * Test email configuration
      */
