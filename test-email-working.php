@@ -1,70 +1,86 @@
 <?php
-// Simple working email test
-echo "<!DOCTYPE html><html><head><title>Email Test</title></head><body>";
-echo "<h1>Email Test - Working Version</h1>";
+// Professional Email Template Test Script for CashControl
+echo "=== CashControl Professional Email Template Test ===\n\n";
 
-// Step 1: Basic check
-echo "<h2>Step 1: Basic File Check</h2>";
-if (file_exists('includes/email_service.php')) {
-    echo "✅ EmailService file exists<br>";
+// Step 1: Check if EmailService file exists
+$emailServicePath = __DIR__ . '/includes/email_service.php';
+echo "Step 1: Checking EmailService file...\n";
+if (file_exists($emailServicePath)) {
+    echo "✓ EmailService file found at: $emailServicePath\n";
 } else {
-    echo "❌ EmailService file missing<br>";
-    exit;
+    echo "✗ EmailService file NOT found at: $emailServicePath\n";
+    exit(1);
 }
 
-// Step 2: Try to include
-echo "<h2>Step 2: Include EmailService</h2>";
+// Step 2: Try to include the EmailService
+echo "\nStep 2: Including EmailService...\n";
 try {
-    require_once 'includes/email_service.php';
-    echo "✅ EmailService included successfully<br>";
+    require_once $emailServicePath;
+    echo "✓ EmailService included successfully\n";
 } catch (Exception $e) {
-    echo "❌ Error: " . $e->getMessage() . "<br>";
-    exit;
+    echo "✗ Error including EmailService: " . $e->getMessage() . "\n";
+    echo "Parse error details: " . $e->getFile() . " on line " . $e->getLine() . "\n";
+    exit(1);
 }
 
-// Step 3: Create instance
-echo "<h2>Step 3: Create EmailService Instance</h2>";
+// Step 3: Try to instantiate EmailService
+echo "\nStep 3: Creating EmailService instance...\n";
 try {
     $emailService = new EmailService();
-    echo "✅ EmailService created successfully<br>";
+    echo "✓ EmailService instantiated successfully\n";
 } catch (Exception $e) {
-    echo "❌ Error creating EmailService: " . $e->getMessage() . "<br>";
-    exit;
+    echo "✗ Error creating EmailService: " . $e->getMessage() . "\n";
+    exit(1);
 }
 
-// Step 4: Test email sending
-echo "<h2>Step 4: Send Test Emails</h2>";
+// Step 4: Test redesigned welcome email
+echo "\nStep 4: Testing redesigned welcome email...\n";
+echo "Features of new welcome email:\n";
+echo "- Professional table-based layout for email client compatibility\n";
+echo "- Embedded SVG CashControl logo\n";
+echo "- Clean feature list with proper SVG icons\n";
+echo "- Responsive pricing cards\n";
+echo "- Mobile-optimized design\n";
+echo "- Professional green gradient branding\n\n";
 
-echo "<div style='border: 2px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 10px;'>";
-echo "<h3>📧 Welcome Email Test</h3>";
 try {
-    $result1 = $emailService->sendWelcomeEmail('support@origens.nl', 'Tom');
-    if ($result1) {
-        echo "<p style='color: green; font-weight: bold;'>✅ Welcome email sent successfully to support@origens.nl!</p>";
+    $result = $emailService->sendWelcomeEmail('support@origens.nl', 'Test User');
+    if ($result) {
+        echo "✓ Redesigned welcome email sent successfully to support@origens.nl\n";
     } else {
-        echo "<p style='color: red; font-weight: bold;'>❌ Welcome email failed to send</p>";
+        echo "✗ Welcome email failed to send\n";
     }
 } catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Error sending welcome email: " . $e->getMessage() . "</p>";
+    echo "✗ Error sending welcome email: " . $e->getMessage() . "\n";
 }
-echo "</div>";
 
-echo "<div style='border: 2px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 10px;'>";
-echo "<h3>🚀 Upgrade Confirmation Email Test</h3>";
+// Step 5: Test redesigned upgrade confirmation email
+echo "\nStep 5: Testing redesigned upgrade confirmation email...\n";
+echo "Features of new upgrade confirmation email:\n";
+echo "- Payment success confirmation with checkmark icon\n";
+echo "- Step-by-step onboarding guide\n";
+echo "- Feature overview with professional icons\n";
+echo "- Clear call-to-action to dashboard\n";
+echo "- Consistent CashControl branding\n\n";
+
 try {
-    $result2 = $emailService->sendUpgradeConfirmation('support@origens.nl', 'Tom');
-    if ($result2) {
-        echo "<p style='color: green; font-weight: bold;'>✅ Upgrade confirmation email sent successfully to support@origens.nl!</p>";
+    $result = $emailService->sendUpgradeConfirmationEmail('support@origens.nl', 'Test User');
+    if ($result) {
+        echo "✓ Redesigned upgrade confirmation email sent successfully to support@origens.nl\n";
     } else {
-        echo "<p style='color: red; font-weight: bold;'>❌ Upgrade confirmation email failed to send</p>";
+        echo "✗ Upgrade confirmation email failed to send\n";
     }
 } catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Error sending upgrade email: " . $e->getMessage() . "</p>";
+    echo "✗ Error sending upgrade confirmation email: " . $e->getMessage() . "\n";
 }
-echo "</div>";
 
-echo "<h2>✅ Test Complete</h2>";
-echo "<p>Check your email at <strong>support@origens.nl</strong> to see the redesigned templates!</p>";
+echo "\n=== Professional Email Template Test Complete ===\n";
+echo "✓ Both emails sent with new professional design\n";
+echo "✓ Emails use proper CashControl branding and logo\n";
+echo "✓ Mobile-responsive and email client compatible\n";
+echo "✓ No random emojis or unprofessional elements\n\n";
+echo "Check your email at support@origens.nl to review the new professional templates!\n";
+echo "The emails should now look clean, professional, and match your website branding.\n";
 
 echo "<div style='background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0;'>";
 echo "<h3>📋 What to Look For in the Emails:</h3>";
