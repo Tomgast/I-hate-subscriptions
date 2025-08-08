@@ -47,8 +47,7 @@ try {
         
         foreach ($columns as $columnName) {
             try {
-                $stmt = $pdo->prepare("SHOW COLUMNS FROM {$tableName} LIKE ?");
-                $stmt->execute([$columnName]);
+                $stmt = $pdo->query("SHOW COLUMNS FROM {$tableName} LIKE '{$columnName}'");
                 $column = $stmt->fetch();
                 
                 if ($column) {
@@ -84,8 +83,7 @@ try {
         
         foreach ($indexes as $indexName) {
             try {
-                $stmt = $pdo->prepare("SHOW INDEX FROM {$tableName} WHERE Key_name = ?");
-                $stmt->execute([$indexName]);
+                $stmt = $pdo->query("SHOW INDEX FROM {$tableName} WHERE Key_name = '{$indexName}'");
                 $index = $stmt->fetch();
                 
                 if ($index) {
@@ -261,8 +259,7 @@ try {
     
     foreach ($optionalTables as $tableName) {
         try {
-            $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
-            $stmt->execute([$tableName]);
+            $stmt = $pdo->query("SHOW TABLES LIKE '{$tableName}'");
             $table = $stmt->fetch();
             
             if ($table) {
