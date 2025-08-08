@@ -307,16 +307,15 @@ function handleSubscriptionCreated($pdo, $subscription) {
     if ($user) {
         // Update user subscription status
         $planType = count($subscription['items']['data']) > 0 ? 'monthly' : 'yearly'; // Determine from price
-        $expiresAt = date('Y-m-d H:i:s', $subscription['current_period_end']);
         
         $stmt = $pdo->prepare("
             UPDATE users 
-            SET subscription_status = 'active',
-                subscription_expires_at = ?,
+            SET subscription_type = ?,
+                subscription_status = 'active',
                 updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$expiresAt, $user['id']]);
+        $stmt->execute([$planType, $user['id']]);
     }
 }
 
@@ -392,17 +391,15 @@ function handleInvoicePaymentSucceeded($pdo, $invoice) {
             $invoice['currency']
         ]);
         
-        // Extend subscription if needed
+        // Update subscription status for recurring payment
         if ($invoice['subscription']) {
-            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 month')); // Adjust based on billing cycle
             $stmt = $pdo->prepare("
                 UPDATE users 
-                SET subscription_expires_at = ?,
-                    subscription_status = 'active',
+                SET subscription_status = 'active',
                     updated_at = NOW()
                 WHERE id = ?
             ");
-            $stmt->execute([$expiresAt, $user['id']]);
+            $stmt->execute([$user['id']]);
         }
     }
 }
