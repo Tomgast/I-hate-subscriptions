@@ -467,12 +467,21 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 // Update form
                 selectedProviderInput.value = provider;
                 
-                // Show/hide country selection
+                // Handle provider-specific logic
                 if (provider === 'gocardless') {
+                    // Show EU banks section for country/bank selection
                     document.getElementById('euBanksSection').style.display = 'block';
                     // Load countries immediately when EU section is shown
                     setTimeout(() => loadAllCountries(), 100); // Small delay to ensure DOM is ready
                     updateConnectButton();
+                } else if (provider === 'stripe') {
+                    // Hide EU banks section and immediately connect to Stripe
+                    document.getElementById('euBanksSection').style.display = 'none';
+                    selectedCountryInput.value = '';
+                    
+                    // Immediately submit form for Stripe connection
+                    console.log('Connecting to Stripe Financial Connections...');
+                    document.getElementById('scanForm').submit();
                 } else {
                     document.getElementById('euBanksSection').style.display = 'none';
                     selectedCountryInput.value = '';
