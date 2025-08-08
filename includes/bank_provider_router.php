@@ -86,8 +86,8 @@ class BankProviderRouter {
                 $providerStatus = $service->getConnectionStatus($userId);
                 
                 $status['providers'][$provider] = $providerStatus;
-                $status['total_connections'] += $providerStatus['connection_count'];
-                $status['total_scans'] += $providerStatus['scan_count'];
+                $status['total_connections'] += $providerStatus['connection_count'] ?? 0;
+                $status['total_scans'] += $providerStatus['scan_count'] ?? 0;
                 
                 if ($providerStatus['has_connections']) {
                     $status['has_connections'] = true;

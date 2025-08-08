@@ -10,7 +10,7 @@ class GoCardlessFinancialService {
     private $secretId;
     private $secretKey;
     private $baseUrl;
-    private $apiBaseUrl = 'https://ob.gocardless.com/api/v2/';
+    private $apiBaseUrl = 'https://bankaccountdata.gocardless.com/api/v2/';
     private $accessToken;
     
     public function __construct($pdo) {
@@ -50,15 +50,31 @@ class GoCardlessFinancialService {
         
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($curl);
         curl_close($curl);
         
+        if ($curlError) {
+            throw new Exception('GoCardless API connection error: ' . $curlError);
+        }
+        
         if ($httpCode !== 200) {
-            throw new Exception('Failed to get GoCardless access token: ' . $response);
+            $errorMsg = 'Failed to get GoCardless access token (HTTP ' . $httpCode . ')';
+            if ($response) {
+                $errorData = json_decode($response, true);
+                if (isset($errorData['detail'])) {
+                    $errorMsg .= ': ' . $errorData['detail'];
+                } elseif (isset($errorData['error'])) {
+                    $errorMsg .= ': ' . $errorData['error'];
+                } else {
+                    $errorMsg .= ': ' . $response;
+                }
+            }
+            throw new Exception($errorMsg);
         }
         
         $data = json_decode($response, true);
         if (!isset($data['access'])) {
-            throw new Exception('Invalid GoCardless token response');
+            throw new Exception('Invalid GoCardless token response: ' . json_encode($data));
         }
         
         return $data['access'];
