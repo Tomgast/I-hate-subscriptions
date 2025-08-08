@@ -82,7 +82,7 @@ class StripeFinancialService {
                     'transactions'
                 ],
                 'filters' => [
-                    'countries' => ['US', 'GB', 'NL', 'DE', 'FR', 'ES', 'IT'] // Add your supported countries
+                    'countries' => ['US'] // Stripe Financial Connections currently only supports US
                 ],
                 'return_url' => $this->baseUrl . '/bank/stripe-callback.php'
             ]);
