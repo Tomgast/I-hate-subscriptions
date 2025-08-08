@@ -428,16 +428,8 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
             const selectedProviderInput = document.getElementById('selectedProvider');
             const selectedCountryInput = document.getElementById('selectedCountry');
             
-            // Auto-select suggested provider
-            const suggestedCard = document.querySelector('[data-suggested="true"]');
-            if (suggestedCard) {
-                const suggestedProvider = suggestedCard.dataset.provider;
-                const suggestedRadio = document.getElementById(suggestedProvider + '_radio');
-                if (suggestedRadio) {
-                    suggestedRadio.checked = true;
-                    selectProvider(suggestedProvider);
-                }
-            }
+            // Don't auto-select any provider - let user choose manually
+            // The suggested provider will still show the "Suggested" badge in the UI
             
             // Provider selection
             providerCards.forEach(card => {
