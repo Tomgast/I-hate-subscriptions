@@ -147,16 +147,17 @@ class EmailService {
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1>🚀 Welcome to CashControl, {$userName}!</h1>
+                    <img src='https://123cashcontrol.com/assets/images/logo.svg' alt='CashControl' style='height: 40px; margin-bottom: 20px;'>
+                    <h1>Welcome to CashControl, {$userName}!</h1>
                     <p>Join thousands saving €100s per year on subscriptions</p>
                 </div>
                 <div class='content'>
                     <div class='hero-cta'>
-                        <a href='https://123cashcontrol.com/upgrade.php' class='hero-button'>🎯 Start Saving Money Now</a>
+                        <a href='https://123cashcontrol.com/upgrade.php' class='hero-button'>Start Saving Money Now</a>
                     </div>
                     
                     <div class='features-section'>
-                        <h2 class='features-title'>🎉 What CashControl Delivers</h2>
+                        <h2 class='features-title'>What CashControl Delivers</h2>
                         <div class='features-grid'>
                             <div class='feature-card'>
                                 <span class='feature-icon'>🏦</span>
@@ -192,7 +193,7 @@ class EmailService {
                     </div>
                     
                     <div class='pricing-section'>
-                        <h2 class='pricing-title'>💎 Choose Your Money-Saving Plan</h2>
+                        <h2 class='pricing-title'>Choose Your Plan</h2>
                         <div class='pricing-grid'>
                             <a href='https://123cashcontrol.com/upgrade.php?plan=monthly' class='pricing-card'>
                                 <div class='plan-icon'>📅</div>
@@ -217,9 +218,9 @@ class EmailService {
                     </div>
                     
                     <div class='final-cta'>
-                        <h3>⚡ Ready to Save Money?</h3>
+                        <h3>Ready to Save Money?</h3>
                         <p>Join thousands of users already saving hundreds of euros per year</p>
-                        <a href='https://123cashcontrol.com/upgrade.php' class='final-button'>🎯 Start Your Money-Saving Journey</a>
+                        <a href='https://123cashcontrol.com/upgrade.php' class='final-button'>Start Your Journey</a>
                     </div>
                 </div>
                 <div class='footer'>
