@@ -4,7 +4,7 @@
  * Include this file to use Stripe functionality
  */
 
-// Include Stripe SDK
+// Include Stripe SDK (corrected path for Plesk hosting)
 require_once __DIR__ . '/../stripe-php/init.php';
 
 // Load Stripe configuration
