@@ -27,8 +27,7 @@ try {
     // Check user 5 (the test user)
     $stmt = $pdo->prepare("
         SELECT id, email, name, subscription_type, subscription_status, 
-               subscription_expires_at, reminder_access_expires_at, 
-               stripe_customer_id, updated_at
+               stripe_customer_id, created_at, updated_at
         FROM users 
         WHERE id = 5
     ");
