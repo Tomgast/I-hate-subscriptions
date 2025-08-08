@@ -459,60 +459,6 @@ class StripeService {
     }
     
     /**
-     * Handle successful payment after Stripe redirect
-     * @param string $sessionId Stripe session ID
-     * @return bool Success status
-     */
-    public function handleSuccessfulPayment($sessionId) {
-        try {
-            // Retrieve the session from Stripe to verify it was completed
-            $response = $this->makeStripeRequest('GET', "checkout/sessions/{$sessionId}");
-            
-            if ($response && $response['payment_status'] === 'paid') {
-                // Payment was successful - webhook should have already processed this
-                // Just return true to show success page
-                return true;
-            }
-            
-            return false;
-        } catch (Exception $e) {
-            error_log("Error handling successful payment: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Check if user has Pro access
-     * @param int $userId User ID
-     * @return bool True if user has active subscription
-     */
-    public function hasProAccess($userId) {
-        try {
-            require_once __DIR__ . '/database_helper.php';
-            $pdo = DatabaseHelper::getConnection();
-            
-            $stmt = $pdo->prepare("
-                SELECT subscription_type, subscription_status 
-                FROM users 
-                WHERE id = ?
-            ");
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch();
-            
-            if ($user) {
-                // User has pro access if they have any paid subscription type
-                return in_array($user['subscription_type'], ['monthly', 'yearly', 'one_time']) 
-                       && $user['subscription_status'] === 'active';
-            }
-            
-            return false;
-        } catch (Exception $e) {
-            error_log("Error checking pro access: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
      * Test Stripe configuration
      */
     public function testConfiguration() {
