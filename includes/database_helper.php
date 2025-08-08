@@ -284,6 +284,46 @@ class DatabaseHelper {
             )
         ");
         
+        // Payment history table (for Stripe payments)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS payment_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                stripe_session_id VARCHAR(255) NULL,
+                stripe_payment_intent_id VARCHAR(255) NULL,
+                stripe_invoice_id VARCHAR(255) NULL,
+                amount INT NOT NULL,
+                currency VARCHAR(3) DEFAULT 'EUR',
+                plan_type VARCHAR(50) NULL,
+                status ENUM('pending', 'completed', 'failed', 'cancelled') DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_session (stripe_session_id),
+                INDEX idx_user_status (user_id, status),
+                INDEX idx_stripe_ids (stripe_payment_intent_id, stripe_invoice_id)
+            )
+        ");
+        
+        // Checkout sessions table (for tracking Stripe checkout sessions)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS checkout_sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                stripe_session_id VARCHAR(255) UNIQUE NOT NULL,
+                plan_type VARCHAR(50) NOT NULL,
+                amount INT NOT NULL,
+                currency VARCHAR(3) DEFAULT 'EUR',
+                status ENUM('pending', 'completed', 'expired', 'cancelled') DEFAULT 'pending',
+                expires_at DATETIME NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_status (user_id, status),
+                INDEX idx_expires (expires_at)
+            )
+        ");
+        
         return ['success' => true, 'message' => 'Database tables initialized successfully'];
     }
     
@@ -294,7 +334,7 @@ class DatabaseHelper {
         $pdo = self::getConnection();
         
         $stats = [];
-        $tables = ['users', 'subscriptions', 'user_preferences', 'reminder_logs', 'bank_accounts'];
+        $tables = ['users', 'subscriptions', 'user_preferences', 'reminder_logs', 'bank_accounts', 'payment_history', 'checkout_sessions'];
         
         foreach ($tables as $table) {
             try {
