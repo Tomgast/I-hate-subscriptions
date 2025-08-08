@@ -152,20 +152,20 @@ class BankService {
         // Create state parameter with user ID and timestamp
         $state = base64_encode(json_encode(['user_id' => $userId, 'timestamp' => time()]));
         
-        // Build OAuth parameters
+        // Build OAuth parameters - match TrueLayer Console format exactly
         $params = [
             'response_type' => 'code',
             'client_id' => $this->trueLayerClientId,
-            'scope' => 'info accounts balance transactions offline_access',
+            'scope' => 'info accounts balance cards transactions direct_debits standing_orders offline_access',
             'redirect_uri' => $redirectUri,
-            'state' => $state,
-            'providers' => 'uk-ob-all uk-oauth-all'
+            'providers' => 'uk-cs-mock uk-ob-all uk-oauth-all',
+            'state' => $state
         ];
         
-        // Use correct TrueLayer authorization endpoint
+        // Use correct TrueLayer authorization endpoint with trailing slash
         $baseUrl = $this->trueLayerEnvironment === 'live' 
-            ? 'https://auth.truelayer.com/connect/authorize' 
-            : 'https://auth.truelayer-sandbox.com/connect/authorize';
+            ? 'https://auth.truelayer.com/' 
+            : 'https://auth.truelayer-sandbox.com/';
             
         return $baseUrl . '?' . http_build_query($params);
     }
