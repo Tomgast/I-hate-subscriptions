@@ -33,7 +33,7 @@ class StripeFinancialService {
             // Create session in Stripe
             $session = \Stripe\FinancialConnections\Session::create([
                 'account_holder' => [
-                    'type' => 'consumer',
+                    'type' => 'account',
                 ],
                 'permissions' => [
                     'payment_method',
