@@ -17,10 +17,8 @@ class GoCardlessFinancialService {
         $this->pdo = $pdo;
         
         // Load GoCardless credentials from secure config
-        require_once __DIR__ . '/../config/secure-config.php';
-        $this->secretId = GOCARDLESS_SECRET_ID ?? '';
-        $this->secretKey = GOCARDLESS_SECRET_KEY ?? '';
-        $this->baseUrl = BASE_URL ?? 'https://123cashcontrol.com';
+        $this->loadSecureConfig();
+        $this->baseUrl = $this->getBaseUrl();
         
         if (empty($this->secretId) || empty($this->secretKey)) {
             throw new Exception('GoCardless credentials not configured');
@@ -580,6 +578,34 @@ class GoCardlessFinancialService {
         ");
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Load secure configuration
+     */
+    private function loadSecureConfig() {
+        // Try secure config file (outside web root)
+        static $secureConfig = null;
+        if ($secureConfig === null) {
+            $configPath = dirname(__DIR__) . '/../secure-config.php';
+            if (file_exists($configPath)) {
+                $secureConfig = include $configPath;
+            } else {
+                $secureConfig = [];
+            }
+        }
+        
+        $this->secretId = $secureConfig['GOCARDLESS_SECRET_ID'] ?? '';
+        $this->secretKey = $secureConfig['GOCARDLESS_SECRET_KEY'] ?? '';
+    }
+    
+    /**
+     * Get the base URL for callbacks
+     */
+    private function getBaseUrl() {
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $protocol . '://' . $host;
     }
 }
 ?>
