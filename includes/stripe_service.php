@@ -459,6 +459,29 @@ class StripeService {
     }
     
     /**
+     * Handle successful payment after Stripe redirect
+     * @param string $sessionId Stripe session ID
+     * @return bool Success status
+     */
+    public function handleSuccessfulPayment($sessionId) {
+        try {
+            // Retrieve the session from Stripe to verify it was completed
+            $response = $this->makeStripeRequest('GET', "checkout/sessions/{$sessionId}");
+            
+            if ($response && $response['payment_status'] === 'paid') {
+                // Payment was successful - webhook should have already processed this
+                // Just return true to show success page
+                return true;
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("Error handling successful payment: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Test Stripe configuration
      */
     public function testConfiguration() {
