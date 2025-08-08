@@ -37,8 +37,8 @@ if ($_POST) {
                 $_SESSION['user_email'] = $email;
                 $_SESSION['user_name'] = $name;
                 $_SESSION['is_paid'] = false;
-                $_SESSION['subscription_type'] = 'monthly';
-                $_SESSION['user_status'] = 'active';
+                $_SESSION['subscription_type'] = 'free';
+                $_SESSION['user_status'] = 'inactive';
                 
                 // Redirect to dashboard
                 header('Location: ../dashboard.php');

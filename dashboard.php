@@ -13,40 +13,24 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
 
-// Get user's plan information using new Plan Manager
-$planManager = getPlanManager();
-$userPlan = $planManager->getUserPlan($userId);
+// Get user's plan information using database-based detection
+require_once 'includes/user_plan_helper.php';
+$userPlan = UserPlanHelper::getUserPlanStatus($userId);
 
-// DEBUG: Check if user has an active plan
-if (!$userPlan || !$userPlan['is_active']) {
-    // TEMPORARY: Show debug info instead of redirecting
-    echo "<div style='background: red; color: white; padding: 20px; margin: 20px;'>";
-    echo "<h3>DEBUG: Plan Detection Issue</h3>";
-    echo "<p>User Plan: " . print_r($userPlan, true) . "</p>";
-    echo "<p>User ID: $userId</p>";
-    echo "<p>Session: " . print_r($_SESSION, true) . "</p>";
-    echo "<p><a href='upgrade.php?reason=no_plan' style='color: yellow;'>Continue to Upgrade Page</a></p>";
-    echo "</div>";
-    // Temporarily comment out the redirect
-    // header('Location: upgrade.php?reason=no_plan');
-    // exit;
-}
+// Refresh session with current database state
+UserPlanHelper::refreshUserSession($userId);
 
 // Route to appropriate dashboard based on plan type
-if ($userPlan['plan_type'] === 'one_time') {
+if ($userPlan['plan_type'] === 'one_time' && $userPlan['is_paid']) {
     // One-time users get limited dashboard
     header('Location: dashboard-onetime.php');
     exit;
-} elseif (in_array($userPlan['plan_type'], ['monthly', 'yearly'])) {
+} elseif (in_array($userPlan['plan_type'], ['monthly', 'yearly']) && $userPlan['is_paid']) {
     // Subscription users get full dashboard - continue with current page
-    $isPaid = true; // Legacy compatibility
-} elseif (in_array($userPlan['plan_type'], ['free', null, '']) || !$userPlan['plan_type']) {
-    // Free users or users without a plan get basic dashboard
-    $isPaid = false;
+    $isPaid = true;
 } else {
-    // Log unknown plan type for debugging but don't redirect
-    error_log("Unknown plan type for user {$_SESSION['user_id']}: " . ($userPlan['plan_type'] ?? 'null'));
-    $isPaid = false; // Default to free user experience
+    // Free users or users without active plan get basic dashboard
+    $isPaid = false;
 }
 
 // Handle form submissions
