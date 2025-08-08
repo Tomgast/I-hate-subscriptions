@@ -26,11 +26,15 @@ try {
         throw new Exception('Invalid country code format');
     }
     
-    // Include GoCardless service
+    // Include database config and GoCardless service
+    require_once '../config/db_config.php';
     require_once '../includes/gocardless_financial_service.php';
     
+    // Get database connection
+    $pdo = getDBConnection();
+    
     // Initialize GoCardless service
-    $goCardlessService = new GoCardlessFinancialService();
+    $goCardlessService = new GoCardlessFinancialService($pdo);
     
     // Get institutions for the country
     $institutions = $goCardlessService->getInstitutions($country);

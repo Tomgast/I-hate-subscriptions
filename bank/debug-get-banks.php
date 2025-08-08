@@ -19,12 +19,17 @@ try {
     echo "<strong>📅 Time:</strong> " . date('Y-m-d H:i:s') . "<br>";
     echo "</div>";
     
-    // Include GoCardless service
+    // Include database config and GoCardless service
+    require_once '../config/db_config.php';
     require_once '../includes/gocardless_financial_service.php';
     echo "<div style='background: #d4edda; padding: 10px; border-radius: 5px; margin: 5px 0;'>✅ GoCardless service included</div>";
     
+    // Get database connection
+    $pdo = getDBConnection();
+    echo "<div style='background: #d4edda; padding: 10px; border-radius: 5px; margin: 5px 0;'>✅ Database connection established</div>";
+    
     // Initialize GoCardless service
-    $goCardlessService = new GoCardlessFinancialService();
+    $goCardlessService = new GoCardlessFinancialService($pdo);
     echo "<div style='background: #d4edda; padding: 10px; border-radius: 5px; margin: 5px 0;'>✅ GoCardless service initialized</div>";
     
     // Check if access token is available

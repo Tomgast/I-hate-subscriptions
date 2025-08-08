@@ -14,11 +14,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0); // Don't display errors in JSON response
 
 try {
-    // Include GoCardless service
+    // Include database config and GoCardless service
+    require_once '../config/db_config.php';
     require_once '../includes/gocardless_financial_service.php';
     
+    // Get database connection
+    $pdo = getDBConnection();
+    
     // Initialize GoCardless service
-    $goCardlessService = new GoCardlessFinancialService();
+    $goCardlessService = new GoCardlessFinancialService($pdo);
     
     // All known GoCardless supported countries (based on research)
     $supportedCountries = [
