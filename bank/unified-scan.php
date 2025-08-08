@@ -67,12 +67,20 @@ if ($_POST && isset($_POST['action'])) {
                 $country = $_POST['country'] ?? null;
                 $institutionId = $_POST['institution_id'] ?? null;
                 
+                // Debug logging
+                error_log("Bank connection debug - Provider: $provider, Country: $country, Institution ID: $institutionId");
+                error_log("POST data: " . print_r($_POST, true));
+                
                 if (!$provider || !in_array($provider, ['stripe', 'gocardless'])) {
                     throw new Exception("Please select a valid bank provider.");
                 }
                 
                 if ($provider === 'gocardless' && !$country) {
                     throw new Exception("Please select your country for EU bank connections.");
+                }
+                
+                if ($provider === 'gocardless' && !$institutionId) {
+                    throw new Exception("Please select a bank before connecting. Institution ID is missing.");
                 }
                 
                 $options = [];
@@ -273,7 +281,7 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                             </div>
                         </div>
                         
-                        <form method="POST" id="scanForm">
+                        <form method="POST" id="scanForm" onsubmit="debugFormSubmission(event)">
                             <input type="hidden" name="action" value="start_scan">
                             <input type="hidden" name="institution_id" id="institutionId" value="">
                             <input type="hidden" name="provider" id="selectedProvider">
@@ -361,7 +369,7 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                                     <p class="text-center text-muted mb-4">Select your country to see available banks (31+ countries supported)</p>
                                     
                                     <!-- Country Loading -->
-                                    <div id="countryLoading" class="text-center py-4">
+                                    <div id="countryLoading" class="text-center py-4" style="display: none;">
                                         <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
                                         <p class="mt-2 text-muted">Loading countries...</p>
                                     </div>
@@ -462,8 +470,8 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 // Show/hide country selection
                 if (provider === 'gocardless') {
                     document.getElementById('euBanksSection').style.display = 'block';
-                    // Load countries when EU section is shown
-                    loadAllCountries();
+                    // Load countries immediately when EU section is shown
+                    setTimeout(() => loadAllCountries(), 100); // Small delay to ensure DOM is ready
                     updateConnectButton();
                 } else {
                     document.getElementById('euBanksSection').style.display = 'none';
@@ -481,6 +489,10 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 
                 const countryLoading = document.getElementById('countryLoading');
                 const countriesByRegion = document.getElementById('countriesByRegion');
+                
+                // Show loading state
+                countryLoading.style.display = 'block';
+                countriesByRegion.style.display = 'none';
                 
                 try {
                     const response = await fetch('get-all-countries-banks.php?action=countries');
@@ -615,6 +627,13 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                             const institutionId = this.dataset.institutionId;
                             document.getElementById('institutionId').value = institutionId;
                             
+                            // Debug logging
+                            console.log('Bank selected:', {
+                                institutionId: institutionId,
+                                bankName: this.querySelector('.fw-bold').textContent,
+                                formValue: document.getElementById('institutionId').value
+                            });
+                            
                             // Enable the connect button
                             document.getElementById('connectEuBtn').disabled = false;
                         });
@@ -643,6 +662,33 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 
                 // Remove bank selection
                 document.querySelectorAll('.bank-btn').forEach(b => b.classList.remove('selected'));
+            }
+            
+            // Debug form submission
+            window.debugFormSubmission = function(event) {
+                const formData = new FormData(event.target);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+                
+                console.log('Form submission debug:', data);
+                
+                // Check if institution_id is missing for GoCardless
+                if (data.provider === 'gocardless' && !data.institution_id) {
+                    console.error('ERROR: Institution ID is missing for GoCardless provider!');
+                    console.log('Current form values:', {
+                        provider: document.getElementById('selectedProvider').value,
+                        country: document.getElementById('selectedCountry').value,
+                        institution_id: document.getElementById('institutionId').value
+                    });
+                    
+                    alert('Debug: Institution ID is missing! Please select a bank first.');
+                    event.preventDefault();
+                    return false;
+                }
+                
+                return true;
             }
             
             function updateConnectButton() {
