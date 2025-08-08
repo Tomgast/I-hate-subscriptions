@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/db_config.php';
+require_once __DIR__ . '/../config/secure_loader.php';
 
 class StripeService {
     private $pdo;
@@ -11,37 +12,13 @@ class StripeService {
         // Use consistent database connection
         $this->pdo = getDBConnection();
         
-        // Load Stripe credentials securely
+        // Load Stripe credentials securely using global getSecureConfig function
         $this->stripeSecretKey = getSecureConfig('STRIPE_SECRET_KEY');
         $this->stripePublishableKey = getSecureConfig('STRIPE_PUBLISHABLE_KEY');
         $this->webhookSecret = getSecureConfig('STRIPE_WEBHOOK_SECRET');
     }
     
-    /**
-     * Securely load configuration values from multiple sources
-     * Priority: Plesk Environment Variables > Secure Config File > Default
-     */
-    private function getSecureConfig($key, $default = null) {
-        // Try Plesk environment variables first
-        $value = getenv($key) ?: $_SERVER[$key] ?? null;
-        
-        if ($value) {
-            return $value;
-        }
-        
-        // Try secure config file (outside web root)
-        static $secureConfig = null;
-        if ($secureConfig === null) {
-            $configPath = dirname(__DIR__) . '/../secure-config.php';
-            if (file_exists($configPath)) {
-                $secureConfig = include $configPath;
-            } else {
-                $secureConfig = [];
-            }
-        }
-        
-        return $secureConfig[$key] ?? $default;
-    }
+    // Removed private getSecureConfig method - now using global function from secure_loader.php
     
     /**
      * Create a Stripe Checkout session for different pricing plans
