@@ -20,11 +20,12 @@ $isWelcome = isset($_GET['welcome']) && $_GET['welcome'] == '1';
 $planManager = getPlanManager();
 $userPlan = $planManager->getUserPlan($userId);
 
-// If user already has an active plan, show upgrade options or redirect to dashboard
+// Get current plan type for button logic
 if ($userPlan && $userPlan['is_active']) {
-    // Allow viewing upgrade options for plan changes
+    // User has an active paid plan
     $currentPlan = $userPlan['plan_type'];
 } else {
+    // User has no plan or inactive plan - allow all upgrades
     $currentPlan = null;
 }
 ?>

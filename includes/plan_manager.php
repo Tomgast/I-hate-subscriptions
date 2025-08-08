@@ -36,18 +36,31 @@ class PlanManager {
                     scan_count,
                     max_scans,
                     stripe_customer_id,
-                    stripe_subscription_id
+                    stripe_subscription_id,
+                    subscription_type,
+                    subscription_status
                 FROM users 
                 WHERE id = ?
             ");
             $stmt->execute([$userId]);
             $plan = $stmt->fetch();
             
-            if (!$plan || !$plan['plan_type']) {
-                return null;
+            if (!$plan) {
+                return null; // User doesn't exist
             }
             
-            // Add computed properties
+            // Handle users with no paid plan (free users)
+            if (!$plan['plan_type'] || empty($plan['plan_type'])) {
+                $plan['plan_type'] = 'none'; // Set explicit 'none' plan type
+                $plan['is_active'] = false;
+                $plan['is_subscription'] = false;
+                $plan['is_onetime'] = false;
+                $plan['scans_remaining'] = 0;
+                $plan['can_scan'] = false;
+                return $plan;
+            }
+            
+            // Add computed properties for paid plans
             $plan['is_active'] = $this->isPlanActive($plan);
             $plan['is_subscription'] = in_array($plan['plan_type'], ['monthly', 'yearly']);
             $plan['is_onetime'] = $plan['plan_type'] === 'onetime';

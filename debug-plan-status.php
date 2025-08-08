@@ -83,9 +83,30 @@ echo "</pre>";
 
 echo "<h3>DIAGNOSIS:</h3>";
 echo "<pre>";
-echo "The issue is that:\n";
-echo "- Database has plan data (PlanManager finds it)\n";
-echo "- Session doesn't have is_paid=true\n";
-echo "- This creates the inconsistent state you're experiencing\n";
+echo "BEFORE FIX: PlanManager returned NULL for free users\n";
+echo "AFTER FIX: PlanManager should now return proper 'none' plan object\n";
+echo "\n";
+echo "Expected behavior now:\n";
+echo "- PlanManager returns plan object with plan_type='none', is_active=false\n";
+echo "- Upgrade buttons should show 'Choose [Plan]' instead of 'Current Plan'\n";
+echo "- Header should still show 'No Plan' (which is correct)\n";
+echo "</pre>";
+
+echo "<h3>6. TESTING THE FIX:</h3>";
+echo "<pre>";
+if ($userPlan) {
+    echo "✅ PlanManager now returns a plan object (not NULL)\n";
+    echo "Plan type: " . ($userPlan['plan_type'] ?? 'UNDEFINED') . "\n";
+    echo "Is active: " . (($userPlan['is_active'] ?? false) ? 'true' : 'false') . "\n";
+    
+    if ($userPlan['plan_type'] === 'none' && !$userPlan['is_active']) {
+        echo "✅ PERFECT: Free user properly detected as 'none' plan with is_active=false\n";
+        echo "✅ Upgrade buttons should now work correctly\n";
+    } else {
+        echo "❌ Issue: Plan type or active status unexpected\n";
+    }
+} else {
+    echo "❌ PlanManager still returns NULL - fix didn't work\n";
+}
 echo "</pre>";
 ?>
