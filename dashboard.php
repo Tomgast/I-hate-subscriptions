@@ -560,8 +560,8 @@ $categories = [
         }
 
         function startBankScan() {
-            // Check if user can perform bank scan
-            <?php if (userCanAccess($userId, 'bank_scan')): ?>
+            // Pro users (monthly/yearly) have unlimited bank scan access
+            <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly']) && $userPlan['is_paid']): ?>
             // Redirect to bank integration with unlimited access
             window.location.href = 'bank/scan.php?plan=<?php echo $userPlan['plan_type']; ?>';
             <?php else: ?>

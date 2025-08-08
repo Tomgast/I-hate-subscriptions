@@ -23,29 +23,46 @@ if (!$userPlan || $userPlan['plan_type'] !== 'onetime' || !$userPlan['is_active'
     exit;
 }
 
-// Check if user has already used their scan
-$hasUsedScan = $userPlan['scan_count'] >= $userPlan['max_scans'];
-$canScan = $planManager->hasScansRemaining($userId);
+// Initialize bank service for verification
+require_once 'includes/bank_service.php';
+$bankService = new BankService();
+
+// Verify one-time scan status
+$scanVerification = $bankService->verifyOnetimeScanSuccess($userId);
+$hasSuccessfulScan = $scanVerification['has_successful_scan'];
+$canRetry = $scanVerification['can_retry'];
+$canScan = $planManager->hasScansRemaining($userId) || $canRetry;
 
 // Handle bank scan request
-if ($_POST && isset($_POST['action']) && $_POST['action'] === 'start_bank_scan') {
-    if ($canScan) {
-        // Increment scan count
-        $planManager->incrementScanCount($userId);
+if ($_POST && isset($_POST['action'])) {
+    if ($_POST['action'] === 'start_bank_scan' && $canScan) {
+        // Don't increment scan count for retries
+        if (!$canRetry) {
+            $planManager->incrementScanCount($userId);
+        }
         
         // Redirect to bank integration (TrueLayer)
         header('Location: bank/scan.php?plan=onetime');
         exit;
+    } elseif ($_POST['action'] === 'retry_scan' && $canRetry) {
+        // Retry failed scan without incrementing count
+        header('Location: bank/scan.php?plan=onetime&retry=1');
+        exit;
     } else {
-        $error = "You have already used your one-time bank scan. Consider upgrading for unlimited scans.";
+        $error = "You have already completed your one-time bank scan successfully.";
     }
 }
 
 // Get existing scan results if available
 $scanResults = [];
 $exportData = null;
+$scanStats = $bankService->getScanStatistics($userId);
+
 try {
     $pdo = getDBConnection();
+    
+    // Get scan results from bank service
+    $scanResults = $bankService->getScanResults($userId);
     
     // Check for existing bank scan results
     $stmt = $pdo->prepare("SELECT * FROM bank_scans WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
@@ -142,10 +159,47 @@ try {
         </div>
         <?php endif; ?>
 
-        <?php if (!$hasUsedScan): ?>
+        <?php if (!$hasSuccessfulScan): ?>
         <!-- Bank Scan Section -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
             <div class="text-center">
+                <?php if ($canRetry): ?>
+                <!-- Retry Scan -->
+                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Retry Bank Scan</h2>
+                <p class="text-gray-600 mb-4">
+                    Your previous scan didn't find subscriptions or encountered an issue.<br>
+                    You can retry your scan at no additional cost.
+                </p>
+                
+                <!-- Scan Status Info -->
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6 text-left">
+                    <h3 class="font-semibold text-orange-800 mb-2">Previous Scan Status:</h3>
+                    <ul class="text-sm text-orange-700 space-y-1">
+                        <?php if ($scanVerification['scan_date']): ?>
+                        <li>• Last scan: <?php echo date('M j, Y \a\t g:i A', strtotime($scanVerification['scan_date'])); ?></li>
+                        <?php endif; ?>
+                        <li>• Subscriptions found: <?php echo $scanVerification['subscriptions_found'] ?? 0; ?></li>
+                        <li>• Status: <?php echo $scanVerification['message']; ?></li>
+                    </ul>
+                </div>
+                
+                <form method="POST" class="inline-block">
+                    <input type="hidden" name="action" value="retry_scan">
+                    <button type="submit" class="bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-orange-700 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center mx-auto">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Retry Bank Scan
+                    </button>
+                </form>
+                
+                <?php else: ?>
+                <!-- First Scan -->
                 <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -166,6 +220,7 @@ try {
                         Start Bank Scan
                     </button>
                 </form>
+                <?php endif; ?>
                 
                 <div class="mt-4 text-sm text-gray-500">
                     <div class="flex items-center justify-center space-x-4">
@@ -214,24 +269,24 @@ try {
             <!-- Summary Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-blue-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-blue-600 mb-2"><?php echo $exportData['total_subscriptions']; ?></div>
-                    <div class="text-blue-800 font-medium">Subscriptions Found</div>
+                    <div class="text-3xl font-bold text-blue-600"><?php echo count($scanResults['subscriptions']); ?></div>
+                    <div class="text-blue-800 font-medium">Subscriptions</div>
                 </div>
                 <div class="bg-green-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-green-600 mb-2">€<?php echo number_format($exportData['monthly_total'], 2); ?></div>
+                    <div class="text-3xl font-bold text-green-600">€<?php echo number_format($scanResults['monthly_total'] ?? 0, 2); ?></div>
                     <div class="text-green-800 font-medium">Monthly Total</div>
                 </div>
                 <div class="bg-purple-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-purple-600 mb-2">€<?php echo number_format($exportData['yearly_total'], 2); ?></div>
+                    <div class="text-3xl font-bold text-purple-600">€<?php echo number_format($scanResults['yearly_total'] ?? 0, 2); ?></div>
                     <div class="text-purple-800 font-medium">Yearly Total</div>
                 </div>
             </div>
             
-            <!-- Subscriptions List -->
-            <?php if (!empty($scanResults)): ?>
+            <!-- Subscription Summary -->
+        <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
             <div class="space-y-4">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Discovered Subscriptions</h3>
-                <?php foreach ($scanResults as $sub): ?>
+                <?php foreach ($scanResults['subscriptions'] as $sub): ?>
                 <div class="scan-card bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">

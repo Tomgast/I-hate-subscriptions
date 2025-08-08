@@ -703,6 +703,173 @@ class BankService {
     }
     
     /**
+     * Check if one-time scan was successful and has valid results
+     * @param int $userId User ID
+     * @return array Status information
+     */
+    public function verifyOnetimeScanSuccess($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT bs.*, COUNT(s.id) as subscriptions_saved
+                FROM bank_scans bs
+                LEFT JOIN subscriptions s ON bs.id = s.scan_id
+                WHERE bs.user_id = ? AND bs.status = 'completed'
+                ORDER BY bs.completed_at DESC
+                LIMIT 1
+            ");
+            
+            $stmt->execute([$userId]);
+            $scan = $stmt->fetch();
+            
+            if (!$scan) {
+                return [
+                    'has_successful_scan' => false,
+                    'can_retry' => true,
+                    'message' => 'No completed scan found'
+                ];
+            }
+            
+            // Consider scan successful if it found at least 1 subscription OR completed without errors
+            $isSuccessful = ($scan['subscriptions_found'] > 0 || empty($scan['error_message']));
+            
+            return [
+                'has_successful_scan' => $isSuccessful,
+                'can_retry' => !$isSuccessful,
+                'scan_date' => $scan['completed_at'],
+                'subscriptions_found' => $scan['subscriptions_found'],
+                'subscriptions_saved' => $scan['subscriptions_saved'],
+                'message' => $isSuccessful ? 'Scan completed successfully' : 'Scan completed but may need retry'
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error verifying one-time scan: " . $e->getMessage());
+            return [
+                'has_successful_scan' => false,
+                'can_retry' => true,
+                'message' => 'Error checking scan status'
+            ];
+        }
+    }
+    
+    /**
+     * Check if subscription user needs automatic scan
+     * @param int $userId User ID
+     * @return bool True if scan is needed
+     */
+    public function needsAutomaticScan($userId) {
+        try {
+            // Get user's plan
+            $planManager = getPlanManager();
+            $userPlan = $planManager->getUserPlan($userId);
+            
+            // Only subscription users get automatic scans
+            if (!$userPlan || !in_array($userPlan['plan_type'], ['monthly', 'yearly'])) {
+                return false;
+            }
+            
+            // Check last scan date
+            $stmt = $this->pdo->prepare("
+                SELECT completed_at 
+                FROM bank_scans 
+                WHERE user_id = ? AND status = 'completed'
+                ORDER BY completed_at DESC 
+                LIMIT 1
+            ");
+            
+            $stmt->execute([$userId]);
+            $lastScan = $stmt->fetch();
+            
+            if (!$lastScan) {
+                return true; // No previous scan, needs initial scan
+            }
+            
+            // Check if last scan was more than 7 days ago
+            $lastScanDate = new DateTime($lastScan['completed_at']);
+            $now = new DateTime();
+            $daysSinceLastScan = $now->diff($lastScanDate)->days;
+            
+            return $daysSinceLastScan >= 7;
+            
+        } catch (Exception $e) {
+            error_log("Error checking automatic scan need: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Schedule automatic scan for subscription users
+     * @param int $userId User ID
+     * @return bool Success
+     */
+    public function scheduleAutomaticScan($userId) {
+        try {
+            // Create automatic scan record
+            $scanId = $this->createScanRecord($userId, 'automatic');
+            
+            if (!$scanId) {
+                return false;
+            }
+            
+            // Mark as scheduled for background processing
+            $stmt = $this->pdo->prepare("
+                UPDATE bank_scans SET
+                    status = 'scheduled',
+                    scan_data = JSON_OBJECT('type', 'automatic', 'scheduled_at', NOW())
+                WHERE id = ?
+            ");
+            
+            $stmt->execute([$scanId]);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error scheduling automatic scan: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get scan statistics for user
+     * @param int $userId User ID
+     * @return array Scan statistics
+     */
+    public function getScanStatistics($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT 
+                    COUNT(*) as total_scans,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_scans,
+                    COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_scans,
+                    MAX(completed_at) as last_scan_date,
+                    SUM(subscriptions_found) as total_subscriptions_found
+                FROM bank_scans 
+                WHERE user_id = ?
+            ");
+            
+            $stmt->execute([$userId]);
+            $stats = $stmt->fetch();
+            
+            return [
+                'total_scans' => (int)$stats['total_scans'],
+                'successful_scans' => (int)$stats['successful_scans'],
+                'failed_scans' => (int)$stats['failed_scans'],
+                'last_scan_date' => $stats['last_scan_date'],
+                'total_subscriptions_found' => (int)$stats['total_subscriptions_found']
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error getting scan statistics: " . $e->getMessage());
+            return [
+                'total_scans' => 0,
+                'successful_scans' => 0,
+                'failed_scans' => 0,
+                'last_scan_date' => null,
+                'total_subscriptions_found' => 0
+            ];
+        }
+    }
+    
+    /**
      * Test bank service configuration
      */
     public function testConfiguration() {
