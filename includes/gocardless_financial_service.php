@@ -113,18 +113,23 @@ class GoCardlessFinancialService {
         $country = $options['country'] ?? 'NL';
         $institutionId = $options['institution_id'] ?? null;
         
-        // If no institution specified, let GoCardless handle bank selection
-        // GoCardless will show their own bank selection UI to the user
+        // Validate that institution_id is provided
         if (!$institutionId) {
-            // We'll use a placeholder institution for the requisition creation
-            // GoCardless will handle the actual bank selection in their UI
-            $institutions = $this->getInstitutions($country);
-            if (empty($institutions)) {
-                throw new Exception("No banks available for country: $country");
+            throw new Exception("Institution ID is required. Please select a bank first.");
+        }
+        
+        // Validate that the institution exists for the country
+        $institutions = $this->getInstitutions($country);
+        $validInstitution = false;
+        foreach ($institutions as $institution) {
+            if ($institution['id'] === $institutionId) {
+                $validInstitution = true;
+                break;
             }
-            // Don't auto-select - let GoCardless handle it
-            // We'll create the requisition without specifying institution
-            $institutionId = null;
+        }
+        
+        if (!$validInstitution) {
+            throw new Exception("Invalid institution ID '$institutionId' for country '$country'");
         }
         
         try {
