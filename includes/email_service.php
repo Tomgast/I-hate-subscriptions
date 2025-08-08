@@ -163,7 +163,7 @@ class EmailService {
                             <div class='pricing-card featured'>
                                 <div style='font-size: 20px; margin-bottom: 10px;'>💎</div>
                                 <div class='price'>€25</div>
-                                <div class='price-label'>per year<br><small style="color: #059669; font-weight: 600;">Save 31%!</small></div>
+                                <div class='price-label'>per year<br><small style='color: #059669; font-weight: 600;'>Save 31%!</small></div>
                             </div>
                             <div class='pricing-card'>
                                 <div style='font-size: 20px; margin-bottom: 10px;'>🔍</div>
