@@ -6,62 +6,83 @@
 
 session_start();
 require_once 'includes/stripe-sdk.php';
+require_once 'config/secure_loader.php';
 
 echo "<h1>🔍 Stripe Financial Connections Debug</h1>";
 
 echo "<div style='background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;'>";
 echo "<strong>🎯 Purpose:</strong><br>";
-echo "Let's test different parameter combinations to find what actually works with Stripe Financial Connections.";
+echo "Let's test Stripe Financial Connections with a REAL customer (the proper way).";
 echo "</div>";
 
 // Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-echo "<h2>📋 Testing Different Parameter Combinations</h2>";
+echo "<h2>📋 Step 1: Create Test Customer</h2>";
 
+// First, create a test customer
+try {
+    $testCustomer = \Stripe\Customer::create([
+        'email' => 'test@123cashcontrol.com',
+        'name' => 'Test User',
+        'metadata' => [
+            'source' => 'financial_connections_debug'
+        ]
+    ]);
+    
+    echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; color: #155724; margin: 10px 0;'>";
+    echo "<strong>✅ Test Customer Created!</strong><br>";
+    echo "<strong>Customer ID:</strong> {$testCustomer->id}<br>";
+    echo "<strong>Email:</strong> {$testCustomer->email}<br>";
+    echo "</div>";
+    
+} catch (\Stripe\Exception\ApiErrorException $e) {
+    echo "<div style='background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; color: #721c24; margin: 10px 0;'>";
+    echo "<strong>❌ Failed to create test customer:</strong><br>";
+    echo "Error: " . $e->getMessage() . "<br>";
+    echo "This suggests your Stripe API keys might not be configured correctly.";
+    echo "</div>";
+    exit;
+}
+
+echo "<h2>📋 Step 2: Test Financial Connections with Real Customer</h2>";
+
+// Now test with the REAL customer ID (this is the correct approach)
 $testCases = [
     [
-        'name' => 'Test 1: Basic customer type (original approach)',
+        'name' => 'Test 1: Real Customer ID (CORRECT approach)',
         'params' => [
             'account_holder' => [
                 'type' => 'customer',
+                'customer' => $testCustomer->id  // Use the REAL customer ID
             ],
             'permissions' => ['payment_method', 'balances', 'transactions'],
             'return_url' => 'https://123cashcontrol.com/bank/stripe-callback.php'
         ]
     ],
     [
-        'name' => 'Test 2: Customer with email',
+        'name' => 'Test 2: Minimal permissions with real customer',
         'params' => [
             'account_holder' => [
                 'type' => 'customer',
-                'customer' => [
-                    'email' => 'test@example.com'
-                ]
-            ],
-            'permissions' => ['payment_method', 'balances', 'transactions'],
-            'return_url' => 'https://123cashcontrol.com/bank/stripe-callback.php'
-        ]
-    ],
-    [
-        'name' => 'Test 3: Account type with account ID',
-        'params' => [
-            'account_holder' => [
-                'type' => 'account',
-                'account' => 'acct_test123' // This would need to be your actual Stripe account ID
-            ],
-            'permissions' => ['payment_method', 'balances', 'transactions'],
-            'return_url' => 'https://123cashcontrol.com/bank/stripe-callback.php'
-        ]
-    ],
-    [
-        'name' => 'Test 4: Minimal required parameters only',
-        'params' => [
-            'account_holder' => [
-                'type' => 'customer',
+                'customer' => $testCustomer->id
             ],
             'permissions' => ['payment_method'],
+            'return_url' => 'https://123cashcontrol.com/bank/stripe-callback.php'
+        ]
+    ],
+    [
+        'name' => 'Test 3: All permissions with filters',
+        'params' => [
+            'account_holder' => [
+                'type' => 'customer',
+                'customer' => $testCustomer->id
+            ],
+            'permissions' => ['payment_method', 'balances', 'transactions'],
+            'filters' => [
+                'countries' => ['US', 'GB', 'NL', 'DE', 'FR']
+            ],
             'return_url' => 'https://123cashcontrol.com/bank/stripe-callback.php'
         ]
     ]
@@ -148,6 +169,20 @@ echo "<li>Test the full flow end-to-end</li>";
 echo "<li>Ensure it works consistently</li>";
 echo "</ol>";
 echo "</div>";
+
+// Cleanup: Delete the test customer
+echo "<h2>🧹 Cleanup</h2>";
+try {
+    $testCustomer->delete();
+    echo "<div style='background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; color: #155724; margin: 10px 0;'>";
+    echo "<strong>✅ Test customer deleted successfully</strong><br>";
+    echo "Customer ID {$testCustomer->id} has been removed from your Stripe account.";
+    echo "</div>";
+} catch (\Stripe\Exception\ApiErrorException $e) {
+    echo "<div style='background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; color: #856404; margin: 10px 0;'>";
+    echo "<strong>⚠️ Note:</strong> Could not delete test customer: " . $e->getMessage();
+    echo "</div>";
+}
 
 echo "<div style='margin: 20px 0;'>";
 echo "<a href='bank/stripe-scan.php' style='background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Back to Bank Scan</a>";
