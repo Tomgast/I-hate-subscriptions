@@ -14,11 +14,13 @@ if ($_POST) {
             $pdo = getDBConnection();
             
             // Get user by email
-            $stmt = $pdo->prepare("SELECT id, email, name, password_hash, is_pro FROM users WHERE email = ?");
+            $stmt = $pdo->prepare("SELECT id, email, name, subscription_type, subscription_status FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
-            if ($user && password_verify($password, $user['password_hash'])) {
+            // Note: Password authentication removed - using Google OAuth only
+            // This signin form is kept for legacy purposes but should redirect to Google OAuth
+            if ($user) {
                 // Create session
                 $sessionToken = bin2hex(random_bytes(32));
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));

@@ -26,11 +26,9 @@ if ($_POST) {
             if ($stmt->fetch()) {
                 $error = "An account with this email already exists.";
             } else {
-                // Create new user with basic plan (they'll choose plan after signup)
-                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                
-                $stmt = $pdo->prepare("INSERT INTO users (email, name, password_hash, subscription_type, status) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$email, $name, $hashedPassword, 'monthly', 'active']);
+                // Create new user with free plan (they'll upgrade later)
+                $stmt = $pdo->prepare("INSERT INTO users (email, name, subscription_type, subscription_status) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$email, $name, 'free', 'active']);
                 
                 $userId = $pdo->lastInsertId();
                 

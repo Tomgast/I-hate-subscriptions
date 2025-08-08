@@ -51,9 +51,9 @@ if (isset($_GET['code'])) {
                     // User exists, log them in
                     $user_id = $existing_user['id'];
                 } else {
-                    // Create new user
-                    $stmt = $pdo->prepare("INSERT INTO users (email, name, google_id, is_pro, created_at) VALUES (?, ?, ?, 0, NOW())");
-                    $stmt->execute([$user_info['email'], $user_info['name'], $user_info['id']]);
+                    // Create new user with free plan
+                    $stmt = $pdo->prepare("INSERT INTO users (email, name, google_id, subscription_type, subscription_status) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$user_info['email'], $user_info['name'], $user_info['id'], 'free', 'active']);
                     $user_id = $pdo->lastInsertId();
                 }
                 
