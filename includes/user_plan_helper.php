@@ -36,7 +36,7 @@ class UserPlanHelper {
             if (!$user) {
                 return [
                     'exists' => false,
-                    'plan_type' => 'free',
+                    'plan_type' => 'none',
                     'status' => 'inactive',
                     'is_paid' => false,
                     'expires_at' => null,
@@ -46,7 +46,7 @@ class UserPlanHelper {
             }
             
             // Analyze subscription data
-            $subscriptionType = $user['subscription_type'] ?? 'free';
+            $subscriptionType = $user['subscription_type'] ?? 'none';
             $subscriptionStatus = $user['subscription_status'] ?? 'inactive';
             $expiresAt = $user['subscription_expires_at'];
             
@@ -87,7 +87,7 @@ class UserPlanHelper {
                 'is_expired' => $isExpired,
                 'stripe_customer_id' => $user['stripe_customer_id'],
                 'created_at' => $user['created_at'],
-                'display_status' => $isPaid ? 'Pro' : 'Free',
+                'display_status' => $isPaid ? self::getPlanDisplayName($subscriptionType, $isPaid) : 'Unpaid',
                 'plan_display' => self::getPlanDisplayName($subscriptionType, $isPaid)
             ];
             
@@ -95,7 +95,7 @@ class UserPlanHelper {
             error_log("Error getting user plan status: " . $e->getMessage());
             return [
                 'exists' => false,
-                'plan_type' => 'free',
+                'plan_type' => 'none',
                 'status' => 'error',
                 'is_paid' => false,
                 'expires_at' => null,
@@ -113,7 +113,7 @@ class UserPlanHelper {
      */
     private static function getPlanDisplayName($planType, $isPaid) {
         if (!$isPaid) {
-            return 'Free Plan';
+            return 'No Active Plan';
         }
         
         switch ($planType) {
@@ -124,7 +124,7 @@ class UserPlanHelper {
             case 'one_time':
                 return 'One-Time Scan';
             default:
-                return 'Free Plan';
+                return 'Unknown Plan';
         }
     }
     
@@ -158,13 +158,13 @@ class UserPlanHelper {
     }
     
     /**
-     * Check if user can access upgrade page (should be free users only)
+     * Check if user can access upgrade page (should be unpaid users only)
      * @param int $userId User ID
      * @return bool Can access upgrade
      */
     public static function canAccessUpgrade($userId) {
         $planStatus = self::getUserPlanStatus($userId);
-        return !$planStatus['is_paid']; // Only free users should see upgrade page
+        return !$planStatus['is_paid']; // Only unpaid users should see upgrade page
     }
     
     /**
@@ -176,7 +176,7 @@ class UserPlanHelper {
         $planStatus = self::getUserPlanStatus($userId);
         
         if (!$planStatus['is_paid']) {
-            return 'dashboard.php'; // Free users get basic dashboard
+            return 'upgrade.php'; // Unpaid users must upgrade first
         }
         
         switch ($planStatus['plan_type']) {

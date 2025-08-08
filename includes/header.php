@@ -88,9 +88,24 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-700">Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>
                 <?php if (!($_SESSION['is_paid'] ?? false)): ?>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium">Basic</span>
+                    <span class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-medium">No Plan</span>
                 <?php else: ?>
-                    <span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Pro</span>
+                    <?php 
+                    $planType = $_SESSION['subscription_type'] ?? 'unknown';
+                    switch($planType) {
+                        case 'monthly':
+                            echo '<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs font-medium">Monthly</span>';
+                            break;
+                        case 'yearly':
+                            echo '<span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Yearly</span>';
+                            break;
+                        case 'one_time':
+                            echo '<span class="bg-purple-100 text-purple-600 px-2 py-1 rounded text-xs font-medium">One-Time</span>';
+                            break;
+                        default:
+                            echo '<span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Pro</span>';
+                    }
+                    ?>
                 <?php endif; ?>
                 <a href="<?php echo $basePath; ?>auth/logout.php" class="text-gray-500 hover:text-red-500 transition-colors duration-200" title="Logout">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

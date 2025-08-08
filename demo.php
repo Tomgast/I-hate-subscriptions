@@ -459,5 +459,127 @@ session_start();
         </div>
     </section>
 
+    <!-- Upgrade Call-to-Action Section -->
+    <section class="py-20 bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden">
+        <div class="absolute inset-0 bg-white/50"></div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="mb-8">
+                <div class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Ready to take control?
+                </div>
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Start Managing Your Subscriptions 
+                    <span class="text-green-600">Professionally</span>
+                </h2>
+                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                    This demo shows just a glimpse of CashControl's power. Get full access to bank integration, 
+                    smart analytics, automated reminders, and professional reporting tools.
+                </p>
+            </div>
+
+            <!-- Pricing Cards Mini -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+                    <div class="text-3xl mb-3">📅</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Monthly</h3>
+                    <div class="text-3xl font-bold text-green-600 mb-3">€3<span class="text-lg text-gray-500">/month</span></div>
+                    <p class="text-gray-600 text-sm mb-4">Perfect for trying Pro features</p>
+                    <a href="auth/signin.php" class="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium">
+                        Get Started
+                    </a>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg border-2 border-green-500 p-6 hover:shadow-xl transition-shadow duration-300 relative">
+                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
+                    </div>
+                    <div class="text-3xl mb-3">🎯</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Yearly</h3>
+                    <div class="text-3xl font-bold text-green-600 mb-3">€25<span class="text-lg text-gray-500">/year</span></div>
+                    <p class="text-gray-600 text-sm mb-4">Best value - 2 months free!</p>
+                    <a href="auth/signin.php" class="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium">
+                        Get Started
+                    </a>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+                    <div class="text-3xl mb-3">⚡</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">One-Time</h3>
+                    <div class="text-3xl font-bold text-purple-600 mb-3">€25<span class="text-lg text-gray-500">/scan</span></div>
+                    <p class="text-gray-600 text-sm mb-4">Single bank scan + dashboard</p>
+                    <a href="auth/signin.php" class="block w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+
+            <!-- Key Benefits -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-8 mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6">Why Choose CashControl?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-1">No Free Tier Limitations</h4>
+                            <p class="text-gray-600 text-sm">All plans include full professional features - no artificial restrictions</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-1">Bank-Grade Security</h4>
+                            <p class="text-gray-600 text-sm">Your financial data is protected with enterprise-level encryption</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-1">Smart Analytics</h4>
+                            <p class="text-gray-600 text-sm">AI-powered insights to optimize your subscription spending</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-1">Automated Reminders</h4>
+                            <p class="text-gray-600 text-sm">Never miss a renewal or cancellation deadline again</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final CTA -->
+            <div class="text-center">
+                <p class="text-gray-600 mb-6">Join professionals who've taken control of their subscriptions</p>
+                <a href="auth/signin.php" class="inline-flex items-center px-8 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 font-semibold text-lg shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                    Start Your Professional Journey
+                </a>
+                <p class="text-sm text-gray-500 mt-4">✨ Setup takes less than 2 minutes</p>
+            </div>
+        </div>
+    </section>
+
 </body>
 </html>

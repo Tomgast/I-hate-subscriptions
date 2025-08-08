@@ -13,6 +13,9 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
 
+// Check if this is a welcome flow for new users
+$isWelcome = isset($_GET['welcome']) && $_GET['welcome'] == '1';
+
 // Get user's current plan
 $planManager = getPlanManager();
 $userPlan = $planManager->getUserPlan($userId);
@@ -53,7 +56,15 @@ if ($userPlan && $userPlan['is_active']) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Hero Section -->
         <div class="text-center mb-12">
-            <?php if ($currentPlan): ?>
+            <?php if ($isWelcome): ?>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Welcome to <span class="gradient-text">CashControl</span>, <?php echo htmlspecialchars($userName); ?>!
+            </h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-4">Your account has been created successfully. Choose a plan to start tracking your subscriptions professionally.</p>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
+                <p class="text-blue-800 text-sm">💡 <strong>No free tier:</strong> All plans include full access to professional features. Choose the option that works best for you.</p>
+            </div>
+            <?php elseif ($currentPlan): ?>
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Upgrade Your <span class="gradient-text">CashControl Plan</span>
             </h1>

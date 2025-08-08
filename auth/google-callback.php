@@ -51,9 +51,9 @@ if (isset($_GET['code'])) {
                     // User exists, log them in
                     $user_id = $existing_user['id'];
                 } else {
-                    // Create new user with free plan
+                    // Create new user without active plan (they must upgrade to access features)
                     $stmt = $pdo->prepare("INSERT INTO users (email, name, google_id, subscription_type, subscription_status) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$user_info['email'], $user_info['name'], $user_info['id'], 'free', 'active']);
+                    $stmt->execute([$user_info['email'], $user_info['name'], $user_info['id'], 'none', 'inactive']);
                     $user_id = $pdo->lastInsertId();
                 }
                 
@@ -71,7 +71,10 @@ if (isset($_GET['code'])) {
                 $_SESSION['is_paid'] = $existing_user['is_pro'] ?? 0;
                 $_SESSION['session_token'] = $sessionToken;
                 
-                header('Location: ../dashboard.php');
+                // Route based on user plan status using helper
+                require_once '../includes/user_plan_helper.php';
+                $dashboardUrl = UserPlanHelper::getDashboardUrl($user_id);
+                header('Location: ../' . $dashboardUrl);
                 exit;
             } catch (Exception $e) {
                 error_log("Google OAuth error: " . $e->getMessage());

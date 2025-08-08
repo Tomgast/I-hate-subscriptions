@@ -26,9 +26,9 @@ if ($_POST) {
             if ($stmt->fetch()) {
                 $error = "An account with this email already exists.";
             } else {
-                // Create new user with free plan (they'll upgrade later)
+                // Create new user without active plan (they must upgrade to access features)
                 $stmt = $pdo->prepare("INSERT INTO users (email, name, subscription_type, subscription_status) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$email, $name, 'free', 'active']);
+                $stmt->execute([$email, $name, 'none', 'inactive']);
                 
                 $userId = $pdo->lastInsertId();
                 
@@ -37,11 +37,11 @@ if ($_POST) {
                 $_SESSION['user_email'] = $email;
                 $_SESSION['user_name'] = $name;
                 $_SESSION['is_paid'] = false;
-                $_SESSION['subscription_type'] = 'free';
+                $_SESSION['subscription_type'] = 'none';
                 $_SESSION['user_status'] = 'inactive';
                 
-                // Redirect to dashboard
-                header('Location: ../dashboard.php');
+                // Redirect to upgrade page (no free access)
+                header('Location: ../upgrade.php?welcome=1');
                 exit;
             }
         } catch (PDOException $e) {

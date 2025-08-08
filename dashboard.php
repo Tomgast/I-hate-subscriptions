@@ -29,8 +29,9 @@ if ($userPlan['plan_type'] === 'one_time' && $userPlan['is_paid']) {
     // Subscription users get full dashboard - continue with current page
     $isPaid = true;
 } else {
-    // Free users or users without active plan get basic dashboard
-    $isPaid = false;
+    // Unpaid users must upgrade first - no free access
+    header('Location: upgrade.php');
+    exit;
 }
 
 // Handle form submissions

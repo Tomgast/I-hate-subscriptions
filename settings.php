@@ -13,9 +13,15 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $userEmail = $_SESSION['user_email'] ?? '';
 
-// Get user's current plan
+// Get user's current plan and enforce paid access
 $planManager = getPlanManager();
 $userPlan = $planManager->getUserPlan($userId);
+
+// Enforce paid-only access to settings
+if (!$userPlan || !$userPlan['is_active']) {
+    header('Location: upgrade.php?reason=settings_access');
+    exit;
+}
 
 // Handle form submission
 if ($_POST) {

@@ -13,6 +13,12 @@ $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
 $isPaid = $_SESSION['is_paid'] ?? false;
 
+// Enforce paid-only access to analytics
+if (!$isPaid) {
+    header('Location: upgrade.php?reason=analytics_access');
+    exit;
+}
+
 $subscriptionManager = new SubscriptionManager();
 
 // Get analytics data
