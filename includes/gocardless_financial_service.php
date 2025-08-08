@@ -109,7 +109,24 @@ class GoCardlessFinancialService {
     /**
      * Create bank connection session (equivalent to Stripe's createBankConnectionSession)
      */
-    public function createBankConnectionSession($userId, $country = 'NL', $institutionId = null) {
+    public function createBankConnectionSession($userId, $options = []) {
+        $country = $options['country'] ?? 'NL';
+        $institutionId = $options['institution_id'] ?? null;
+        
+        // If no institution specified, let GoCardless handle bank selection
+        // GoCardless will show their own bank selection UI to the user
+        if (!$institutionId) {
+            // We'll use a placeholder institution for the requisition creation
+            // GoCardless will handle the actual bank selection in their UI
+            $institutions = $this->getInstitutions($country);
+            if (empty($institutions)) {
+                throw new Exception("No banks available for country: $country");
+            }
+            // Don't auto-select - let GoCardless handle it
+            // We'll create the requisition without specifying institution
+            $institutionId = null;
+        }
+        
         try {
             // Get user info
             $stmt = $this->pdo->prepare("SELECT email, name FROM users WHERE id = ?");
@@ -118,15 +135,6 @@ class GoCardlessFinancialService {
             
             if (!$user) {
                 throw new Exception('User not found');
-            }
-            
-            // If no institution specified, get the first available one for the country
-            if (!$institutionId) {
-                $institutions = $this->getInstitutions($country);
-                if (empty($institutions)) {
-                    throw new Exception('No banks available for country: ' . $country);
-                }
-                $institutionId = $institutions[0]['id'];
             }
             
             // Create end user agreement

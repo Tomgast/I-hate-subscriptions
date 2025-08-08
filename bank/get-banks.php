@@ -1,0 +1,71 @@
+<?php
+/**
+ * Get Banks for Country - GoCardless Integration
+ * Fetches available banks for a specific country via GoCardless API
+ */
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors in JSON response
+
+try {
+    // Get country parameter
+    $country = $_GET['country'] ?? '';
+    
+    if (empty($country)) {
+        throw new Exception('Country parameter is required');
+    }
+    
+    // Validate country code (2-letter ISO code)
+    if (strlen($country) !== 2) {
+        throw new Exception('Invalid country code format');
+    }
+    
+    // Include GoCardless service
+    require_once '../includes/gocardless_financial_service.php';
+    
+    // Initialize GoCardless service
+    $goCardlessService = new GoCardlessFinancialService();
+    
+    // Get institutions for the country
+    $institutions = $goCardlessService->getInstitutions($country);
+    
+    // Format response for frontend
+    $banks = [];
+    foreach ($institutions as $institution) {
+        $banks[] = [
+            'id' => $institution['id'],
+            'name' => $institution['name'],
+            'bic' => $institution['bic'] ?? '',
+            'logo' => $institution['logo'] ?? '',
+            'countries' => $institution['countries'] ?? [$country],
+            'transaction_total_days' => $institution['transaction_total_days'] ?? 90
+        ];
+    }
+    
+    // Sort banks alphabetically by name
+    usort($banks, function($a, $b) {
+        return strcmp($a['name'], $b['name']);
+    });
+    
+    // Return JSON response
+    echo json_encode($banks, JSON_PRETTY_PRINT);
+    
+} catch (Exception $e) {
+    // Log error for debugging
+    error_log("Get Banks Error: " . $e->getMessage());
+    
+    // Return error response
+    http_response_code(500);
+    echo json_encode([
+        'error' => true,
+        'message' => $e->getMessage(),
+        'banks' => []
+    ], JSON_PRETTY_PRINT);
+}
+?>

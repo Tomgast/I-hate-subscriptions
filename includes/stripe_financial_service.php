@@ -90,13 +90,17 @@ class StripeFinancialService {
             // Store session in database
             $stmt = $this->pdo->prepare("
                 INSERT INTO bank_connection_sessions 
-                (user_id, stripe_session_id, session_url, status, created_at) 
-                VALUES (?, ?, ?, 'created', NOW())
+                (user_id, session_id, provider, status, session_data, created_at) 
+                VALUES (?, ?, 'stripe', 'pending', ?, NOW())
             ");
             $stmt->execute([
                 $userId,
                 $session->id,
-                $session->hosted_auth_url
+                json_encode([
+                    'hosted_auth_url' => $session->hosted_auth_url,
+                    'client_secret' => $session->client_secret ?? null,
+                    'stripe_session_id' => $session->id
+                ])
             ]);
             
             return [

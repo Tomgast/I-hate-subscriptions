@@ -171,6 +171,33 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
             background: #007bff;
             color: white;
         }
+        .bank-btn {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            height: 100%;
+        }
+        .bank-btn:hover {
+            border-color: #007bff;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+        }
+        .bank-btn.selected {
+            border-color: #007bff;
+            background: #007bff;
+            color: white;
+        }
+        .bank-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
         .status-badge {
             padding: 5px 15px;
             border-radius: 20px;
@@ -248,6 +275,7 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                         
                         <form method="POST" id="scanForm">
                             <input type="hidden" name="action" value="start_scan">
+                            <input type="hidden" name="institution_id" id="institutionId" value="">
                             <input type="hidden" name="provider" id="selectedProvider">
                             <input type="hidden" name="country" id="selectedCountry">
                             
@@ -324,25 +352,52 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                                     </div>
                                 </div>
                                 
-                                <!-- Country Selection for GoCardless -->
-                                <div id="countrySelection" style="display: none;">
-                                    <hr class="my-3">
-                                    <h6 class="mb-3">Select Your Country</h6>
+                                <!-- EU Banks Section -->
+                                <div id="euBanksSection" style="display: none;">
+                                    <h4 class="text-center mb-4">
+                                        <i class="fas fa-university text-primary me-2"></i>
+                                        European Banks
+                                    </h4>
+                                    <p class="text-center text-muted mb-4">Select your country to see available banks</p>
+                                    
                                     <div class="country-grid">
-                                        <div class="country-btn" data-country="NL">🇳🇱 Netherlands</div>
-                                        <div class="country-btn" data-country="DE">🇩🇪 Germany</div>
-                                        <div class="country-btn" data-country="FR">🇫🇷 France</div>
-                                        <div class="country-btn" data-country="ES">🇪🇸 Spain</div>
-                                        <div class="country-btn" data-country="IT">🇮🇹 Italy</div>
-                                        <div class="country-btn" data-country="GB">🇬🇧 UK</div>
-                                        <div class="country-btn" data-country="BE">🇧🇪 Belgium</div>
-                                        <div class="country-btn" data-country="AT">🇦🇹 Austria</div>
-                                        <div class="country-btn" data-country="PT">🇵🇹 Portugal</div>
-                                        <div class="country-btn" data-country="IE">🇮🇪 Ireland</div>
-                                        <div class="country-btn" data-country="FI">🇫🇮 Finland</div>
-                                        <div class="country-btn" data-country="DK">🇩🇰 Denmark</div>
-                                        <div class="country-btn" data-country="SE">🇸🇪 Sweden</div>
-                                        <div class="country-btn" data-country="NO">🇳🇴 Norway</div>
+                                        <div class="country-btn" data-country="NL">
+                                            <div class="fw-bold">🇳🇱 Netherlands</div>
+                                            <small class="text-muted">ING, ABN AMRO, Rabobank</small>
+                                        </div>
+                                        <div class="country-btn" data-country="DE">
+                                            <div class="fw-bold">🇩🇪 Germany</div>
+                                            <small class="text-muted">Deutsche Bank, Commerzbank</small>
+                                        </div>
+                                        <div class="country-btn" data-country="FR">
+                                            <div class="fw-bold">🇫🇷 France</div>
+                                            <small class="text-muted">BNP Paribas, Crédit Agricole</small>
+                                        </div>
+                                        <div class="country-btn" data-country="ES">
+                                            <div class="fw-bold">🇪🇸 Spain</div>
+                                            <small class="text-muted">Santander, BBVA</small>
+                                        </div>
+                                        <div class="country-btn" data-country="IT">
+                                            <div class="fw-bold">🇮🇹 Italy</div>
+                                            <small class="text-muted">UniCredit, Intesa Sanpaolo</small>
+                                        </div>
+                                        <div class="country-btn" data-country="GB">
+                                            <div class="fw-bold">🇬🇧 United Kingdom</div>
+                                            <small class="text-muted">Barclays, HSBC, Lloyds</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Bank Selection (shown after country selection) -->
+                                    <div id="bankSelection" style="display: none; margin-top: 30px;">
+                                        <h5 class="text-center mb-3">Choose Your Bank</h5>
+                                        <div id="bankGrid" class="row g-3"></div>
+                                    </div>
+                                    
+                                    <div class="text-center mt-4">
+                                        <button type="submit" class="btn btn-primary btn-lg px-5" id="connectEuBtn" disabled>
+                                            <i class="fas fa-link me-2"></i>
+                                            Connect European Bank
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -416,24 +471,89 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 
                 // Show/hide country selection
                 if (provider === 'gocardless') {
-                    countrySelection.style.display = 'block';
+                    document.getElementById('euBanksSection').style.display = 'block';
                     updateConnectButton();
                 } else {
-                    countrySelection.style.display = 'none';
+                    document.getElementById('euBanksSection').style.display = 'none';
                     selectedCountryInput.value = '';
                     connectBtn.disabled = false;
                 }
             }
             
-            // Country selection
-            countryButtons.forEach(btn => {
+            // Country selection for EU banks
+            document.querySelectorAll('.country-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    countryButtons.forEach(b => b.classList.remove('selected'));
+                    // Remove selected class from all country buttons
+                    document.querySelectorAll('.country-btn').forEach(b => b.classList.remove('selected'));
+                    
+                    // Add selected class to clicked button
                     this.classList.add('selected');
-                    selectedCountryInput.value = this.dataset.country;
-                    updateConnectButton();
+                    
+                    // Set the selected country
+                    const country = this.dataset.country;
+                    document.getElementById('selectedCountry').value = country;
+                    
+                    // Load banks for selected country
+                    loadBanksForCountry(country);
                 });
             });
+            
+            // Function to load banks for a country
+            async function loadBanksForCountry(country) {
+                const bankGrid = document.getElementById('bankGrid');
+                const bankSelection = document.getElementById('bankSelection');
+                
+                // Show loading
+                bankGrid.innerHTML = '<div class="col-12 text-center"><i class="fas fa-spinner fa-spin"></i> Loading banks...</div>';
+                bankSelection.style.display = 'block';
+                
+                try {
+                    const response = await fetch('get-banks.php?country=' + country);
+                    const banks = await response.json();
+                    
+                    if (banks.length === 0) {
+                        bankGrid.innerHTML = '<div class="col-12 text-center text-muted">No banks available for this country</div>';
+                        return;
+                    }
+                    
+                    // Display banks
+                    bankGrid.innerHTML = '';
+                    banks.forEach(bank => {
+                        const bankDiv = document.createElement('div');
+                        bankDiv.className = 'col-md-4 col-sm-6';
+                        bankDiv.innerHTML = `
+                            <div class="bank-btn" data-institution-id="${bank.id}">
+                                <img src="${bank.logo}" alt="${bank.name}" class="bank-logo" onerror="this.style.display='none'">
+                                <div class="fw-bold">${bank.name}</div>
+                                <small class="text-muted">${bank.bic || ''}</small>
+                            </div>
+                        `;
+                        bankGrid.appendChild(bankDiv);
+                    });
+                    
+                    // Add click handlers for bank selection
+                    document.querySelectorAll('.bank-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            // Remove selected class from all bank buttons
+                            document.querySelectorAll('.bank-btn').forEach(b => b.classList.remove('selected'));
+                            
+                            // Add selected class to clicked button
+                            this.classList.add('selected');
+                            
+                            // Set the selected institution ID
+                            const institutionId = this.dataset.institutionId;
+                            document.getElementById('institutionId').value = institutionId;
+                            
+                            // Enable the connect button
+                            document.getElementById('connectEuBtn').disabled = false;
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading banks:', error);
+                    bankGrid.innerHTML = '<div class="col-12 text-center text-danger">Error loading banks. Please try again.</div>';
+                }
+            }
             
             function updateConnectButton() {
                 const provider = selectedProviderInput.value;
