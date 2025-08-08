@@ -253,7 +253,7 @@ $categories = [
                 <?php if ($isPaid): ?>
                     <p>You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!</p>
                 <?php else: ?>
-                    <p>You're on the <span class="text-gray-700 font-semibold">Free Plan</span> - manage your subscriptions with ease</p>
+                    <p>You're on the <span class="text-gray-700 font-semibold">Basic Plan</span> - manage your subscriptions with ease</p>
                 <a href="upgrade.php" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                     Upgrade to Pro for Bank Integration
                 </a>

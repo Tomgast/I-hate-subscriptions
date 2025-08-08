@@ -60,7 +60,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                     Sign In
                 </a>
                 <a href="<?php echo $basePath; ?>auth/signup.php" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
-                    Start Free
+                    Get Started
                 </a>
             </div>
             <?php else: ?>
@@ -88,7 +88,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-700">Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>
                 <?php if (!($_SESSION['is_paid'] ?? false)): ?>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium">Free</span>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium">Basic</span>
                 <?php else: ?>
                     <span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium">Pro</span>
                 <?php endif; ?>

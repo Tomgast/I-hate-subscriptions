@@ -32,27 +32,21 @@ if ($_POST) {
             if ($stmt->fetch()) {
                 $error = "An account with this email already exists.";
             } else {
-                // Create new user
+                // Create new user with basic plan (they'll choose plan after signup)
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 
-                $stmt = $pdo->prepare("INSERT INTO users (email, name, password_hash, is_pro) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$email, $name, $hashedPassword, false]);
+                $stmt = $pdo->prepare("INSERT INTO users (email, name, password_hash, subscription_type, status) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$email, $name, $hashedPassword, 'monthly', 'active']);
                 
                 $userId = $pdo->lastInsertId();
                 
-                // Create session
-                $sessionToken = bin2hex(random_bytes(32));
-                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
-                
-                $stmt = $pdo->prepare("INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)");
-                $stmt->execute([$userId, $sessionToken, $expiresAt]);
-                
-                // Set session variables
+                // Set session variables (using PHP sessions only)
                 $_SESSION['user_id'] = $userId;
                 $_SESSION['user_email'] = $email;
                 $_SESSION['user_name'] = $name;
                 $_SESSION['is_paid'] = false;
-                $_SESSION['session_token'] = $sessionToken;
+                $_SESSION['subscription_type'] = 'monthly';
+                $_SESSION['user_status'] = 'active';
                 
                 // Redirect to dashboard
                 header('Location: ../dashboard.php');
@@ -60,10 +54,12 @@ if ($_POST) {
             }
         } catch (PDOException $e) {
             error_log("Signup PDO error: " . $e->getMessage());
+            error_log("PDO Error Code: " . $e->getCode());
+            error_log("PDO Error Info: " . print_r($e->errorInfo, true));
             if ($e->getCode() == 23000) {
                 $error = "An account with this email already exists. Please try signing in instead.";
             } else {
-                $error = "Database error occurred. Please try again later.";
+                $error = "Database error occurred. Please try again later. (Error: " . $e->getMessage() . ")";
             }
         } catch (Exception $e) {
             error_log("Signup error: " . $e->getMessage());
@@ -215,7 +211,7 @@ if ($_POST) {
                             <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span class="text-sm text-green-700 font-medium">Free account includes unlimited manual subscription tracking</span>
+                            <span class="text-sm text-green-700 font-medium">Choose your plan after account creation - Monthly €3, Yearly €25, or One-time €25</span>
                         </div>
                     </div>
 
@@ -226,7 +222,7 @@ if ($_POST) {
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                         </svg>
-                        Create Free Account
+                        Create Account
                     </button>
                 </form>
 
@@ -265,7 +261,7 @@ if ($_POST) {
                 </div>
                 
                 <div class="text-xs text-gray-400">
-                    🔒 Your data is secure and encrypted • 🆓 Always free to start
+                    🔒 Your data is secure and encrypted • 💳 Choose your plan after signup
                 </div>
             </div>
         </div>
