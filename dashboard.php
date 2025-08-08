@@ -33,17 +33,20 @@ if (!$userPlan || !$userPlan['is_active']) {
 }
 
 // Route to appropriate dashboard based on plan type
-if ($userPlan['plan_type'] === 'onetime') {
+if ($userPlan['plan_type'] === 'one_time') {
     // One-time users get limited dashboard
     header('Location: dashboard-onetime.php');
     exit;
 } elseif (in_array($userPlan['plan_type'], ['monthly', 'yearly'])) {
     // Subscription users get full dashboard - continue with current page
     $isPaid = true; // Legacy compatibility
+} elseif (in_array($userPlan['plan_type'], ['free', null, '']) || !$userPlan['plan_type']) {
+    // Free users or users without a plan get basic dashboard
+    $isPaid = false;
 } else {
-    // Unknown plan type - redirect to upgrade
-    header('Location: upgrade.php?reason=unknown_plan');
-    exit;
+    // Log unknown plan type for debugging but don't redirect
+    error_log("Unknown plan type for user {$_SESSION['user_id']}: " . ($userPlan['plan_type'] ?? 'null'));
+    $isPaid = false; // Default to free user experience
 }
 
 // Handle form submissions
