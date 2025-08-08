@@ -9,14 +9,17 @@ class DatabaseHelper {
     private static $config = null;
     
     /**
-     * Load secure configuration
+     * Load secure configuration using global secure loader
      */
     private static function loadConfig() {
         if (self::$config === null) {
-            $configPath = dirname(__DIR__) . '/secure-config.php';
-            if (file_exists($configPath)) {
-                self::$config = require $configPath;
-            } else {
+            // Use the global getSecureConfig function that handles path resolution correctly
+            if (!function_exists('getSecureConfig')) {
+                require_once __DIR__ . '/../config/secure_loader.php';
+            }
+            self::$config = getSecureConfig();
+            
+            if (empty(self::$config)) {
                 throw new Exception('Secure configuration file not found. Please create secure-config.php');
             }
         }
