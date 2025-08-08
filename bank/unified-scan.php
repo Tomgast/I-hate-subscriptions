@@ -400,11 +400,29 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                                 </div>
                             </div>
                             
+                            <!-- US Banks Section (shown when Stripe is selected) -->
+                            <div id="usBanksSection" style="display: none; margin-top: 30px;">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <div class="provider-flag" style="font-size: 3rem;">🇺🇸</div>
+                                        </div>
+                                        <h5 class="card-title">Connect US Bank Account</h5>
+                                        <p class="card-text text-muted">
+                                            You'll be redirected to Stripe Financial Connections to securely link your US bank account.
+                                            This service supports thousands of US banks and credit unions.
+                                        </p>
+                                        <div class="text-center mt-4">
+                                            <button type="submit" class="btn btn-primary btn-lg px-5" id="connectUsBtn">
+                                                <i class="fas fa-link me-2"></i>
+                                                Connect American Bank
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg" id="connectBtn" disabled>
-                                    <i class="fas fa-link me-2"></i>
-                                    Connect Bank Account
-                                </button>
                                 <a href="../dashboard.php" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-2"></i>
                                     Back to Dashboard
@@ -424,7 +442,8 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
             const providerRadios = document.querySelectorAll('input[name="provider_radio"]');
             const countrySelection = document.getElementById('countrySelection');
             const countryButtons = document.querySelectorAll('.country-btn');
-            const connectBtn = document.getElementById('connectBtn');
+            const connectUsBtn = document.getElementById('connectUsBtn');
+            const connectEuBtn = document.getElementById('connectEuBtn');
             const selectedProviderInput = document.getElementById('selectedProvider');
             const selectedCountryInput = document.getElementById('selectedCountry');
             
@@ -463,25 +482,21 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 if (provider === 'gocardless') {
                     // Show EU banks section for country/bank selection
                     document.getElementById('euBanksSection').style.display = 'block';
+                    document.getElementById('usBanksSection').style.display = 'none';
                     // Load countries immediately when EU section is shown
                     setTimeout(() => loadAllCountries(), 100); // Small delay to ensure DOM is ready
                     updateConnectButton();
                 } else if (provider === 'stripe') {
-                    // Hide EU banks section and connect to Stripe
+                    // Show US banks section and hide EU banks section
                     document.getElementById('euBanksSection').style.display = 'none';
+                    document.getElementById('usBanksSection').style.display = 'block';
                     selectedCountryInput.value = '';
-                    
-                    // Show visual feedback and then submit form for Stripe connection
-                    console.log('Connecting to Stripe Financial Connections...');
-                    
-                    // Add a brief delay to show the selection visually before submitting
-                    setTimeout(() => {
-                        document.getElementById('scanForm').submit();
-                    }, 300); // 300ms delay to show selection
+                    updateConnectButton();
                 } else {
+                    // Hide both sections
                     document.getElementById('euBanksSection').style.display = 'none';
+                    document.getElementById('usBanksSection').style.display = 'none';
                     selectedCountryInput.value = '';
-                    connectBtn.disabled = false;
                 }
             }
             
@@ -701,11 +716,17 @@ $connectionStatus = $providerRouter->getUnifiedConnectionStatus($userId);
                 const country = selectedCountryInput.value;
                 
                 if (provider === 'stripe') {
-                    connectBtn.disabled = false;
+                    // Enable US connect button (always ready for Stripe)
+                    if (connectUsBtn) connectUsBtn.disabled = false;
+                    if (connectEuBtn) connectEuBtn.disabled = true;
                 } else if (provider === 'gocardless') {
-                    connectBtn.disabled = !country;
+                    // Enable EU connect button only when country is selected
+                    if (connectUsBtn) connectUsBtn.disabled = true;
+                    if (connectEuBtn) connectEuBtn.disabled = !country;
                 } else {
-                    connectBtn.disabled = true;
+                    // Disable both buttons when no provider selected
+                    if (connectUsBtn) connectUsBtn.disabled = true;
+                    if (connectEuBtn) connectEuBtn.disabled = true;
                 }
             }
         });
