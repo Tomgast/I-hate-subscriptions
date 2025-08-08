@@ -40,6 +40,15 @@ if ($_POST) {
                 $_SESSION['subscription_type'] = 'none';
                 $_SESSION['user_status'] = 'inactive';
                 
+                // Send welcome email
+                try {
+                    require_once '../includes/email_service.php';
+                    $emailService = new EmailService();
+                    $emailService->sendWelcomeEmail($email, $name);
+                } catch (Exception $e) {
+                    error_log("Welcome email error: " . $e->getMessage());
+                }
+                
                 // Redirect to upgrade page (no free access)
                 header('Location: ../upgrade.php?welcome=1');
                 exit;

@@ -50,11 +50,22 @@ if (isset($_GET['code'])) {
                 if ($existing_user) {
                     // User exists, log them in
                     $user_id = $existing_user['id'];
+                    $isNewUser = false;
                 } else {
                     // Create new user without active plan (they must upgrade to access features)
                     $stmt = $pdo->prepare("INSERT INTO users (email, name, google_id, subscription_type, subscription_status) VALUES (?, ?, ?, ?, ?)");
                     $stmt->execute([$user_info['email'], $user_info['name'], $user_info['id'], 'none', 'inactive']);
                     $user_id = $pdo->lastInsertId();
+                    $isNewUser = true;
+                    
+                    // Send welcome email for new Google users
+                    try {
+                        require_once '../includes/email_service.php';
+                        $emailService = new EmailService();
+                        $emailService->sendWelcomeEmail($user_info['email'], $user_info['name']);
+                    } catch (Exception $e) {
+                        error_log("Welcome email error for Google user: " . $e->getMessage());
+                    }
                 }
                 
                 // Create session
