@@ -258,7 +258,7 @@ class StripeService {
             if ($user) {
                 require_once __DIR__ . '/email_service.php';
                 $emailService = new EmailService();
-                $emailService->sendUpgradeConfirmationEmail($user['email'], $user['name']);
+                $emailService->sendUpgradeConfirmation($user['email'], $user['name']);
             }
             
         } catch (Exception $e) {
