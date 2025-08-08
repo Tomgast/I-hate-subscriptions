@@ -474,18 +474,23 @@ class StripeService {
      */
     public function handleSuccessfulPayment($sessionId) {
         try {
+            error_log("Starting payment handling for session: $sessionId");
+            
             // Retrieve the checkout session from Stripe
             $session = $this->makeStripeRequest('GET', "checkout/sessions/$sessionId");
             
             if (!$session || $session['payment_status'] !== 'paid') {
-                error_log("Payment not completed for session: $sessionId");
+                error_log("Payment not completed for session: $sessionId - Status: " . ($session['payment_status'] ?? 'unknown'));
                 return false;
             }
+            
+            error_log("Session retrieved successfully, payment status: paid");
             
             // Get user ID from session metadata or database
             $userId = null;
             if (isset($session['metadata']['user_id'])) {
                 $userId = $session['metadata']['user_id'];
+                error_log("User ID from metadata: $userId");
             } else {
                 // Try to find user by email from session
                 $customerEmail = $session['customer_details']['email'] ?? null;
@@ -494,6 +499,7 @@ class StripeService {
                     $stmt->execute([$customerEmail]);
                     $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     $userId = $user['id'] ?? null;
+                    error_log("User ID from email lookup ($customerEmail): " . ($userId ?? 'not found'));
                 }
             }
             
@@ -503,30 +509,43 @@ class StripeService {
             }
             
             // Record the payment in payment history
+            error_log("Recording payment for user $userId");
             $this->recordPayment($userId, $session, $session['metadata']['plan_type'] ?? 'one_time_scan');
+            error_log("Payment recorded successfully");
             
             // Update user to Pro status
-            if ($session['metadata']['plan_type'] === 'one_time_scan') {
+            $planType = $session['metadata']['plan_type'] ?? 'one_time_scan';
+            error_log("Upgrading user to plan type: $planType");
+            
+            if ($planType === 'one_time_scan') {
                 $this->upgradeUserToOneTimeScan($userId, $session);
+                error_log("One-time scan upgrade completed");
             } else {
-                $this->upgradeUserToSubscription($userId, $session['metadata']['plan_type'], $session);
+                $this->upgradeUserToSubscription($userId, $planType, $session);
+                error_log("Subscription upgrade completed for plan: $planType");
             }
             
             // Update checkout session status
+            error_log("Updating checkout session status");
             $stmt = $this->pdo->prepare("
                 UPDATE checkout_sessions 
                 SET status = 'completed', updated_at = NOW() 
                 WHERE stripe_session_id = ?
             ");
             $stmt->execute([$sessionId]);
+            error_log("Checkout session updated, rows affected: " . $stmt->rowCount());
             
             // Send upgrade confirmation email
+            error_log("Sending upgrade confirmation email");
             $this->sendUpgradeConfirmationEmail($userId, $session);
+            error_log("Email sent successfully");
             
+            error_log("Payment handling completed successfully for session: $sessionId");
             return true;
             
         } catch (Exception $e) {
-            error_log("Payment handling error: " . $e->getMessage());
+            error_log("Payment handling error for session $sessionId: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }

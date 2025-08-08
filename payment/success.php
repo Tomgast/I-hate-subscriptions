@@ -1,4 +1,9 @@
 <?php
+// Enable error display for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
 session_start();
 require_once '../includes/stripe_service.php';
 require_once '../includes/plan_manager.php';
