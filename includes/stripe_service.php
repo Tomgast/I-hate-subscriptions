@@ -53,7 +53,7 @@ class StripeService {
                     'mode' => 'subscription',
                     'recurring' => ['interval' => 'year']
                 ],
-                'onetime' => [
+                'one_time' => [
                     'name' => 'CashControl - One-Time Bank Scan',
                     'description' => 'Single bank scan with PDF/CSV export and unsubscribe guides',
                     'amount' => 2500, // €25.00 in cents

@@ -14,7 +14,7 @@ $userEmail = $_SESSION['user_email'] ?? '';
 
 // Get selected plan type from URL parameter
 $planType = $_GET['plan'] ?? 'yearly';
-$validPlans = ['monthly', 'yearly', 'onetime'];
+$validPlans = ['monthly', 'yearly', 'one_time'];
 if (!in_array($planType, $validPlans)) {
     $planType = 'yearly'; // Default to yearly if invalid plan
 }
@@ -35,7 +35,7 @@ $planDetails = [
         'billing' => 'per year',
         'features' => 'All monthly features + priority support + advanced reporting'
     ],
-    'onetime' => [
+    'one_time' => [
         'name' => 'CashControl - One-Time Scan',
         'description' => 'Perfect for subscription audit',
         'price' => '€25.00',

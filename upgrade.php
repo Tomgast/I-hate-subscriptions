@@ -148,8 +148,8 @@ if ($userPlan && $userPlan['is_active']) {
                             <div class="text-sm text-gray-500 mt-1">Single scan + export + guides</div>
                         </div>
                         
-                        <button onclick="startUpgrade('onetime')" class="w-full <?php echo $currentPlan === 'onetime' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'onetime' ? 'disabled' : ''; ?>>
-                            <?php echo $currentPlan === 'onetime' ? 'Current Plan' : 'Choose One-Time Scan'; ?>
+                        <button onclick="startUpgrade('one_time')" class="w-full <?php echo $currentPlan === 'one_time' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'one_time' ? 'disabled' : ''; ?>>
+                            <?php echo $currentPlan === 'one_time' ? 'Current Plan' : 'Choose One-Time Scan'; ?>
                         </button>
                         
                         <div class="text-xs text-gray-500">
