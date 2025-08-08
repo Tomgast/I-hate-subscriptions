@@ -26,6 +26,46 @@ class StripeFinancialService {
     }
     
     /**
+     * Get or create Stripe customer for user
+     */
+    private function getOrCreateStripeCustomer($userId) {
+        try {
+            // Check if user already has a Stripe customer ID
+            $stmt = $this->pdo->prepare("SELECT stripe_customer_id, email FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                throw new Exception('User not found');
+            }
+            
+            // If user already has a Stripe customer ID, return it
+            if (!empty($user['stripe_customer_id'])) {
+                return $user['stripe_customer_id'];
+            }
+            
+            // Create new Stripe customer
+            $customer = \Stripe\Customer::create([
+                'email' => $user['email'],
+                'metadata' => [
+                    'user_id' => $userId,
+                    'source' => 'financial_connections'
+                ]
+            ]);
+            
+            // Save customer ID to database
+            $stmt = $this->pdo->prepare("UPDATE users SET stripe_customer_id = ? WHERE id = ?");
+            $stmt->execute([$customer->id, $userId]);
+            
+            return $customer->id;
+            
+        } catch (Exception $e) {
+            error_log("Error creating Stripe customer: " . $e->getMessage());
+            throw new Exception('Failed to create Stripe customer');
+        }
+    }
+    
+    /**
      * Create Financial Connections Session
      */
     public function createBankConnectionSession($userId) {
@@ -33,7 +73,8 @@ class StripeFinancialService {
             // Create session in Stripe
             $session = \Stripe\FinancialConnections\Session::create([
                 'account_holder' => [
-                    'type' => 'account',
+                    'type' => 'customer',
+                    'customer' => $this->getOrCreateStripeCustomer($userId),
                 ],
                 'permissions' => [
                     'payment_method',
