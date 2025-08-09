@@ -16,12 +16,18 @@ $error = null;
 $success = null;
 
 try {
+    // Debug: Log all incoming parameters
+    error_log("GoCardless callback received. GET params: " . print_r($_GET, true));
+    error_log("GoCardless callback received. POST params: " . print_r($_POST, true));
+    
     // Get requisition ID from URL parameters
     $requisitionId = $_GET['ref'] ?? null;
     
     if (!$requisitionId) {
-        throw new Exception('Missing requisition reference');
+        throw new Exception('Missing requisition reference. Available parameters: ' . print_r($_GET, true));
     }
+    
+    error_log("GoCardless callback processing requisition ID: " . $requisitionId);
     
     // Initialize GoCardless service
     $pdo = getDBConnection();

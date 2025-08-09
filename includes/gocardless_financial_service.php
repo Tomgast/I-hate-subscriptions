@@ -244,6 +244,42 @@ class GoCardlessFinancialService {
      */
     public function handleCallback($requisitionId) {
         try {
+            error_log("GoCardless handleCallback called with requisition ID: " . $requisitionId);
+            
+            // Check if session exists in database first
+            $stmt = $this->pdo->prepare("
+                SELECT user_id, session_data, status, created_at, expires_at
+                FROM bank_connection_sessions 
+                WHERE session_id = ? AND provider = 'gocardless'
+            ");
+            $stmt->execute([$requisitionId]);
+            $session = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            error_log("Database session lookup result: " . print_r($session, true));
+            
+            if (!$session) {
+                // Log all sessions for this user to debug
+                $stmt = $this->pdo->prepare("
+                    SELECT session_id, status, created_at, expires_at 
+                    FROM bank_connection_sessions 
+                    WHERE provider = 'gocardless' 
+                    ORDER BY created_at DESC LIMIT 10
+                ");
+                $stmt->execute();
+                $allSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                error_log("Recent GoCardless sessions: " . print_r($allSessions, true));
+                
+                throw new Exception('Session not found in database for requisition ID: ' . $requisitionId);
+            }
+            
+            // Check if session has expired
+            if ($session['expires_at'] && strtotime($session['expires_at']) < time()) {
+                error_log("Session expired. Expires at: " . $session['expires_at'] . ", Current time: " . date('Y-m-d H:i:s'));
+                throw new Exception('Session has expired');
+            }
+            
+            error_log("Making API call to GoCardless for requisition: " . $requisitionId);
+            
             // Get requisition details
             $curl = curl_init();
             curl_setopt_array($curl, [
@@ -257,26 +293,19 @@ class GoCardlessFinancialService {
             
             $response = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($curl);
             curl_close($curl);
+            
+            error_log("GoCardless API response - HTTP Code: " . $httpCode . ", Response: " . $response);
+            if ($curlError) {
+                error_log("cURL error: " . $curlError);
+            }
             
             if ($httpCode !== 200) {
                 throw new Exception('Failed to get requisition: ' . $response);
             }
             
             $requisition = json_decode($response, true);
-            
-            // Get session from database
-            $stmt = $this->pdo->prepare("
-                SELECT user_id, session_data 
-                FROM bank_connection_sessions 
-                WHERE session_id = ? AND provider = 'gocardless'
-            ");
-            $stmt->execute([$requisitionId]);
-            $session = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$session) {
-                throw new Exception('Session not found');
-            }
             
             $userId = $session['user_id'];
             $sessionData = json_decode($session['session_data'], true);
