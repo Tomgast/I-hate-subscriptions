@@ -463,34 +463,44 @@ class GoCardlessFinancialService {
         $subscriptions = [];
         $merchantGroups = [];
         
+        error_log("GoCardless: Starting transaction analysis for " . count($transactions) . " transactions");
+        
         // Group transactions by merchant
         foreach ($transactions as $transaction) {
             $merchant = $this->extractMerchantName($transaction);
-            $amount = abs(floatval($transaction['transactionAmount']['amount']));
-            $date = $transaction['bookingDate'];
+            $rawAmount = floatval($transaction['transactionAmount']['amount']);
+            $amount = abs($rawAmount);
+            $date = $transaction['bookingDate'] ?? $transaction['valueDate'] ?? '';
             
-            if ($amount > 0) {
+            // Only process outgoing payments (negative amounts) as potential subscriptions
+            if ($rawAmount < 0 && $amount > 0) {
                 if (!isset($merchantGroups[$merchant])) {
                     $merchantGroups[$merchant] = [];
                 }
                 $merchantGroups[$merchant][] = [
                     'amount' => $amount,
                     'date' => $date,
-                    'description' => $transaction['remittanceInformationUnstructured'] ?? ''
+                    'description' => $transaction['remittanceInformationUnstructured'] ?? '',
+                    'raw_transaction' => $transaction
                 ];
             }
         }
         
+        error_log("GoCardless: Found " . count($merchantGroups) . " unique merchants with outgoing payments");
+        
         // Analyze each merchant for subscription patterns
-        foreach ($merchantGroups as $merchant => $transactions) {
-            if (count($transactions) >= 2) {
-                $subscription = $this->detectSubscriptionPattern($merchant, $transactions);
+        foreach ($merchantGroups as $merchant => $merchantTransactions) {
+            if (count($merchantTransactions) >= 2) {
+                error_log("GoCardless: Analyzing merchant '$merchant' with " . count($merchantTransactions) . " transactions");
+                $subscription = $this->detectSubscriptionPattern($merchant, $merchantTransactions);
                 if ($subscription) {
                     $subscriptions[] = $subscription;
+                    error_log("GoCardless: Found subscription for '$merchant'");
                 }
             }
         }
         
+        error_log("GoCardless: Analysis complete. Found " . count($subscriptions) . " subscriptions");
         return $subscriptions;
     }
     
