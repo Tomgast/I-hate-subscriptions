@@ -142,11 +142,11 @@ class GoCardlessFinancialService {
                 throw new Exception('User not found');
             }
             
-            // Create end user agreement
+            // Create end user agreement with 1 year of data for yearly subscription detection
             $agreementData = [
                 'institution_id' => $institutionId,
-                'max_historical_days' => 90,
-                'access_valid_for_days' => 90,
+                'max_historical_days' => 365, // Full year for yearly subscriptions
+                'access_valid_for_days' => 90, // Keep access period at 90 days
                 'access_scope' => ['balances', 'details', 'transactions']
             ];
             
@@ -404,6 +404,9 @@ class GoCardlessFinancialService {
      */
     public function scanForSubscriptions($userId) {
         try {
+            require_once 'gocardless_transaction_processor.php';
+            $processor = new GoCardlessTransactionProcessor($this->pdo);
+            
             // Get user's connected accounts
             $stmt = $this->pdo->prepare("
                 SELECT account_id, connection_data 
@@ -414,15 +417,26 @@ class GoCardlessFinancialService {
             $accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             $allSubscriptions = [];
+            $totalTransactionsProcessed = 0;
             
             foreach ($accounts as $account) {
                 $accountId = $account['account_id'];
                 
-                // Get transactions
+                // Get transactions with 1 year of historical data for yearly subscription detection
+                $dateFrom = date('Y-m-d', strtotime('-365 days')); // Full year for yearly subscriptions
+                $dateTo = date('Y-m-d'); // Today
+                
+                $transactionUrl = $this->apiBaseUrl . 'accounts/' . $accountId . '/transactions/' . 
+                                 '?date_from=' . $dateFrom . '&date_to=' . $dateTo;
+                
+                error_log("GoCardless: Fetching 1 year of transactions from $dateFrom to $dateTo for account $accountId");
+                error_log("GoCardless: Transaction URL: $transactionUrl");
+                
                 $curl = curl_init();
                 curl_setopt_array($curl, [
-                    CURLOPT_URL => $this->apiBaseUrl . 'accounts/' . $accountId . '/transactions/',
+                    CURLOPT_URL => $transactionUrl,
                     CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 30,
                     CURLOPT_HTTPHEADER => [
                         'Authorization: Bearer ' . $this->accessToken,
                         'Accept: application/json'
@@ -430,11 +444,41 @@ class GoCardlessFinancialService {
                 ]);
                 
                 $response = curl_exec($curl);
-                $transactions = json_decode($response, true);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($curl);
+                curl_close($curl);
                 
-                if (isset($transactions['transactions'])) {
-                    $subscriptions = $this->analyzeTransactionsForSubscriptions($transactions['transactions']);
-                    $allSubscriptions = array_merge($allSubscriptions, $subscriptions);
+                if ($curlError) {
+                    error_log("GoCardless: cURL error fetching transactions: $curlError");
+                    continue;
+                }
+                
+                if ($httpCode !== 200) {
+                    error_log("GoCardless: HTTP error $httpCode fetching transactions: $response");
+                    continue;
+                }
+                
+                $rawTransactionData = json_decode($response, true);
+                
+                if ($rawTransactionData) {
+                    // Process and store transactions using the comprehensive processor
+                    $processingResult = $processor->processTransactions($userId, $accountId, $rawTransactionData);
+                    
+                    if ($processingResult['success']) {
+                        $totalTransactionsProcessed += $processingResult['valid_transactions'];
+                        error_log("GoCardless: Processed {$processingResult['valid_transactions']} transactions for account $accountId");
+                        
+                        // Get processed transactions for subscription analysis
+                        $processedTransactions = $processor->getTransactionsForAnalysis($userId, $accountId);
+                        
+                        // Analyze for subscription patterns
+                        $subscriptions = $this->analyzeProcessedTransactionsForSubscriptions($processedTransactions);
+                        $allSubscriptions = array_merge($allSubscriptions, $subscriptions);
+                    } else {
+                        error_log("GoCardless: Failed to process transactions for account $accountId: " . $processingResult['error']);
+                    }
+                } else {
+                    error_log("GoCardless: Invalid JSON response for account $accountId");
                 }
             }
             
@@ -444,7 +488,8 @@ class GoCardlessFinancialService {
             return [
                 'success' => true,
                 'scan_id' => $scanId,
-                'subscriptions_found' => count($allSubscriptions)
+                'subscriptions_found' => count($allSubscriptions),
+                'transactions_processed' => $totalTransactionsProcessed
             ];
             
         } catch (Exception $e) {
@@ -457,46 +502,34 @@ class GoCardlessFinancialService {
     }
     
     /**
-     * Analyze transactions for subscription patterns
+     * Analyze processed transactions for subscription patterns
      */
-    private function analyzeTransactionsForSubscriptions($transactions) {
+    private function analyzeProcessedTransactionsForSubscriptions($processedTransactions) {
         $subscriptions = [];
         $merchantGroups = [];
         
-        error_log("GoCardless: Starting transaction analysis for " . count($transactions) . " transactions");
+        error_log("GoCardless: Starting subscription analysis for " . count($processedTransactions) . " processed transactions");
         
         // Group transactions by merchant
-        foreach ($transactions as $transaction) {
-            $merchant = $this->extractMerchantName($transaction);
-            
-            // Handle different possible transaction amount structures
-            $rawAmount = 0;
-            if (isset($transaction['transactionAmount']['amount'])) {
-                $rawAmount = floatval($transaction['transactionAmount']['amount']);
-            } elseif (isset($transaction['amount'])) {
-                $rawAmount = floatval($transaction['amount']);
-            } elseif (isset($transaction['transactionAmount'])) {
-                $rawAmount = floatval($transaction['transactionAmount']);
-            } else {
-                error_log("GoCardless: No amount found in transaction: " . json_encode($transaction));
-                continue;
-            }
-            
-            $amount = abs($rawAmount);
-            $date = $transaction['bookingDate'] ?? $transaction['valueDate'] ?? '';
+        foreach ($processedTransactions as $transaction) {
+            $merchant = $transaction['merchant_name'] ?? 'Unknown';
+            $amount = abs(floatval($transaction['amount']));
+            $date = $transaction['booking_date'];
             
             // Only process outgoing payments (negative amounts) as potential subscriptions
-            if ($rawAmount < 0 && $amount > 0) {
+            if (floatval($transaction['amount']) < 0 && $amount > 0) {
                 if (!isset($merchantGroups[$merchant])) {
                     $merchantGroups[$merchant] = [];
                 }
                 $merchantGroups[$merchant][] = [
                     'amount' => $amount,
                     'date' => $date,
-                    'description' => $transaction['remittanceInformationUnstructured'] ?? '',
-                    'raw_transaction' => $transaction
+                    'description' => $transaction['description'],
+                    'currency' => $transaction['currency'],
+                    'transaction_id' => $transaction['transaction_id'],
+                    'merchant_category_code' => $transaction['merchant_category_code']
                 ];
-                error_log("GoCardless: Added transaction for merchant '$merchant': €$amount on $date");
+                error_log("GoCardless: Added transaction for merchant '$merchant': {$transaction['currency']}$amount on $date");
             }
         }
         
@@ -506,7 +539,7 @@ class GoCardlessFinancialService {
         foreach ($merchantGroups as $merchant => $merchantTransactions) {
             if (count($merchantTransactions) >= 2) {
                 error_log("GoCardless: Analyzing merchant '$merchant' with " . count($merchantTransactions) . " transactions");
-                $subscription = $this->detectSubscriptionPattern($merchant, $merchantTransactions);
+                $subscription = $this->detectSubscriptionPatternFromProcessed($merchant, $merchantTransactions);
                 if ($subscription) {
                     $subscriptions[] = $subscription;
                     error_log("GoCardless: Found subscription for '$merchant'");
@@ -516,6 +549,16 @@ class GoCardlessFinancialService {
         
         error_log("GoCardless: Analysis complete. Found " . count($subscriptions) . " subscriptions");
         return $subscriptions;
+    }
+    
+    /**
+     * Legacy method for backward compatibility
+     */
+    private function analyzeTransactionsForSubscriptions($transactions) {
+        // This method is kept for backward compatibility but should not be used
+        // with the new transaction processor
+        error_log("GoCardless: Warning - using legacy transaction analysis method");
+        return [];
     }
     
     /**
@@ -533,9 +576,9 @@ class GoCardlessFinancialService {
     }
     
     /**
-     * Detect subscription patterns in merchant transactions
+     * Detect subscription patterns in processed merchant transactions
      */
-    private function detectSubscriptionPattern($merchant, $transactions) {
+    private function detectSubscriptionPatternFromProcessed($merchant, $transactions) {
         // Sort by date
         usort($transactions, function($a, $b) {
             return strtotime($a['date']) - strtotime($b['date']);
@@ -562,7 +605,7 @@ class GoCardlessFinancialService {
             
             $avgInterval = array_sum($intervals) / count($intervals);
             
-            // Determine billing cycle
+            // Determine billing cycle with more comprehensive detection
             $billingCycle = 'unknown';
             if ($avgInterval >= 28 && $avgInterval <= 32) {
                 $billingCycle = 'monthly';
@@ -570,20 +613,45 @@ class GoCardlessFinancialService {
                 $billingCycle = 'yearly';
             } elseif ($avgInterval >= 85 && $avgInterval <= 95) {
                 $billingCycle = 'quarterly';
+            } elseif ($avgInterval >= 6 && $avgInterval <= 8) {
+                $billingCycle = 'weekly';
+            } elseif ($avgInterval >= 13 && $avgInterval <= 15) {
+                $billingCycle = 'bi-weekly';
+            } elseif ($avgInterval >= 175 && $avgInterval <= 185) {
+                $billingCycle = 'semi-annual';
             }
+            
+            // Get currency from first transaction
+            $currency = $recurringTransactions[0]['currency'] ?? 'EUR';
+            
+            // Calculate next expected payment date
+            $lastDate = end($dates);
+            $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + ' . round($avgInterval) . ' days'));
             
             return [
                 'merchant_name' => $merchant,
                 'amount' => $recurringAmount,
-                'currency' => 'EUR', // Default for EU
+                'currency' => $currency,
                 'billing_cycle' => $billingCycle,
-                'last_charge_date' => end($dates),
+                'last_charge_date' => $lastDate,
+                'next_billing_date' => $nextPaymentDate,
                 'transaction_count' => count($recurringTransactions),
                 'confidence' => min(100, count($recurringTransactions) * 25),
-                'provider' => 'gocardless'
+                'provider' => 'gocardless',
+                'avg_interval_days' => round($avgInterval, 1),
+                'merchant_category_code' => $recurringTransactions[0]['merchant_category_code'] ?? null
             ];
         }
         
+        return null;
+    }
+    
+    /**
+     * Legacy subscription pattern detection (kept for compatibility)
+     */
+    private function detectSubscriptionPattern($merchant, $transactions) {
+        // Legacy method - should not be used with new processor
+        error_log("GoCardless: Warning - using legacy subscription pattern detection");
         return null;
     }
     
