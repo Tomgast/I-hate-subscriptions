@@ -121,6 +121,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Subscription Audit - CashControl</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -289,29 +290,89 @@ try {
                 </div>
             </div>
             
+            <!-- Charts Section -->
+            <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Category Breakdown Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Spending by Category</h3>
+                    <canvas id="categoryChart" width="400" height="200"></canvas>
+                </div>
+                
+                <!-- Transaction Timeline -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Costs</h3>
+                    <canvas id="costsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            <?php endif; ?>
+            
             <!-- Subscription Summary -->
         <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
             <div class="space-y-4">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Discovered Subscriptions</h3>
                 <?php foreach ($scanResults['subscriptions'] as $sub): ?>
-                <div class="scan-card bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex items-center justify-between">
+                <div class="scan-card bg-gray-50 rounded-lg p-6 border border-gray-200 hover:border-gray-300 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
-                            <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                                <span class="text-lg"><?php 
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-xl"><?php 
                                     $icons = ['Entertainment' => '🎬', 'Software' => '💻', 'Music' => '🎵', 'Gaming' => '🎮', 'News' => '📰', 'Fitness' => '💪'];
                                     echo $icons[$sub['category']] ?? '📦';
                                 ?></span>
                             </div>
                             <div>
-                                <div class="font-semibold text-gray-900"><?php echo htmlspecialchars($sub['name']); ?></div>
+                                <div class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($sub['name']); ?></div>
                                 <div class="text-sm text-gray-600"><?php echo ucfirst($sub['billing_cycle']); ?> • <?php echo htmlspecialchars($sub['category']); ?></div>
+                                <?php if (isset($sub['merchant_info'])): ?>
+                                <div class="text-xs text-gray-500 mt-1">Merchant: <?php echo htmlspecialchars($sub['merchant_info']); ?></div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="font-semibold text-gray-900">€<?php echo number_format($sub['cost'], 2); ?></div>
+                            <div class="font-bold text-gray-900 text-xl">€<?php echo number_format($sub['cost'], 2); ?></div>
                             <div class="text-sm text-gray-600"><?php echo $sub['billing_cycle']; ?></div>
+                            <?php if (isset($sub['next_payment'])): ?>
+                            <div class="text-xs text-orange-600 mt-1">Next: <?php echo date('M j', strtotime($sub['next_payment'])); ?></div>
+                            <?php endif; ?>
                         </div>
+                    </div>
+                    
+                    <!-- Enhanced GoCardless Data -->
+                    <?php if (isset($sub['transaction_details'])): ?>
+                    <div class="bg-white rounded-lg p-4 border border-gray-100">
+                        <h4 class="font-medium text-gray-900 mb-2">Transaction Details</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <?php if (isset($sub['transaction_details']['creditor_name'])): ?>
+                            <div>
+                                <span class="text-gray-500">Creditor:</span>
+                                <span class="font-medium"><?php echo htmlspecialchars($sub['transaction_details']['creditor_name']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (isset($sub['transaction_details']['booking_date'])): ?>
+                            <div>
+                                <span class="text-gray-500">Last Payment:</span>
+                                <span class="font-medium"><?php echo date('M j, Y', strtotime($sub['transaction_details']['booking_date'])); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (isset($sub['transaction_details']['remittance_info'])): ?>
+                            <div class="col-span-2">
+                                <span class="text-gray-500">Description:</span>
+                                <span class="font-medium"><?php echo htmlspecialchars($sub['transaction_details']['remittance_info']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3 mt-4">
+                        <a href="guides/unsubscribe.php?service=<?php echo urlencode(strtolower($sub['name'])); ?>" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors text-center">
+                            🚫 Cancel Subscription
+                        </a>
+                        <button onclick="showTransactionHistory('<?php echo $sub['id']; ?>')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                            📊 View History
+                        </button>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -398,9 +459,91 @@ try {
     </div>
 
     <script>
-        // Add any JavaScript for interactions
+        // Initialize charts if we have scan results
+        <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            // Smooth scroll for anchor links
+            // Category breakdown chart
+            const categoryData = {
+                <?php 
+                $categoryTotals = [];
+                foreach ($scanResults['subscriptions'] as $sub) {
+                    $category = $sub['category'] ?? 'Other';
+                    $monthlyCost = 0;
+                    switch ($sub['billing_cycle']) {
+                        case 'monthly': $monthlyCost = $sub['cost']; break;
+                        case 'yearly': $monthlyCost = $sub['cost'] / 12; break;
+                        case 'weekly': $monthlyCost = $sub['cost'] * 4.33; break;
+                    }
+                    $categoryTotals[$category] = ($categoryTotals[$category] ?? 0) + $monthlyCost;
+                }
+                ?>
+                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
+                datasets: [{
+                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
+                    backgroundColor: [
+                        '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
+                        '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
+                    ]
+                }]
+            };
+            
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: categoryData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Monthly costs chart
+            const costsData = {
+                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
+                datasets: [{
+                    label: 'Monthly Cost',
+                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
+                    backgroundColor: '#3b82f6',
+                    borderColor: '#1d4ed8',
+                    borderWidth: 2
+                }]
+            };
+            
+            new Chart(document.getElementById('costsChart'), {
+                type: 'bar',
+                data: costsData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+        <?php endif; ?>
+        
+        // Transaction history modal
+        function showTransactionHistory(subscriptionId) {
+            alert('Transaction history feature coming soon! This will show detailed payment history from GoCardless data.');
+        }
+        
+        // Smooth scroll for anchor links
+        document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();

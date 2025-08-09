@@ -73,13 +73,14 @@ if ($_POST && isset($_POST['action'])) {
             $success = "Subscription deleted successfully!";
         } elseif ($_POST['action'] === 'update_subscription') {
             // Update subscription
-            $stmt = $pdo->prepare("UPDATE subscriptions SET name = ?, cost = ?, billing_cycle = ?, category = ?, status = ? WHERE id = ? AND user_id = ?");
+            $isActive = isset($_POST['is_active']) ? 1 : 0;
+            $stmt = $pdo->prepare("UPDATE subscriptions SET name = ?, cost = ?, billing_cycle = ?, category = ?, is_active = ? WHERE id = ? AND user_id = ?");
             $stmt->execute([
                 $_POST['name'],
                 floatval($_POST['cost']),
                 $_POST['billing_cycle'],
                 $_POST['category'],
-                $_POST['status'],
+                $isActive,
                 $_POST['subscription_id'],
                 $userId
             ]);
@@ -192,6 +193,7 @@ $categories = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CashControl</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -467,6 +469,24 @@ $categories = [
                     </div>
                 </div>
             </div>
+
+            <!-- Charts Section -->
+            <?php if (!empty($subscriptions)): ?>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Monthly Spending Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Spending by Category</h3>
+                    <canvas id="categoryChart" width="400" height="200"></canvas>
+                </div>
+                
+                <!-- Spending Trend Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Spending Trend</h3>
+                    <canvas id="trendChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Subscriptions List -->
             <?php if (empty($subscriptions)): ?>
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
@@ -512,7 +532,7 @@ $categories = [
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <button onclick="editSubscription(<?php echo $subscription['id']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['name'], ENT_QUOTES); ?>', <?php echo $subscription['cost']; ?>, '<?php echo $subscription['billing_cycle']; ?>', '<?php echo $subscription['category']; ?>', <?php echo $subscription['is_active']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
@@ -614,6 +634,68 @@ $categories = [
         </div>
     </div>
 
+    <!-- Edit Subscription Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Edit Subscription</h2>
+            
+            <form method="POST" id="editForm">
+                <input type="hidden" name="action" value="update_subscription">
+                <input type="hidden" name="subscription_id" id="edit_subscription_id">
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label for="edit_name" class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                        <input type="text" id="edit_name" name="name" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="edit_cost" class="block text-sm font-medium text-gray-700 mb-1">Cost (€)</label>
+                            <input type="number" id="edit_cost" name="cost" step="0.01" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label for="edit_billing_cycle" class="block text-sm font-medium text-gray-700 mb-1">Billing</label>
+                            <select id="edit_billing_cycle" name="billing_cycle" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="edit_category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select id="edit_category" name="category" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo htmlspecialchars($category['name']); ?>">
+                                <?php echo $category['icon']; ?> <?php echo htmlspecialchars($category['name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="edit_is_active" name="is_active" class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-700">Active subscription</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 mt-6">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Update Subscription
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openAddModal() {
             document.getElementById('addModal').classList.remove('hidden');
@@ -651,9 +733,21 @@ $categories = [
             }
         }
 
-        function editSubscription(id) {
-            // For now, just show an alert - you can implement edit modal later
-            alert('Edit functionality coming soon! For now, you can delete and re-add the subscription.');
+        function openEditModal(id, name, cost, billing_cycle, category, is_active) {
+            document.getElementById('edit_subscription_id').value = id;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_cost').value = cost;
+            document.getElementById('edit_billing_cycle').value = billing_cycle;
+            document.getElementById('edit_category').value = category;
+            document.getElementById('edit_is_active').checked = is_active == 1;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+            document.getElementById('editModal').classList.add('flex');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editModal').classList.remove('flex');
         }
 
         function startBankScan() {
@@ -667,12 +761,98 @@ $categories = [
             <?php endif; ?>
         }
 
-        // Close modal when clicking outside
+        // Close modals when clicking outside
         document.getElementById('addModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeAddModal();
             }
         });
+        
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+        
+        // Initialize charts if we have subscription data
+        <?php if (!empty($subscriptions)): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category spending chart
+            const categoryData = {
+                <?php 
+                $categoryTotals = [];
+                foreach ($subscriptions as $sub) {
+                    if ($sub['is_active']) {
+                        $category = $sub['category'] ?? 'Other';
+                        $monthlyCost = 0;
+                        switch ($sub['billing_cycle']) {
+                            case 'monthly': $monthlyCost = $sub['cost']; break;
+                            case 'yearly': $monthlyCost = $sub['cost'] / 12; break;
+                            case 'weekly': $monthlyCost = $sub['cost'] * 4.33; break;
+                        }
+                        $categoryTotals[$category] = ($categoryTotals[$category] ?? 0) + $monthlyCost;
+                    }
+                }
+                ?>
+                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
+                datasets: [{
+                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
+                    backgroundColor: [
+                        '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
+                        '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
+                    ]
+                }]
+            };
+            
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: categoryData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Trend chart (simulated data for now)
+            const trendData = {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Monthly Spending',
+                    data: [<?php echo $stats['monthly_total']; ?>, <?php echo $stats['monthly_total'] * 0.9; ?>, <?php echo $stats['monthly_total'] * 1.1; ?>, <?php echo $stats['monthly_total']; ?>, <?php echo $stats['monthly_total'] * 1.05; ?>, <?php echo $stats['monthly_total']; ?>],
+                    borderColor: '#3b82f6',
+                    backgroundColor: '#3b82f6',
+                    tension: 0.4
+                }]
+            };
+            
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: trendData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>
