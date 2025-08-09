@@ -37,6 +37,7 @@ if (!$stripePublishableKey) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://js.stripe.com/v3/financial-connections.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -139,19 +140,14 @@ if (!$stripePublishableKey) {
         console.log('Session ID:', sessionId);
         console.log('Client Secret:', clientSecret ? 'Present' : 'Missing');
         
-        // Initialize Financial Connections
-        let financialConnectionsSession = null;
-        
         async function initializeConnection() {
             try {
-                // Create Financial Connections session object
-                financialConnectionsSession = stripe.financialConnections.session({
-                    clientSecret: clientSecret
-                });
+                // For now, let's use a simpler approach - redirect directly to Stripe's hosted flow
+                // This will work better with the current Stripe API
                 
-                console.log('Financial Connections session created:', financialConnectionsSession);
+                console.log('Preparing to redirect to Stripe Financial Connections...');
                 
-                // Show ready state
+                // Show ready state immediately
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('ready-state').style.display = 'block';
                 
@@ -159,36 +155,40 @@ if (!$stripePublishableKey) {
                 document.getElementById('connect-button').addEventListener('click', connectBank);
                 
             } catch (error) {
-                console.error('Error initializing Financial Connections:', error);
+                console.error('Error initializing connection:', error);
                 showError('Failed to initialize bank connection: ' + error.message);
             }
         }
         
         async function connectBank() {
             try {
-                console.log('Starting bank connection flow...');
+                console.log('Redirecting to Stripe Financial Connections...');
                 
                 // Disable button and show loading
                 const button = document.getElementById('connect-button');
                 button.disabled = true;
                 button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
                 
-                // Launch Financial Connections
-                const {session, error} = await financialConnectionsSession.collect({
-                    // Optional: specify which accounts to collect
-                    // permissions: ['payment_method', 'balances', 'transactions']
+                // Make a request to our backend to get the proper hosted URL
+                const response = await fetch('../api/stripe-financial-url.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        client_secret: clientSecret
+                    })
                 });
                 
-                if (error) {
-                    console.error('Financial Connections error:', error);
-                    showError('Bank connection failed: ' + error.message);
-                    return;
+                const result = await response.json();
+                
+                if (result.success && result.hosted_url) {
+                    // Redirect to Stripe's hosted flow
+                    window.location.href = result.hosted_url;
+                } else {
+                    showError('Failed to get Stripe connection URL: ' + (result.error || 'Unknown error'));
                 }
-                
-                console.log('Financial Connections completed:', session);
-                
-                // Redirect to callback handler
-                window.location.href = 'stripe-callback.php?session_id=' + sessionId;
                 
             } catch (error) {
                 console.error('Error during bank connection:', error);

@@ -103,13 +103,31 @@ class StripeFinancialService {
                 ])
             ]);
             
-            // In test mode, hosted_auth_url might be empty, so we need to construct it
-            $authUrl = $session->hosted_auth_url;
+            // Debug the session object to see what we actually get
+            error_log("DEBUG: Full Stripe session object: " . print_r($session->toArray(), true));
             
-            // If hosted_auth_url is empty (common in test mode), construct the URL
-            if (empty($authUrl) && !empty($session->client_secret)) {
-                // For test mode, we need to redirect to a page that will handle the client-side flow
-                $authUrl = $this->baseUrl . '/bank/stripe-connect.php?session_id=' . $session->id . '&client_secret=' . $session->client_secret;
+            $authUrl = $session->hosted_auth_url ?? null;
+            
+            // If no hosted_auth_url, this might be a limitation in test mode
+            if (empty($authUrl)) {
+                error_log("WARNING: No hosted_auth_url provided by Stripe. This may be a test mode limitation.");
+                
+                // Try to retrieve the session again to see if URL becomes available
+                try {
+                    $retrievedSession = \Stripe\FinancialConnections\Session::retrieve($session->id);
+                    $authUrl = $retrievedSession->hosted_auth_url ?? null;
+                    error_log("DEBUG: Retrieved session hosted_auth_url: " . ($authUrl ?: 'still empty'));
+                } catch (Exception $e) {
+                    error_log("DEBUG: Could not retrieve session: " . $e->getMessage());
+                }
+                
+                // If still no URL, return an error
+                if (empty($authUrl)) {
+                    return [
+                        'success' => false,
+                        'error' => 'Stripe Financial Connections is not available in test mode for your account. Please contact support or try with live credentials.'
+                    ];
+                }
             }
             
             return [
