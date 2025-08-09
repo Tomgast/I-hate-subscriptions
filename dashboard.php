@@ -238,7 +238,7 @@ $categories = [
                     <?php if ($userPlan['plan_type'] === 'yearly'): ?>
                     <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Priority Support</span>
                     <?php endif; ?>
-                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Unlimited Scans</span>
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Bank Connected</span>
                 </div>
                 <?php if ($isPaid): ?>
                     <p>You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!</p>
@@ -310,17 +310,17 @@ $categories = [
                     </div>
                 </div>
 
-                <!-- Expiring Subscriptions -->
+                <!-- Total Subscriptions -->
                 <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-orange-100">
-                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <div class="p-3 rounded-lg bg-indigo-100">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Expiring Soon</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo count($upcomingPayments); ?></p>
+                            <p class="text-sm font-medium text-gray-500">Total Subscriptions</p>
+                            <p class="text-2xl font-bold text-gray-900" data-stat="total"><?php echo count($subscriptions); ?></p>
                         </div>
                     </div>
                 </div>
@@ -328,104 +328,7 @@ $categories = [
         </div>
     </div>
 
-    <!-- Bank Connection Status for Subscription Users -->
-    <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly'])): ?>
-    <?php
-    // Check bank connection status
-    $bankConnectionStatus = null;
-    $lastScanDate = null;
-    $nextScanDate = null;
-    try {
-        $pdo = getDBConnection();
-        
-        // Check for active bank connection
-        $stmt = $pdo->prepare("
-            SELECT bc.*, MAX(bs.completed_at) as last_scan_date
-            FROM bank_connections bc
-            LEFT JOIN bank_scans bs ON bc.user_id = bs.user_id AND bs.status = 'completed'
-            WHERE bc.user_id = ? AND bc.is_active = 1
-            GROUP BY bc.id
-            ORDER BY bc.created_at DESC
-            LIMIT 1
-        ");
-        $stmt->execute([$userId]);
-        $bankConnection = $stmt->fetch();
-        
-        if ($bankConnection) {
-            $bankConnectionStatus = 'connected';
-            $lastScanDate = $bankConnection['last_scan_date'];
-            if ($lastScanDate) {
-                $nextScanDate = date('Y-m-d', strtotime($lastScanDate . ' +7 days'));
-            }
-        } else {
-            $bankConnectionStatus = 'not_connected';
-        }
-    } catch (Exception $e) {
-        error_log("Bank connection status error: " . $e->getMessage());
-        $bankConnectionStatus = 'error';
-    }
-    ?>
-    <section class="py-8 bg-white border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-lg <?php echo $bankConnectionStatus === 'connected' ? 'bg-green-100' : 'bg-gray-100'; ?>">
-                            <?php if ($bankConnectionStatus === 'connected'): ?>
-                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <?php else: ?>
-                            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2-16h2m2 16V7a2 2 0 00-2-2h-2m2-2V3a2 2 0 00-2-2H7a2 2 0 00-2 2v2m2 14h2m-2 0h-2m2 0v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2"></path>
-                            </svg>
-                            <?php endif; ?>
-                        </div>
-                        <div class="ml-6">
-                            <h3 class="text-xl font-bold text-gray-900 mb-2">
-                                <?php if ($bankConnectionStatus === 'connected'): ?>
-                                🏦 <?php echo htmlspecialchars($bankConnection['bank_name'] ?? 'Bank'); ?> Connected - Monitoring Active
-                                <?php else: ?>
-                                🏦 Connect Your Bank Account
-                                <?php endif; ?>
-                            </h3>
-                            <div class="text-gray-600">
-                                <?php if ($bankConnectionStatus === 'connected'): ?>
-                                    <p class="mb-1">✅ Your bank is connected and transactions are monitored automatically</p>
-                                    <?php if ($lastScanDate): ?>
-                                    <p class="text-sm">Last updated: <?php echo date('M j, Y', strtotime($lastScanDate)); ?></p>
-                                    <p class="text-sm">Connected via: <?php echo htmlspecialchars($bankConnection['provider'] ?? 'GoCardless'); ?></p>
-                                    <?php else: ?>
-                                    <p>Connect once to automatically detect subscriptions from your transactions</p>
-                                <?php endif; ?>
-                                <?php else: ?>
-                                    <p class="mb-1">Connect once and we'll automatically scan for new subscriptions every week</p>
-                                    <p class="text-sm text-blue-600">• No manual scanning needed • Always up-to-date • Secure bank-grade encryption</p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex space-x-4">
-                        <?php if ($bankConnectionStatus === 'connected'): ?>
-                        <div class="flex space-x-3">
-                            <span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-800">
-                                ✅ Connected
-                            </span>
-                            <button onclick="disconnectBank()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
-                                Disconnect
-                            </button>
-                        </div>
-                        <?php else: ?>
-                        <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                            Connect Bank Account
-                        </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
+
 
     <!-- Subscriptions Section -->
     <section class="py-12 bg-gray-50">
@@ -437,31 +340,62 @@ $categories = [
                 <p class="text-lg text-gray-600 mb-6">Manage all your recurring payments in one place</p>
                 
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900">Your Subscriptions</h2>
-                    <div class="flex space-x-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Your Subscriptions</h2>
+                        <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly'])): ?>
+                        <?php
+                        // Check bank connection status
+                        $bankConnectionStatus = null;
+                        try {
+                            $pdo = getDBConnection();
+                            $stmt = $pdo->prepare("SELECT bc.*, MAX(bs.completed_at) as last_scan_date FROM bank_connections bc LEFT JOIN bank_scans bs ON bc.user_id = bs.user_id AND bs.status = 'completed' WHERE bc.user_id = ? AND bc.is_active = 1 GROUP BY bc.id ORDER BY bc.created_at DESC LIMIT 1");
+                            $stmt->execute([$userId]);
+                            $bankConnection = $stmt->fetch();
+                            $bankConnectionStatus = $bankConnection ? 'connected' : 'not_connected';
+                        } catch (Exception $e) {
+                            $bankConnectionStatus = 'error';
+                        }
+                        ?>
+                        <?php if ($bankConnectionStatus === 'connected'): ?>
+                        <p class="text-sm text-green-600 mt-1">🏦 <?php echo htmlspecialchars($bankConnection['bank_name'] ?? 'Bank'); ?> connected • Auto-monitoring active</p>
+                        <?php else: ?>
+                        <p class="text-sm text-gray-500 mt-1">Add subscriptions manually or connect your bank</p>
+                        <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="flex space-x-3">
                         <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                             Add Subscription
                         </button>
+                        <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly']) && $bankConnectionStatus !== 'connected'): ?>
+                        <button onclick="startBankScan()" class="bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                            Connect Bank
+                        </button>
+                        <?php elseif ($bankConnectionStatus === 'connected'): ?>
+                        <button onclick="disconnectBank()" class="bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
+                            Disconnect
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
                 <!-- Filters -->
-                <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                    <div class="flex items-center justify-between mb-3">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
                         <h3 class="font-medium text-gray-900">Filters & Display Options</h3>
                         <button onclick="resetFilters()" class="text-sm text-blue-600 hover:text-blue-800">Reset All</button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="flex items-center">
                                 <input type="checkbox" id="includeInactive" class="rounded border-gray-300 text-blue-600" onchange="updateFilters()">
-                                <span class="ml-2 text-sm text-gray-700">Include inactive subscriptions</span>
+                                <span class="ml-2 text-sm text-gray-700">Include inactive</span>
                             </label>
                         </div>
                         <div>
                             <label class="flex items-center">
                                 <input type="checkbox" id="excludeFromTotals" class="rounded border-gray-300 text-red-600" onchange="updateFilters()">
-                                <span class="ml-2 text-sm text-gray-700">Exclude selected from totals</span>
+                                <span class="ml-2 text-sm text-gray-700">Exclude selected</span>
                             </label>
                         </div>
                         <div>
@@ -471,45 +405,18 @@ $categories = [
                                 <option value="24">Last 24 months</option>
                             </select>
                         </div>
+                        <div>
+                            <select id="categoryFilterMain" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" onchange="updateFilters()">
+                                <option value="">All Categories</option>
+                                <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo htmlspecialchars($category['name']); ?>">
+                                    <?php echo $category['icon']; ?> <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
-                        Add New Subscription
-                    </button>
-                    <?php if ($isPaid): ?>
-                        <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all duration-200">
-                            Scan Bank Account
-                        </button>
-                    <?php else: ?>
-                        <a href="upgrade.php" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:bg-gray-700 transform hover:-translate-y-1 transition-all duration-200">
-                            Upgrade for Bank Scan
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Filter and Search -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <label for="categoryFilter" class="text-sm font-medium text-gray-700">Filter by category:</label>
-                        <select id="categoryFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" onchange="filterSubscriptions()">
-                            <option value="">All Categories</option>
-                            <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo htmlspecialchars($category['name']); ?>">
-                                <?php echo $category['icon']; ?> <?php echo htmlspecialchars($category['name']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="text-sm text-gray-500">
-                        Showing <?php echo count($subscriptions); ?> subscription<?php echo count($subscriptions) !== 1 ? 's' : ''; ?>
-                    </div>
-                </div>
-            </div>
 
             <!-- Charts Section -->
             <?php if (!empty($subscriptions)): ?>
@@ -879,11 +786,13 @@ $categories = [
             const includeInactive = document.getElementById('includeInactive')?.checked || false;
             const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
             const timeRange = parseInt(document.getElementById('timeRange')?.value || '12');
+            const categoryFilter = document.getElementById('categoryFilterMain')?.value || '';
             
             // Filter subscriptions
             let filtered = subscriptionsData.filter(sub => {
                 if (!includeInactive && sub.is_active != 1) return false;
                 if (excludeFromTotals && excludedSubscriptions.includes(sub.id.toString())) return false;
+                if (categoryFilter && sub.category !== categoryFilter) return false;
                 return true;
             });
             
@@ -904,27 +813,43 @@ $categories = [
             const months = [];
             const trendValues = [];
             const currentDate = new Date();
-            const totalMonthly = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
             
             for (let i = timeRange - 1; i >= 0; i--) {
                 const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-                months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+                months.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
                 
-                // Calculate realistic spending for this month based on subscription start dates
+                // Calculate realistic spending for this month based on subscription lifecycle
                 let monthlySpending = 0;
                 filtered.forEach(sub => {
-                    const subStartDate = new Date(sub.created_at || sub.next_billing_date || currentDate);
+                    // Use created_at if available, otherwise estimate based on current date
+                    let subStartDate;
+                    if (sub.created_at && sub.created_at !== '0000-00-00 00:00:00') {
+                        subStartDate = new Date(sub.created_at);
+                    } else {
+                        // Estimate start date: assume subscription started 6 months ago on average
+                        subStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 6, 1);
+                    }
+                    
+                    // Only include subscription cost if it was active during this month
                     if (subStartDate <= date) {
                         let monthlyCost = 0;
                         switch (sub.billing_cycle) {
-                            case 'monthly': monthlyCost = parseFloat(sub.cost); break;
-                            case 'yearly': monthlyCost = parseFloat(sub.cost) / 12; break;
-                            case 'weekly': monthlyCost = parseFloat(sub.cost) * 4.33; break;
+                            case 'monthly': monthlyCost = parseFloat(sub.cost) || 0; break;
+                            case 'yearly': monthlyCost = (parseFloat(sub.cost) || 0) / 12; break;
+                            case 'weekly': monthlyCost = (parseFloat(sub.cost) || 0) * 4.33; break;
+                            default: monthlyCost = parseFloat(sub.cost) || 0; break;
                         }
                         monthlySpending += monthlyCost;
                     }
                 });
-                trendValues.push(monthlySpending);
+                
+                // Ensure we don't have zero values - use current total if no historical data
+                if (monthlySpending === 0 && i === 0) {
+                    // For current month, use actual current totals
+                    monthlySpending = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+                }
+                
+                trendValues.push(Math.round(monthlySpending * 100) / 100); // Round to 2 decimals
             }
             
             return {
@@ -970,13 +895,63 @@ $categories = [
             const filteredData = getFilteredData();
             const monthlyTotal = filteredData.categoryData.datasets[0].data.reduce((a, b) => a + b, 0);
             const yearlyTotal = monthlyTotal * 12;
+            const activeCount = getActiveSubscriptionCount();
+            const totalCount = getTotalSubscriptionCount();
             
-            // Update the stat cards if they exist
+            // Update all stat cards
             const monthlyElement = document.querySelector('[data-stat="monthly"]');
             const yearlyElement = document.querySelector('[data-stat="yearly"]');
+            const totalElement = document.querySelector('[data-stat="total"]');
+            const activeElement = document.querySelector('p:contains("Active Subscriptions")');
             
             if (monthlyElement) monthlyElement.textContent = '€' + monthlyTotal.toFixed(2);
             if (yearlyElement) yearlyElement.textContent = '€' + yearlyTotal.toFixed(2);
+            if (totalElement) totalElement.textContent = totalCount;
+            
+            // Update active subscriptions count
+            const activeStatElement = document.querySelector('.stat-card:first-child .text-2xl');
+            if (activeStatElement) activeStatElement.textContent = activeCount;
+            
+            // Update subscription cards visibility based on exclusions
+            updateSubscriptionCardsVisibility();
+        }
+        
+        function getActiveSubscriptionCount() {
+            const includeInactive = document.getElementById('includeInactive')?.checked || false;
+            const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
+            
+            return subscriptionsData.filter(sub => {
+                if (!includeInactive && sub.is_active != 1) return false;
+                if (excludeFromTotals && excludedSubscriptions.includes(sub.id.toString())) return false;
+                return sub.is_active == 1;
+            }).length;
+        }
+        
+        function getTotalSubscriptionCount() {
+            const includeInactive = document.getElementById('includeInactive')?.checked || false;
+            const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
+            
+            return subscriptionsData.filter(sub => {
+                if (!includeInactive && sub.is_active != 1) return false;
+                if (excludeFromTotals && excludedSubscriptions.includes(sub.id.toString())) return false;
+                return true;
+            }).length;
+        }
+        
+        function updateSubscriptionCardsVisibility() {
+            const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
+            
+            document.querySelectorAll('.subscription-card').forEach(card => {
+                const subscriptionId = card.querySelector('.exclude-checkbox')?.getAttribute('data-id');
+                
+                if (excludeFromTotals && excludedSubscriptions.includes(subscriptionId)) {
+                    card.style.opacity = '0.5';
+                    card.style.border = '2px dashed #ef4444';
+                } else {
+                    card.style.opacity = '1';
+                    card.style.border = '1px solid #e5e7eb';
+                }
+            });
         }
         
         function toggleExclude(subscriptionId) {
@@ -1001,10 +976,36 @@ $categories = [
             document.getElementById('includeInactive').checked = false;
             document.getElementById('excludeFromTotals').checked = false;
             document.getElementById('timeRange').value = '12';
+            document.getElementById('categoryFilterMain').value = '';
             excludedSubscriptions = [];
             localStorage.removeItem('excludedSubscriptions');
             document.querySelectorAll('.exclude-checkbox').forEach(cb => cb.checked = false);
             updateFilters();
+        }
+        
+        // Update subscription card visibility based on filters
+        function updateSubscriptionVisibility() {
+            const categoryFilter = document.getElementById('categoryFilterMain')?.value || '';
+            const includeInactive = document.getElementById('includeInactive')?.checked || false;
+            
+            document.querySelectorAll('.subscription-card').forEach(card => {
+                const category = card.getAttribute('data-category');
+                const isActive = card.querySelector('.bg-green-100') !== null; // Check if has active badge
+                
+                let shouldShow = true;
+                
+                // Category filter
+                if (categoryFilter && category !== categoryFilter) {
+                    shouldShow = false;
+                }
+                
+                // Inactive filter
+                if (!includeInactive && !isActive) {
+                    shouldShow = false;
+                }
+                
+                card.style.display = shouldShow ? 'block' : 'none';
+            });
         }
         
         function disconnectBank() {
