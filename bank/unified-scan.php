@@ -96,6 +96,12 @@ if ($_POST && isset($_POST['action'])) {
                 try {
                     $result = $providerRouter->createBankConnectionSession($userId, $provider, $options);
                     error_log("createBankConnectionSession result: " . print_r($result, true));
+                    
+                    // DETAILED DEBUG - Check what we got back
+                    error_log("DEBUG: Result success: " . ($result['success'] ? 'true' : 'false'));
+                    error_log("DEBUG: Result auth_url: " . ($result['auth_url'] ?? 'NULL'));
+                    error_log("DEBUG: Result error: " . ($result['error'] ?? 'NULL'));
+                    
                 } catch (Exception $e) {
                     error_log("Error in createBankConnectionSession: " . $e->getMessage());
                     error_log("Stack trace: " . $e->getTraceAsString());
@@ -103,9 +109,18 @@ if ($_POST && isset($_POST['action'])) {
                 }
                 
                 if ($result['success']) {
+                    error_log("DEBUG: About to redirect to: " . $result['auth_url']);
+                    
+                    // Check if auth_url is actually valid
+                    if (empty($result['auth_url'])) {
+                        error_log("ERROR: auth_url is empty!");
+                        throw new Exception("Bank connection session created but no authorization URL provided.");
+                    }
+                    
                     header('Location: ' . $result['auth_url']);
                     exit;
                 } else {
+                    error_log("DEBUG: createBankConnectionSession failed with error: " . ($result['error'] ?? 'Unknown error'));
                     throw new Exception($result['error'] ?? "Failed to initiate bank connection. Please try again.");
                 }
                 break;
