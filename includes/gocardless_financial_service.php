@@ -468,7 +468,20 @@ class GoCardlessFinancialService {
         // Group transactions by merchant
         foreach ($transactions as $transaction) {
             $merchant = $this->extractMerchantName($transaction);
-            $rawAmount = floatval($transaction['transactionAmount']['amount']);
+            
+            // Handle different possible transaction amount structures
+            $rawAmount = 0;
+            if (isset($transaction['transactionAmount']['amount'])) {
+                $rawAmount = floatval($transaction['transactionAmount']['amount']);
+            } elseif (isset($transaction['amount'])) {
+                $rawAmount = floatval($transaction['amount']);
+            } elseif (isset($transaction['transactionAmount'])) {
+                $rawAmount = floatval($transaction['transactionAmount']);
+            } else {
+                error_log("GoCardless: No amount found in transaction: " . json_encode($transaction));
+                continue;
+            }
+            
             $amount = abs($rawAmount);
             $date = $transaction['bookingDate'] ?? $transaction['valueDate'] ?? '';
             
@@ -483,6 +496,7 @@ class GoCardlessFinancialService {
                     'description' => $transaction['remittanceInformationUnstructured'] ?? '',
                     'raw_transaction' => $transaction
                 ];
+                error_log("GoCardless: Added transaction for merchant '$merchant': €$amount on $date");
             }
         }
         
