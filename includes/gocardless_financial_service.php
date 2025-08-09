@@ -609,8 +609,8 @@ class GoCardlessFinancialService {
             $billingCycle = 'unknown';
             if ($avgInterval >= 28 && $avgInterval <= 32) {
                 $billingCycle = 'monthly';
-            } elseif ($avgInterval >= 360 && $avgInterval <= 370) {
-                $billingCycle = 'yearly';
+            } elseif ($avgInterval >= 350 && $avgInterval <= 380) {
+                $billingCycle = 'yearly';  // Much wider range for yearly subscriptions
             } elseif ($avgInterval >= 85 && $avgInterval <= 95) {
                 $billingCycle = 'quarterly';
             } elseif ($avgInterval >= 6 && $avgInterval <= 8) {
