@@ -103,10 +103,20 @@ class StripeFinancialService {
                 ])
             ]);
             
+            // In test mode, hosted_auth_url might be empty, so we need to construct it
+            $authUrl = $session->hosted_auth_url;
+            
+            // If hosted_auth_url is empty (common in test mode), construct the URL
+            if (empty($authUrl) && !empty($session->client_secret)) {
+                // For test mode, we need to redirect to a page that will handle the client-side flow
+                $authUrl = $this->baseUrl . '/bank/stripe-connect.php?session_id=' . $session->id . '&client_secret=' . $session->client_secret;
+            }
+            
             return [
                 'success' => true,
                 'session_id' => $session->id,
-                'auth_url' => $session->hosted_auth_url,
+                'auth_url' => $authUrl,
+                'client_secret' => $session->client_secret ?? null,
                 'message' => 'Bank connection session created successfully'
             ];
             
