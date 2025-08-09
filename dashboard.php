@@ -289,12 +289,13 @@ $categories = [
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Monthly Spending</p>
-                            <p class="text-2xl font-bold text-gray-900">€<?php echo number_format($stats['monthly_total'], 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" data-stat="monthly">€<?php echo number_format($stats['monthly_total'], 2); ?></p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Yearly Total -->
+{{ ... }}
                 <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-lg bg-purple-100">
@@ -304,7 +305,7 @@ $categories = [
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Yearly Total</p>
-                            <p class="text-2xl font-bold text-gray-900">€<?php echo number_format($stats['yearly_total'], 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" data-stat="yearly">€<?php echo number_format($stats['yearly_total'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -383,20 +384,20 @@ $categories = [
                         <div class="ml-6">
                             <h3 class="text-xl font-bold text-gray-900 mb-2">
                                 <?php if ($bankConnectionStatus === 'connected'): ?>
-                                🏦 Bank Connected - Automatic Weekly Scans
+                                🏦 <?php echo htmlspecialchars($bankConnection['bank_name'] ?? 'Bank'); ?> Connected - Monitoring Active
                                 <?php else: ?>
                                 🏦 Connect Your Bank Account
                                 <?php endif; ?>
                             </h3>
                             <div class="text-gray-600">
                                 <?php if ($bankConnectionStatus === 'connected'): ?>
-                                    <p class="mb-1">✅ Your bank account is connected and will be scanned automatically every week</p>
+                                    <p class="mb-1">✅ Your bank is connected and transactions are monitored automatically</p>
                                     <?php if ($lastScanDate): ?>
-                                    <p class="text-sm">Last scan: <?php echo date('M j, Y', strtotime($lastScanDate)); ?></p>
-                                    <p class="text-sm">Next scan: <?php echo $nextScanDate ? date('M j, Y', strtotime($nextScanDate)) : 'Within 7 days'; ?></p>
+                                    <p class="text-sm">Last updated: <?php echo date('M j, Y', strtotime($lastScanDate)); ?></p>
+                                    <p class="text-sm">Connected via: <?php echo htmlspecialchars($bankConnection['provider'] ?? 'GoCardless'); ?></p>
                                     <?php else: ?>
-                                    <p class="text-sm">Initial scan will run within 24 hours</p>
-                                    <?php endif; ?>
+                                    <p>Connect once to automatically detect subscriptions from your transactions</p>
+                                <?php endif; ?>
                                 <?php else: ?>
                                     <p class="mb-1">Connect once and we'll automatically scan for new subscriptions every week</p>
                                     <p class="text-sm text-blue-600">• No manual scanning needed • Always up-to-date • Secure bank-grade encryption</p>
@@ -404,16 +405,18 @@ $categories = [
                             </div>
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
+                    <div class="flex space-x-4">
                         <?php if ($bankConnectionStatus === 'connected'): ?>
-                        <div class="text-center">
-                            <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2">
-                                Manual Scan Now
+                        <div class="flex space-x-3">
+                            <span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-800">
+                                ✅ Connected
+                            </span>
+                            <button onclick="disconnectBank()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
+                                Disconnect
                             </button>
-                            <p class="text-xs text-gray-500">Or wait for automatic scan</p>
                         </div>
                         <?php else: ?>
-                        <button onclick="startBankScan()" class="bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-green-700 transform hover:-translate-y-1 transition-all duration-200">
+                        <button onclick="startBankScan()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
                             Connect Bank Account
                         </button>
                         <?php endif; ?>
@@ -432,6 +435,44 @@ $categories = [
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 mb-4">Your Subscriptions</h2>
                 <p class="text-lg text-gray-600 mb-6">Manage all your recurring payments in one place</p>
+                
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Your Subscriptions</h2>
+                    <div class="flex space-x-4">
+                        <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                            Add Subscription
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900">Filters & Display Options</h3>
+                        <button onclick="resetFilters()" class="text-sm text-blue-600 hover:text-blue-800">Reset All</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="includeInactive" class="rounded border-gray-300 text-blue-600" onchange="updateFilters()">
+                                <span class="ml-2 text-sm text-gray-700">Include inactive subscriptions</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="excludeFromTotals" class="rounded border-gray-300 text-red-600" onchange="updateFilters()">
+                                <span class="ml-2 text-sm text-gray-700">Exclude selected from totals</span>
+                            </label>
+                        </div>
+                        <div>
+                            <select id="timeRange" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" onchange="updateFilters()">
+                                <option value="6">Last 6 months</option>
+                                <option value="12" selected>Last 12 months</option>
+                                <option value="24">Last 24 months</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -532,6 +573,10 @@ $categories = [
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
+                            <label class="flex items-center" title="Exclude from totals">
+                                <input type="checkbox" class="exclude-checkbox rounded border-gray-300 text-red-600" data-id="<?php echo $subscription['id']; ?>" onchange="toggleExclude(<?php echo $subscription['id']; ?>)">
+                                <span class="ml-1 text-xs text-gray-500">Exclude</span>
+                            </label>
                             <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['name'], ENT_QUOTES); ?>', <?php echo $subscription['cost']; ?>, '<?php echo $subscription['billing_cycle']; ?>', '<?php echo $subscription['category']; ?>', <?php echo $subscription['is_active']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -774,39 +819,27 @@ $categories = [
             }
         });
         
+        // Global variables for charts and data
+        let categoryChart, trendChart;
+        let subscriptionsData = <?php echo json_encode($subscriptions); ?>;
+        let excludedSubscriptions = JSON.parse(localStorage.getItem('excludedSubscriptions') || '[]');
+        
         // Initialize charts if we have subscription data
         <?php if (!empty($subscriptions)): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            // Category spending chart
-            const categoryData = {
-                <?php 
-                $categoryTotals = [];
-                foreach ($subscriptions as $sub) {
-                    if ($sub['is_active']) {
-                        $category = $sub['category'] ?? 'Other';
-                        $monthlyCost = 0;
-                        switch ($sub['billing_cycle']) {
-                            case 'monthly': $monthlyCost = $sub['cost']; break;
-                            case 'yearly': $monthlyCost = $sub['cost'] / 12; break;
-                            case 'weekly': $monthlyCost = $sub['cost'] * 4.33; break;
-                        }
-                        $categoryTotals[$category] = ($categoryTotals[$category] ?? 0) + $monthlyCost;
-                    }
-                }
-                ?>
-                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
-                datasets: [{
-                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
-                    backgroundColor: [
-                        '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
-                        '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
-                    ]
-                }]
-            };
+            initializeCharts();
+            loadExcludedSubscriptions();
+            updateFilters();
+        });
+        <?php endif; ?>
+        
+        function initializeCharts() {
+            const filteredData = getFilteredData();
             
-            new Chart(document.getElementById('categoryChart'), {
+            // Category spending chart
+            categoryChart = new Chart(document.getElementById('categoryChart'), {
                 type: 'doughnut',
-                data: categoryData,
+                data: filteredData.categoryData,
                 options: {
                     responsive: true,
                     plugins: {
@@ -817,21 +850,10 @@ $categories = [
                 }
             });
             
-            // Trend chart (simulated data for now)
-            const trendData = {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Monthly Spending',
-                    data: [<?php echo $stats['monthly_total']; ?>, <?php echo $stats['monthly_total'] * 0.9; ?>, <?php echo $stats['monthly_total'] * 1.1; ?>, <?php echo $stats['monthly_total']; ?>, <?php echo $stats['monthly_total'] * 1.05; ?>, <?php echo $stats['monthly_total']; ?>],
-                    borderColor: '#3b82f6',
-                    backgroundColor: '#3b82f6',
-                    tension: 0.4
-                }]
-            };
-            
-            new Chart(document.getElementById('trendChart'), {
+            // Realistic trend chart based on actual subscription start dates
+            trendChart = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
-                data: trendData,
+                data: filteredData.trendData,
                 options: {
                     responsive: true,
                     scales: {
@@ -851,8 +873,153 @@ $categories = [
                     }
                 }
             });
-        });
-        <?php endif; ?>
+        }
+        
+        function getFilteredData() {
+            const includeInactive = document.getElementById('includeInactive')?.checked || false;
+            const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
+            const timeRange = parseInt(document.getElementById('timeRange')?.value || '12');
+            
+            // Filter subscriptions
+            let filtered = subscriptionsData.filter(sub => {
+                if (!includeInactive && sub.is_active != 1) return false;
+                if (excludeFromTotals && excludedSubscriptions.includes(sub.id.toString())) return false;
+                return true;
+            });
+            
+            // Calculate category totals
+            const categoryTotals = {};
+            filtered.forEach(sub => {
+                const category = sub.category || 'Other';
+                let monthlyCost = 0;
+                switch (sub.billing_cycle) {
+                    case 'monthly': monthlyCost = parseFloat(sub.cost); break;
+                    case 'yearly': monthlyCost = parseFloat(sub.cost) / 12; break;
+                    case 'weekly': monthlyCost = parseFloat(sub.cost) * 4.33; break;
+                }
+                categoryTotals[category] = (categoryTotals[category] || 0) + monthlyCost;
+            });
+            
+            // Generate realistic trend data
+            const months = [];
+            const trendValues = [];
+            const currentDate = new Date();
+            const totalMonthly = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+            
+            for (let i = timeRange - 1; i >= 0; i--) {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+                
+                // Calculate realistic spending for this month based on subscription start dates
+                let monthlySpending = 0;
+                filtered.forEach(sub => {
+                    const subStartDate = new Date(sub.created_at || sub.next_billing_date || currentDate);
+                    if (subStartDate <= date) {
+                        let monthlyCost = 0;
+                        switch (sub.billing_cycle) {
+                            case 'monthly': monthlyCost = parseFloat(sub.cost); break;
+                            case 'yearly': monthlyCost = parseFloat(sub.cost) / 12; break;
+                            case 'weekly': monthlyCost = parseFloat(sub.cost) * 4.33; break;
+                        }
+                        monthlySpending += monthlyCost;
+                    }
+                });
+                trendValues.push(monthlySpending);
+            }
+            
+            return {
+                categoryData: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        data: Object.values(categoryTotals),
+                        backgroundColor: [
+                            '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
+                            '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
+                        ]
+                    }]
+                },
+                trendData: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Monthly Spending',
+                        data: trendValues,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                }
+            };
+        }
+        
+        function updateFilters() {
+            if (categoryChart && trendChart) {
+                const filteredData = getFilteredData();
+                
+                categoryChart.data = filteredData.categoryData;
+                categoryChart.update();
+                
+                trendChart.data = filteredData.trendData;
+                trendChart.update();
+                
+                updateTotalDisplays();
+            }
+        }
+        
+        function updateTotalDisplays() {
+            const filteredData = getFilteredData();
+            const monthlyTotal = filteredData.categoryData.datasets[0].data.reduce((a, b) => a + b, 0);
+            const yearlyTotal = monthlyTotal * 12;
+            
+            // Update the stat cards if they exist
+            const monthlyElement = document.querySelector('[data-stat="monthly"]');
+            const yearlyElement = document.querySelector('[data-stat="yearly"]');
+            
+            if (monthlyElement) monthlyElement.textContent = '€' + monthlyTotal.toFixed(2);
+            if (yearlyElement) yearlyElement.textContent = '€' + yearlyTotal.toFixed(2);
+        }
+        
+        function toggleExclude(subscriptionId) {
+            const index = excludedSubscriptions.indexOf(subscriptionId.toString());
+            if (index > -1) {
+                excludedSubscriptions.splice(index, 1);
+            } else {
+                excludedSubscriptions.push(subscriptionId.toString());
+            }
+            localStorage.setItem('excludedSubscriptions', JSON.stringify(excludedSubscriptions));
+            updateFilters();
+        }
+        
+        function loadExcludedSubscriptions() {
+            excludedSubscriptions.forEach(id => {
+                const checkbox = document.querySelector(`[data-id="${id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        
+        function resetFilters() {
+            document.getElementById('includeInactive').checked = false;
+            document.getElementById('excludeFromTotals').checked = false;
+            document.getElementById('timeRange').value = '12';
+            excludedSubscriptions = [];
+            localStorage.removeItem('excludedSubscriptions');
+            document.querySelectorAll('.exclude-checkbox').forEach(cb => cb.checked = false);
+            updateFilters();
+        }
+        
+        function disconnectBank() {
+            if (confirm('Are you sure you want to disconnect your bank? This will stop automatic subscription monitoring.')) {
+                // Add AJAX call to disconnect bank
+                fetch('bank/disconnect.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(() => {
+                    location.reload();
+                }).catch(err => {
+                    alert('Error disconnecting bank. Please try again.');
+                });
+            }
+        }
     </script>
 </body>
 </html>

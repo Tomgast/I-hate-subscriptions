@@ -277,21 +277,48 @@ try {
             <!-- Summary Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-blue-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-blue-600"><?php echo count($scanResults['subscriptions']); ?></div>
+                    <div class="text-3xl font-bold text-blue-600" data-stat="count"><?php echo count($scanResults['subscriptions']); ?></div>
                     <div class="text-blue-800 font-medium">Subscriptions</div>
                 </div>
                 <div class="bg-green-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-green-600">€<?php echo number_format($scanResults['monthly_total'] ?? 0, 2); ?></div>
+                    <div class="text-3xl font-bold text-green-600" data-stat="monthly">€<?php echo number_format($scanResults['monthly_total'] ?? 0, 2); ?></div>
                     <div class="text-green-800 font-medium">Monthly Total</div>
                 </div>
                 <div class="bg-purple-50 rounded-lg p-6 text-center">
-                    <div class="text-3xl font-bold text-purple-600">€<?php echo number_format($scanResults['yearly_total'] ?? 0, 2); ?></div>
+                    <div class="text-3xl font-bold text-purple-600" data-stat="yearly">€<?php echo number_format($scanResults['yearly_total'] ?? 0, 2); ?></div>
                     <div class="text-purple-800 font-medium">Yearly Total</div>
                 </div>
             </div>
             
-            <!-- Charts Section -->
+            <!-- Filters -->
             <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-medium text-gray-900">Filter Results</h3>
+                    <button onclick="resetFilters()" class="text-sm text-blue-600 hover:text-blue-800">Reset</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="excludeFromTotals" class="rounded border-gray-300 text-red-600" onchange="updateOneTimeFilters()">
+                            <span class="ml-2 text-sm text-gray-700">Exclude selected from totals</span>
+                        </label>
+                    </div>
+                    <div>
+                        <select id="categoryFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" onchange="updateOneTimeFilters()">
+                            <option value="all">All Categories</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Software">Software</option>
+                            <option value="Music">Music</option>
+                            <option value="Gaming">Gaming</option>
+                            <option value="News">News</option>
+                            <option value="Fitness">Fitness</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Category Breakdown Chart -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -365,14 +392,20 @@ try {
                     </div>
                     <?php endif; ?>
                     
-                    <!-- Action Buttons -->
-                    <div class="flex space-x-3 mt-4">
-                        <a href="guides/unsubscribe.php?service=<?php echo urlencode(strtolower($sub['name'])); ?>" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors text-center">
-                            🚫 Cancel Subscription
-                        </a>
-                        <button onclick="showTransactionHistory('<?php echo $sub['id']; ?>')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                            📊 View History
-                        </button>
+                    <!-- Exclude Option -->
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="exclude-checkbox-onetime rounded border-gray-300 text-red-600" data-id="<?php echo $sub['id']; ?>" onchange="toggleOneTimeExclude('<?php echo $sub['id']; ?>')">
+                            <span class="ml-2 text-sm text-gray-700">Exclude from totals</span>
+                        </label>
+                        <div class="flex space-x-2">
+                            <a href="guides/unsubscribe.php?service=<?php echo urlencode(strtolower($sub['name'])); ?>" class="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors">
+                                🚫 Cancel
+                            </a>
+                            <button onclick="showTransactionHistory('<?php echo $sub['id']; ?>')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors">
+                                📊 History
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -459,37 +492,27 @@ try {
     </div>
 
     <script>
+        // Global variables for one-time dashboard
+        let categoryChart, costsChart;
+        let scanResultsData = <?php echo json_encode($scanResults['subscriptions'] ?? []); ?>;
+        let excludedOneTimeSubscriptions = JSON.parse(localStorage.getItem('excludedOneTimeSubscriptions') || '[]');
+        
         // Initialize charts if we have scan results
         <?php if ($scanResults && !empty($scanResults['subscriptions'])): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            // Category breakdown chart
-            const categoryData = {
-                <?php 
-                $categoryTotals = [];
-                foreach ($scanResults['subscriptions'] as $sub) {
-                    $category = $sub['category'] ?? 'Other';
-                    $monthlyCost = 0;
-                    switch ($sub['billing_cycle']) {
-                        case 'monthly': $monthlyCost = $sub['cost']; break;
-                        case 'yearly': $monthlyCost = $sub['cost'] / 12; break;
-                        case 'weekly': $monthlyCost = $sub['cost'] * 4.33; break;
-                    }
-                    $categoryTotals[$category] = ($categoryTotals[$category] ?? 0) + $monthlyCost;
-                }
-                ?>
-                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
-                datasets: [{
-                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
-                    backgroundColor: [
-                        '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
-                        '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
-                    ]
-                }]
-            };
+            initializeOneTimeCharts();
+            loadExcludedOneTimeSubscriptions();
+            updateOneTimeFilters();
+        });
+        <?php endif; ?>
+        
+        function initializeOneTimeCharts() {
+            const filteredData = getOneTimeFilteredData();
             
-            new Chart(document.getElementById('categoryChart'), {
+            // Category breakdown chart
+            categoryChart = new Chart(document.getElementById('categoryChart'), {
                 type: 'doughnut',
-                data: categoryData,
+                data: filteredData.categoryData,
                 options: {
                     responsive: true,
                     plugins: {
@@ -501,20 +524,9 @@ try {
             });
             
             // Monthly costs chart
-            const costsData = {
-                labels: <?php echo json_encode(array_keys($categoryTotals)); ?>,
-                datasets: [{
-                    label: 'Monthly Cost',
-                    data: <?php echo json_encode(array_values($categoryTotals)); ?>,
-                    backgroundColor: '#3b82f6',
-                    borderColor: '#1d4ed8',
-                    borderWidth: 2
-                }]
-            };
-            
-            new Chart(document.getElementById('costsChart'), {
+            costsChart = new Chart(document.getElementById('costsChart'), {
                 type: 'bar',
-                data: costsData,
+                data: filteredData.costsData,
                 options: {
                     responsive: true,
                     scales: {
@@ -534,8 +546,125 @@ try {
                     }
                 }
             });
-        });
-        <?php endif; ?>
+        }
+        
+        function getOneTimeFilteredData() {
+            const excludeFromTotals = document.getElementById('excludeFromTotals')?.checked || false;
+            const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
+            
+            // Filter subscriptions
+            let filtered = scanResultsData.filter(sub => {
+                if (excludeFromTotals && excludedOneTimeSubscriptions.includes(sub.id.toString())) return false;
+                if (categoryFilter !== 'all' && sub.category !== categoryFilter) return false;
+                return true;
+            });
+            
+            // Calculate category totals
+            const categoryTotals = {};
+            filtered.forEach(sub => {
+                const category = sub.category || 'Other';
+                let monthlyCost = 0;
+                switch (sub.billing_cycle) {
+                    case 'monthly': monthlyCost = parseFloat(sub.cost); break;
+                    case 'yearly': monthlyCost = parseFloat(sub.cost) / 12; break;
+                    case 'weekly': monthlyCost = parseFloat(sub.cost) * 4.33; break;
+                }
+                categoryTotals[category] = (categoryTotals[category] || 0) + monthlyCost;
+            });
+            
+            return {
+                categoryData: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        data: Object.values(categoryTotals),
+                        backgroundColor: [
+                            '#ef4444', '#10b981', '#3b82f6', '#6b7280', 
+                            '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'
+                        ]
+                    }]
+                },
+                costsData: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        label: 'Monthly Cost',
+                        data: Object.values(categoryTotals),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1d4ed8',
+                        borderWidth: 2
+                    }]
+                }
+            };
+        }
+        
+        function updateOneTimeFilters() {
+            if (categoryChart && costsChart) {
+                const filteredData = getOneTimeFilteredData();
+                
+                categoryChart.data = filteredData.categoryData;
+                categoryChart.update();
+                
+                costsChart.data = filteredData.costsData;
+                costsChart.update();
+                
+                updateOneTimeTotalDisplays();
+                updateSubscriptionVisibility();
+            }
+        }
+        
+        function updateOneTimeTotalDisplays() {
+            const filteredData = getOneTimeFilteredData();
+            const monthlyTotal = filteredData.categoryData.datasets[0].data.reduce((a, b) => a + b, 0);
+            const yearlyTotal = monthlyTotal * 12;
+            const count = filteredData.categoryData.labels.length;
+            
+            // Update the stat cards
+            const countElement = document.querySelector('[data-stat="count"]');
+            const monthlyElement = document.querySelector('[data-stat="monthly"]');
+            const yearlyElement = document.querySelector('[data-stat="yearly"]');
+            
+            if (countElement) countElement.textContent = count;
+            if (monthlyElement) monthlyElement.textContent = '€' + monthlyTotal.toFixed(2);
+            if (yearlyElement) yearlyElement.textContent = '€' + yearlyTotal.toFixed(2);
+        }
+        
+        function updateSubscriptionVisibility() {
+            const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
+            document.querySelectorAll('.scan-card').forEach(card => {
+                const category = card.querySelector('.text-sm.text-gray-600').textContent.split(' • ')[1];
+                if (categoryFilter === 'all' || category === categoryFilter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        function toggleOneTimeExclude(subscriptionId) {
+            const index = excludedOneTimeSubscriptions.indexOf(subscriptionId.toString());
+            if (index > -1) {
+                excludedOneTimeSubscriptions.splice(index, 1);
+            } else {
+                excludedOneTimeSubscriptions.push(subscriptionId.toString());
+            }
+            localStorage.setItem('excludedOneTimeSubscriptions', JSON.stringify(excludedOneTimeSubscriptions));
+            updateOneTimeFilters();
+        }
+        
+        function loadExcludedOneTimeSubscriptions() {
+            excludedOneTimeSubscriptions.forEach(id => {
+                const checkbox = document.querySelector(`[data-id="${id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        
+        function resetFilters() {
+            document.getElementById('excludeFromTotals').checked = false;
+            document.getElementById('categoryFilter').value = 'all';
+            excludedOneTimeSubscriptions = [];
+            localStorage.removeItem('excludedOneTimeSubscriptions');
+            document.querySelectorAll('.exclude-checkbox-onetime').forEach(cb => cb.checked = false);
+            updateOneTimeFilters();
+        }
         
         // Transaction history modal
         function showTransactionHistory(subscriptionId) {
