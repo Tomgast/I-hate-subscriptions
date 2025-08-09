@@ -91,7 +91,16 @@ if ($_POST && isset($_POST['action'])) {
                     }
                 }
                 
-                $result = $providerRouter->createBankConnectionSession($userId, $provider, $options);
+                error_log("About to call createBankConnectionSession with provider: $provider, options: " . print_r($options, true));
+                
+                try {
+                    $result = $providerRouter->createBankConnectionSession($userId, $provider, $options);
+                    error_log("createBankConnectionSession result: " . print_r($result, true));
+                } catch (Exception $e) {
+                    error_log("Error in createBankConnectionSession: " . $e->getMessage());
+                    error_log("Stack trace: " . $e->getTraceAsString());
+                    throw $e;
+                }
                 
                 if ($result['success']) {
                     header('Location: ' . $result['auth_url']);
