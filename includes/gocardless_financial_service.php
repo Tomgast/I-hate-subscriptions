@@ -246,30 +246,43 @@ class GoCardlessFinancialService {
         try {
             error_log("GoCardless handleCallback called with requisition ID: " . $requisitionId);
             
-            // Check if session exists in database first
+            // The $requisitionId is actually the reference ID from GoCardless callback
+            // We need to look up the session by reference in session_data, not by session_id
             $stmt = $this->pdo->prepare("
-                SELECT user_id, session_data, status, created_at, expires_at
+                SELECT user_id, session_id, session_data, status, created_at, expires_at
                 FROM bank_connection_sessions 
-                WHERE session_id = ? AND provider = 'gocardless'
+                WHERE provider = 'gocardless' 
+                AND JSON_EXTRACT(session_data, '$.reference') = ?
             ");
             $stmt->execute([$requisitionId]);
             $session = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            error_log("Database session lookup result: " . print_r($session, true));
+            error_log("Database session lookup by reference result: " . print_r($session, true));
             
             if (!$session) {
-                // Log all sessions for this user to debug
+                // Try alternative lookup - maybe it's actually the requisition ID
                 $stmt = $this->pdo->prepare("
-                    SELECT session_id, status, created_at, expires_at 
+                    SELECT user_id, session_id, session_data, status, created_at, expires_at
                     FROM bank_connection_sessions 
-                    WHERE provider = 'gocardless' 
-                    ORDER BY created_at DESC LIMIT 10
+                    WHERE session_id = ? AND provider = 'gocardless'
                 ");
-                $stmt->execute();
-                $allSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                error_log("Recent GoCardless sessions: " . print_r($allSessions, true));
+                $stmt->execute([$requisitionId]);
+                $session = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                throw new Exception('Session not found in database for requisition ID: ' . $requisitionId);
+                if (!$session) {
+                    // Log all sessions for debugging
+                    $stmt = $this->pdo->prepare("
+                        SELECT session_id, session_data, status, created_at, expires_at 
+                        FROM bank_connection_sessions 
+                        WHERE provider = 'gocardless' 
+                        ORDER BY created_at DESC LIMIT 10
+                    ");
+                    $stmt->execute();
+                    $allSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    error_log("Recent GoCardless sessions: " . print_r($allSessions, true));
+                    
+                    throw new Exception('Session not found in database for reference/requisition ID: ' . $requisitionId);
+                }
             }
             
             // Check if session has expired
@@ -278,12 +291,19 @@ class GoCardlessFinancialService {
                 throw new Exception('Session has expired');
             }
             
-            error_log("Making API call to GoCardless for requisition: " . $requisitionId);
+            $userId = $session['user_id'];
+            $sessionData = json_decode($session['session_data'], true);
             
-            // Get requisition details
+            // Get the actual requisition ID from session data
+            $actualRequisitionId = $sessionData['requisition_id'] ?? $session['session_id'];
+            
+            error_log("Making API call to GoCardless for actual requisition: " . $actualRequisitionId);
+            error_log("Session data: " . print_r($sessionData, true));
+            
+            // Get requisition details using the actual requisition ID
             $curl = curl_init();
             curl_setopt_array($curl, [
-                CURLOPT_URL => $this->apiBaseUrl . 'requisitions/' . $requisitionId . '/',
+                CURLOPT_URL => $this->apiBaseUrl . 'requisitions/' . $actualRequisitionId . '/',
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => [
                     'Authorization: Bearer ' . $this->accessToken,
@@ -307,16 +327,13 @@ class GoCardlessFinancialService {
             
             $requisition = json_decode($response, true);
             
-            $userId = $session['user_id'];
-            $sessionData = json_decode($session['session_data'], true);
-            
-            // Update session status
+            // Update session status using the correct session_id
             $stmt = $this->pdo->prepare("
                 UPDATE bank_connection_sessions 
                 SET status = 'completed', updated_at = NOW() 
                 WHERE session_id = ? AND provider = 'gocardless'
             ");
-            $stmt->execute([$requisitionId]);
+            $stmt->execute([$session['session_id']]);
             
             // Process connected accounts
             if (!empty($requisition['accounts'])) {
