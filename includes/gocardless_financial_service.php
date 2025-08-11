@@ -341,8 +341,14 @@ class GoCardlessFinancialService {
                     $this->saveConnectedAccount($userId, $accountId, $sessionData);
                 }
                 
-                // Start subscription scan
-                $this->scanForSubscriptions($userId);
+                // Start subscription scan (with error handling to prevent callback failure)
+                try {
+                    $this->scanForSubscriptions($userId);
+                    error_log("GoCardless: Subscription scan completed successfully for user $userId");
+                } catch (Exception $e) {
+                    error_log("GoCardless: Subscription scan failed for user $userId: " . $e->getMessage());
+                    // Don't fail the callback - bank connection is still successful
+                }
             }
             
             return [
@@ -539,10 +545,15 @@ class GoCardlessFinancialService {
         foreach ($merchantGroups as $merchant => $merchantTransactions) {
             if (count($merchantTransactions) >= 2) {
                 error_log("GoCardless: Analyzing merchant '$merchant' with " . count($merchantTransactions) . " transactions");
-                $subscription = $this->detectSubscriptionPatternFromProcessed($merchant, $merchantTransactions);
-                if ($subscription) {
-                    $subscriptions[] = $subscription;
-                    error_log("GoCardless: Found subscription for '$merchant'");
+                try {
+                    $subscription = $this->detectSubscriptionPatternFromProcessed($merchant, $merchantTransactions);
+                    if ($subscription) {
+                        $subscriptions[] = $subscription;
+                        error_log("GoCardless: Found subscription for '$merchant'");
+                    }
+                } catch (Exception $e) {
+                    error_log("GoCardless: Error analyzing merchant '$merchant': " . $e->getMessage());
+                    // Continue with other merchants instead of failing completely
                 }
             }
         }
@@ -586,10 +597,23 @@ class GoCardlessFinancialService {
         
         // Look for recurring amounts
         $amounts = array_column($transactions, 'amount');
-        $amountCounts = array_count_values($amounts);
+        
+        // Convert amounts to strings for array_count_values (handles floats/decimals)
+        $amountStrings = array_map(function($amount) {
+            return (string)$amount;
+        }, $amounts);
+        
+        // Count occurrences of each amount
+        $amountCounts = array_count_values($amountStrings);
+        
+        // Check if we have any amounts to process
+        if (empty($amountCounts)) {
+            return null; // No amounts to analyze
+        }
         
         // Find most common amount
-        $recurringAmount = array_keys($amountCounts, max($amountCounts))[0];
+        $recurringAmountString = array_keys($amountCounts, max($amountCounts))[0];
+        $recurringAmount = (float)$recurringAmountString;
         $recurringTransactions = array_filter($transactions, function($t) use ($recurringAmount) {
             return $t['amount'] == $recurringAmount;
         });
