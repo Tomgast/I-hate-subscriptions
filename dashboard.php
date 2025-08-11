@@ -121,23 +121,35 @@ try {
     $nextPaymentDate = null;
     
     foreach ($subscriptions as $subscription) {
-        if ($subscription['is_active'] == 1) {
+        // Check if subscription is active (support both column names for compatibility)
+        $isActive = ($subscription['status'] == 'active') || ($subscription['is_active'] == 1);
+        
+        if ($isActive) {
             $stats['total_active']++;
+            
+            // Get amount (support both column names for compatibility)
+            $amount = $subscription['amount'] ?? $subscription['cost'] ?? 0;
             
             // Calculate monthly cost
             $monthlyCost = 0;
-            switch ($subscription['billing_cycle']) {
+            $billingCycle = $subscription['billing_cycle'] ?? 'monthly';
+            
+            switch ($billingCycle) {
                 case 'monthly':
-                    $monthlyCost = $subscription['cost'];
+                    $monthlyCost = $amount;
                     break;
                 case 'yearly':
-                    $monthlyCost = $subscription['cost'] / 12;
+                    $monthlyCost = $amount / 12;
                     break;
                 case 'weekly':
-                    $monthlyCost = $subscription['cost'] * 4.33;
+                    $monthlyCost = $amount * 4.33;
                     break;
                 case 'daily':
-                    $monthlyCost = $subscription['cost'] * 30;
+                    $monthlyCost = $amount * 30;
+                    break;
+                default:
+                    // If no billing cycle specified, assume monthly
+                    $monthlyCost = $amount;
                     break;
             }
             
@@ -808,10 +820,12 @@ $categories = [
             filtered.forEach(sub => {
                 const category = sub.category || 'Other';
                 let monthlyCost = 0;
+                // Support both column names for compatibility
+                const amount = parseFloat(sub.amount || sub.cost || 0);
                 switch (sub.billing_cycle) {
-                    case 'monthly': monthlyCost = parseFloat(sub.cost); break;
-                    case 'yearly': monthlyCost = parseFloat(sub.cost) / 12; break;
-                    case 'weekly': monthlyCost = parseFloat(sub.cost) * 4.33; break;
+                    case 'monthly': monthlyCost = amount; break;
+                    case 'yearly': monthlyCost = amount / 12; break;
+                    case 'weekly': monthlyCost = amount * 4.33; break;
                 }
                 categoryTotals[category] = (categoryTotals[category] || 0) + monthlyCost;
             });
@@ -840,11 +854,13 @@ $categories = [
                     // Only include subscription cost if it was active during this month
                     if (subStartDate <= date) {
                         let monthlyCost = 0;
+                        // Support both column names for compatibility
+                        const amount = parseFloat(sub.amount || sub.cost || 0);
                         switch (sub.billing_cycle) {
-                            case 'monthly': monthlyCost = parseFloat(sub.cost) || 0; break;
-                            case 'yearly': monthlyCost = (parseFloat(sub.cost) || 0) / 12; break;
-                            case 'weekly': monthlyCost = (parseFloat(sub.cost) || 0) * 4.33; break;
-                            default: monthlyCost = parseFloat(sub.cost) || 0; break;
+                            case 'monthly': monthlyCost = amount; break;
+                            case 'yearly': monthlyCost = amount / 12; break;
+                            case 'weekly': monthlyCost = amount * 4.33; break;
+                            default: monthlyCost = amount; break;
                         }
                         monthlySpending += monthlyCost;
                     }
