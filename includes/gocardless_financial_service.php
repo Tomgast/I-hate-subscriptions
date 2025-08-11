@@ -669,11 +669,10 @@ class GoCardlessFinancialService {
                 break;
         }
         
-        // Bonus for reasonable subscription amounts (use absolute value since subscriptions are negative)
-        $absAmount = abs($amount);
-        if ($absAmount >= 5 && $absAmount <= 100) {
+        // Bonus for reasonable subscription amounts
+        if ($amount >= 5 && $amount <= 100) {
             $score += 10; // Sweet spot for most subscriptions
-        } elseif ($absAmount >= 2 && $absAmount <= 200) {
+        } elseif ($amount >= 2 && $amount <= 200) {
             $score += 5; // Still reasonable
         }
         
@@ -715,15 +714,11 @@ class GoCardlessFinancialService {
         $recurringAmount = (float)$recurringAmountString;
         
         // STEP 2: Apply amount filters early
-        if ($recurringAmount > 0) {
-            return null; // Positive amounts are income (money coming IN), not subscriptions
-        }
-        
-        if (abs($recurringAmount) < 2.00) {
+        if ($recurringAmount < 2.00) {
             return null; // Too small - likely fees or tips
         }
         
-        if (abs($recurringAmount) > 500.00) {
+        if ($recurringAmount > 500.00) {
             return null; // Too large - likely one-time purchase
         }
         
@@ -763,43 +758,7 @@ class GoCardlessFinancialService {
             
             // Calculate next expected payment date
             $lastDate = end($dates);
-            
-            // Validate last date and calculate next payment
-            if (!$lastDate || !strtotime($lastDate)) {
-                // If no valid last date, use most recent date from transactions
-                $lastDate = date('Y-m-d');
-            }
-            
-            // Calculate next payment based on billing cycle for more accuracy
-            $nextPaymentDate = null;
-            switch ($billingCycle) {
-                case 'monthly':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 1 month'));
-                    break;
-                case 'yearly':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 1 year'));
-                    break;
-                case 'quarterly':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 3 months'));
-                    break;
-                case 'weekly':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 1 week'));
-                    break;
-                case 'bi-weekly':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 2 weeks'));
-                    break;
-                case 'semi-annual':
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + 6 months'));
-                    break;
-                default:
-                    // Fallback to interval-based calculation
-                    $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + ' . round($avgInterval) . ' days'));
-            }
-            
-            // Ensure we have a valid next payment date
-            if (!$nextPaymentDate || !strtotime($nextPaymentDate)) {
-                $nextPaymentDate = date('Y-m-d', strtotime('+1 month')); // Default fallback
-            }
+            $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + ' . round($avgInterval) . ' days'));
             
             // STEP 3: Calculate improved confidence score
             $confidence = $this->calculateSubscriptionConfidence($merchant, $recurringAmount, $billingCycle, count($recurringTransactions));
@@ -814,10 +773,6 @@ class GoCardlessFinancialService {
                 return null; // Must have a valid billing cycle
             }
             
-            // Auto-categorize the subscription
-            require_once __DIR__ . '/subscription_categorizer.php';
-            $categoryResult = SubscriptionCategorizer::categorizeSubscription($merchant);
-            
             return [
                 'merchant_name' => $merchant,
                 'amount' => $recurringAmount,
@@ -829,9 +784,7 @@ class GoCardlessFinancialService {
                 'confidence' => $confidence,
                 'provider' => 'gocardless',
                 'avg_interval_days' => round($avgInterval, 1),
-                'merchant_category_code' => $recurringTransactions[0]['merchant_category_code'] ?? null,
-                'category' => $categoryResult['category'],
-                'category_confidence' => $categoryResult['confidence']
+                'merchant_category_code' => $recurringTransactions[0]['merchant_category_code'] ?? null
             ];
         }
         
