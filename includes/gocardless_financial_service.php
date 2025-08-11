@@ -522,24 +522,21 @@ class GoCardlessFinancialService {
             $amount = abs(floatval($transaction['amount']));
             $date = $transaction['booking_date'];
             
-            // Only process outgoing payments (negative amounts) as potential subscriptions
-            if (floatval($transaction['amount']) < 0 && $amount > 0) {
-                if (!isset($merchantGroups[$merchant])) {
-                    $merchantGroups[$merchant] = [];
-                }
-                $merchantGroups[$merchant][] = [
-                    'amount' => $amount,
-                    'date' => $date,
-                    'description' => $transaction['description'],
-                    'currency' => $transaction['currency'],
-                    'transaction_id' => $transaction['transaction_id'],
-                    'merchant_category_code' => $transaction['merchant_category_code']
-                ];
-                error_log("GoCardless: Added transaction for merchant '$merchant': {$transaction['currency']}$amount on $date");
+            if (!isset($merchantGroups[$merchant])) {
+                $merchantGroups[$merchant] = [];
             }
+            $merchantGroups[$merchant][] = [
+                'amount' => $amount,
+                'date' => $date,
+                'description' => $transaction['description'],
+                'currency' => $transaction['currency'],
+                'transaction_id' => $transaction['transaction_id'],
+                'merchant_category_code' => $transaction['merchant_category_code']
+            ];
+            error_log("GoCardless: Added transaction for merchant '$merchant': {$transaction['currency']}$amount on $date");
         }
         
-        error_log("GoCardless: Found " . count($merchantGroups) . " unique merchants with outgoing payments");
+        error_log("GoCardless: Found " . count($merchantGroups) . " unique merchants");
         
         // Analyze each merchant for subscription patterns
         foreach ($merchantGroups as $merchant => $merchantTransactions) {
