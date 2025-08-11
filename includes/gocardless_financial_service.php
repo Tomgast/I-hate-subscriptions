@@ -587,9 +587,107 @@ class GoCardlessFinancialService {
     }
     
     /**
+     * Check if a merchant should be blacklisted (never a subscription)
+     */
+    private function isBlacklistedMerchant($merchantName) {
+        $blacklist = [
+            // Grocery stores
+            'albert heijn', 'ah ', 'jumbo', 'lidl', 'aldi', 'supermarket', 'grocery',
+            
+            // Shipping/postal services
+            'postnl', 'post nl', 'dhl', 'ups', 'fedex', 'dpd', 'shipping',
+            
+            // Food delivery/restaurants (irregular amounts)
+            'takeaway', 'uber eats', 'deliveroo', 'thuisbezorgd', 'restaurant', 
+            'cafe', 'eetcafe', 'bakkerij', 'bakery', 'pizza', 'mcdonalds', 'kfc',
+            
+            // Gas stations (irregular amounts)
+            'tankstation', 'shell', 'bp', 'esso', 'total', 'gas station',
+            
+            // Parking (irregular)
+            'parking', 'parkeren', 'park',
+            
+            // Government/taxes (irregular)
+            'gemeente', 'belasting', 'tax', 'government', 'overheid',
+            
+            // ATM withdrawals
+            'geldautomaat', 'atm', 'cash withdrawal',
+            
+            // One-time purchases
+            'amazon.nl', 'bol.com', 'webshop', 'shop'
+        ];
+        
+        $merchant = strtolower($merchantName);
+        
+        foreach ($blacklist as $blacklisted) {
+            if (strpos($merchant, $blacklisted) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Calculate confidence score for subscription detection
+     */
+    private function calculateSubscriptionConfidence($merchant, $amount, $billingCycle, $transactionCount) {
+        $score = 0;
+        
+        // Base score from transaction count (more transactions = higher confidence)
+        $score += min(50, $transactionCount * 15); // Max 50 points for frequency
+        
+        // Bonus for known subscription merchants
+        $subscriptionKeywords = [
+            'spotify', 'netflix', 'disney', 'amazon prime', 'adobe', 'microsoft', 
+            'apple music', 'youtube premium', 'hulu', 'hbo', 'jagex', 'games studio',
+            'playstation', 'xbox', 'steam', 'office 365', 'dropbox', 'google'
+        ];
+        
+        $merchantLower = strtolower($merchant);
+        foreach ($subscriptionKeywords as $keyword) {
+            if (strpos($merchantLower, $keyword) !== false) {
+                $score += 25; // Big bonus for known subscription services
+                break;
+            }
+        }
+        
+        // Bonus for valid billing cycles
+        switch ($billingCycle) {
+            case 'monthly':
+                $score += 20; // Monthly is most common for subscriptions
+                break;
+            case 'yearly':
+                $score += 15; // Yearly is also common
+                break;
+            case 'quarterly':
+                $score += 10; // Less common but valid
+                break;
+            case 'weekly':
+            case 'bi-weekly':
+                $score += 5; // Less typical for subscriptions
+                break;
+        }
+        
+        // Bonus for reasonable subscription amounts
+        if ($amount >= 5 && $amount <= 100) {
+            $score += 10; // Sweet spot for most subscriptions
+        } elseif ($amount >= 2 && $amount <= 200) {
+            $score += 5; // Still reasonable
+        }
+        
+        return min(100, $score); // Cap at 100
+    }
+
+    /**
      * Detect subscription patterns in processed merchant transactions
      */
     private function detectSubscriptionPatternFromProcessed($merchant, $transactions) {
+        // STEP 1: Pre-filter merchants that should never be subscriptions
+        if ($this->isBlacklistedMerchant($merchant)) {
+            return null; // Skip grocery stores, shipping, restaurants, etc.
+        }
+        
         // Sort by date
         usort($transactions, function($a, $b) {
             return strtotime($a['date']) - strtotime($b['date']);
@@ -614,6 +712,16 @@ class GoCardlessFinancialService {
         // Find most common amount
         $recurringAmountString = array_keys($amountCounts, max($amountCounts))[0];
         $recurringAmount = (float)$recurringAmountString;
+        
+        // STEP 2: Apply amount filters early
+        if ($recurringAmount < 2.00) {
+            return null; // Too small - likely fees or tips
+        }
+        
+        if ($recurringAmount > 500.00) {
+            return null; // Too large - likely one-time purchase
+        }
+        
         $recurringTransactions = array_filter($transactions, function($t) use ($recurringAmount) {
             return $t['amount'] == $recurringAmount;
         });
@@ -652,6 +760,19 @@ class GoCardlessFinancialService {
             $lastDate = end($dates);
             $nextPaymentDate = date('Y-m-d', strtotime($lastDate . ' + ' . round($avgInterval) . ' days'));
             
+            // STEP 3: Calculate improved confidence score
+            $confidence = $this->calculateSubscriptionConfidence($merchant, $recurringAmount, $billingCycle, count($recurringTransactions));
+            
+            // STEP 4: Final validation - must meet minimum confidence threshold
+            if ($confidence < 50) {
+                return null; // Not confident enough this is a real subscription
+            }
+            
+            // STEP 5: Additional validation for billing cycle
+            if ($billingCycle === 'unknown') {
+                return null; // Must have a valid billing cycle
+            }
+            
             return [
                 'merchant_name' => $merchant,
                 'amount' => $recurringAmount,
@@ -660,7 +781,7 @@ class GoCardlessFinancialService {
                 'last_charge_date' => $lastDate,
                 'next_billing_date' => $nextPaymentDate,
                 'transaction_count' => count($recurringTransactions),
-                'confidence' => min(100, count($recurringTransactions) * 25),
+                'confidence' => $confidence,
                 'provider' => 'gocardless',
                 'avg_interval_days' => round($avgInterval, 1),
                 'merchant_category_code' => $recurringTransactions[0]['merchant_category_code'] ?? null
