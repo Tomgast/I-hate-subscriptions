@@ -104,10 +104,16 @@ if ($_POST && isset($_POST['action'])) {
 try {
     $pdo = getDBConnection();
     
-    // Get subscriptions
+    // Get all subscriptions (both manual and bank-detected)
     $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->execute([$userId]);
     $subscriptions = $stmt->fetchAll();
+    
+    // Debug: Log the number of subscriptions found
+    error_log("Found " . count($subscriptions) . " subscriptions for user $userId");
+    if (count($subscriptions) > 0) {
+        error_log("First subscription: " . print_r($subscriptions[0], true));
+    }
     
     // Calculate stats
     $stats = [
@@ -478,7 +484,13 @@ $categories = [
             <?php else: ?>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="subscriptionsList">
                 <?php foreach ($subscriptions as $subscription): ?>
-                <div class="subscription-card bg-white rounded-xl shadow-sm border border-gray-100 p-6" data-category="<?php echo htmlspecialchars($subscription['category']); ?>">
+                <div class="subscription-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative hover:shadow-md transition-shadow duration-200" 
+                     data-category="<?php echo htmlspecialchars($subscription['category']); ?>">
+                    <?php if (!empty($subscription['source']) && $subscription['source'] === 'bank'): ?>
+                        <span class="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            <i class="fas fa-university mr-1"></i> Bank
+                        </span>
+                    <?php endif; ?>
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center">
                             <span class="text-2xl mr-3">
