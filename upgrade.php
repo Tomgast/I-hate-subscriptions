@@ -2,6 +2,8 @@
 session_start();
 require_once 'config/db_config.php';
 require_once 'includes/plan_manager.php';
+require_once 'includes/multi_bank_service.php';
+require_once 'includes/bank_pricing_service.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -28,6 +30,13 @@ if ($userPlan && $userPlan['is_active']) {
     // User has no plan or inactive plan - allow all upgrades
     $currentPlan = null;
 }
+
+// Get bank account pricing information
+$multiBankService = new MultiBankService();
+$bankPricingService = new BankPricingService();
+$bankAccountCount = max(1, $multiBankService->getActiveBankAccountCount($userId)); // Minimum 1 for pricing display
+$pricingTiers = $bankPricingService->getPricingTiers($userId);
+$pricingSummary = $bankPricingService->getPricingSummary($userId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,10 +102,17 @@ if ($userPlan && $userPlan['is_active']) {
                         
                         <div class="mb-6">
                             <div class="text-4xl font-bold text-gray-900 mb-2">
-                                <span class="gradient-text">€3</span>
+                                <span class="gradient-text">€<?php echo number_format($pricingTiers['monthly']['cost'], 0); ?></span>
                             </div>
                             <div class="text-gray-600">per month</div>
-                            <div class="text-sm text-gray-500 mt-1">Cancel anytime</div>
+                            <div class="text-sm text-gray-500 mt-1">
+                                <?php if ($bankAccountCount > 1): ?>
+                                €3 × <?php echo $bankAccountCount; ?> bank accounts
+                                <?php else: ?>
+                                €3 per bank account
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Cancel anytime</div>
                         </div>
                         
                         <button onclick="startUpgrade('monthly')" class="w-full <?php echo $currentPlan === 'monthly' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'monthly' ? 'disabled' : ''; ?>>
@@ -127,10 +143,17 @@ if ($userPlan && $userPlan['is_active']) {
                         
                         <div class="mb-6">
                             <div class="text-4xl font-bold text-gray-900 mb-2">
-                                <span class="gradient-text">€25</span>
+                                <span class="gradient-text">€<?php echo number_format($pricingTiers['yearly']['cost'], 0); ?></span>
                             </div>
                             <div class="text-gray-600">per year</div>
-                            <div class="text-sm text-green-600 font-semibold mt-1">Save €11 vs monthly</div>
+                            <div class="text-sm text-gray-500 mt-1">
+                                <?php if ($bankAccountCount > 1): ?>
+                                €25 × <?php echo $bankAccountCount; ?> bank accounts
+                                <?php else: ?>
+                                €25 per bank account
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-sm text-green-600 font-semibold mt-1">Save €<?php echo number_format($pricingTiers['yearly']['savings_per_account'] * $bankAccountCount, 0); ?> vs monthly</div>
                         </div>
                         
                         <button onclick="startUpgrade('yearly')" class="w-full <?php echo $currentPlan === 'yearly' ? 'bg-green-100 text-green-800 cursor-not-allowed' : 'gradient-bg text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'; ?> px-6 py-3 rounded-lg font-semibold transition-all duration-200 mb-4" <?php echo $currentPlan === 'yearly' ? 'disabled' : ''; ?>>
@@ -170,6 +193,51 @@ if ($userPlan && $userPlan['is_active']) {
                     </div>
                 </div>
                 
+            </div>
+        </div>
+
+        <!-- Pricing Explanation -->
+        <div class="max-w-4xl mx-auto mb-16">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div class="flex items-start space-x-3">
+                    <div class="text-2xl">💡</div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-blue-900 mb-2">Per-Bank-Account Pricing</h3>
+                        <div class="text-blue-800 space-y-2">
+                            <p><strong>How it works:</strong> You pay per connected bank account, giving you complete flexibility.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <p class="font-medium">Monthly Plan:</p>
+                                    <ul class="text-sm space-y-1 ml-4">
+                                        <li>• €3 per bank account per month</li>
+                                        <li>• Connect/disconnect anytime</li>
+                                        <li>• Pricing updates automatically</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Yearly Plan (Best Value):</p>
+                                    <ul class="text-sm space-y-1 ml-4">
+                                        <li>• €25 per bank account per year</li>
+                                        <li>• Save €11 per account vs monthly</li>
+                                        <li>• 5 months free per account!</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <?php if ($bankAccountCount > 0): ?>
+                            <div class="mt-4 p-3 bg-blue-100 rounded-lg">
+                                <p class="font-medium">Your Current Setup:</p>
+                                <p class="text-sm">You have <strong><?php echo $bankAccountCount; ?> bank account<?php echo $bankAccountCount > 1 ? 's' : ''; ?></strong> connected.</p>
+                                <p class="text-sm">Monthly: <strong>€<?php echo number_format($pricingTiers['monthly']['cost'], 0); ?></strong> • Yearly: <strong>€<?php echo number_format($pricingTiers['yearly']['cost'], 0); ?></strong> (save €<?php echo number_format($pricingTiers['yearly']['savings'], 0); ?>)</p>
+                            </div>
+                            <?php else: ?>
+                            <div class="mt-4 p-3 bg-blue-100 rounded-lg">
+                                <p class="text-sm"><strong>Start with 1 bank account:</strong> Monthly €3 • Yearly €25 (save €11)</p>
+                                <p class="text-sm">Add more bank accounts anytime - pricing scales automatically!</p>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

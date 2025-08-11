@@ -174,6 +174,11 @@ try {
     $upcomingPayments = [];
 }
 
+// Get multi-bank account information
+require_once 'includes/multi_bank_service.php';
+$multiBankService = new MultiBankService();
+$bankAccountSummary = $multiBankService->getBankAccountSummary($userId);
+
 // Categories for filtering
 $categories = [
     ['name' => 'Streaming', 'icon' => '📺'],
@@ -343,23 +348,24 @@ $categories = [
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">Your Subscriptions</h2>
                         <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly'])): ?>
-                        <?php
-                        // Check bank connection status
-                        $bankConnectionStatus = null;
-                        try {
-                            $pdo = getDBConnection();
-                            $stmt = $pdo->prepare("SELECT bc.*, MAX(bs.completed_at) as last_scan_date FROM bank_connections bc LEFT JOIN bank_scans bs ON bc.user_id = bs.user_id AND bs.status = 'completed' WHERE bc.user_id = ? AND bc.is_active = 1 GROUP BY bc.id ORDER BY bc.created_at DESC LIMIT 1");
-                            $stmt->execute([$userId]);
-                            $bankConnection = $stmt->fetch();
-                            $bankConnectionStatus = $bankConnection ? 'connected' : 'not_connected';
-                        } catch (Exception $e) {
-                            $bankConnectionStatus = 'error';
-                        }
-                        ?>
-                        <?php if ($bankConnectionStatus === 'connected'): ?>
-                        <p class="text-sm text-green-600 mt-1">🏦 <?php echo htmlspecialchars($bankConnection['bank_name'] ?? 'Bank'); ?> connected • Auto-monitoring active</p>
+                        <?php if ($bankAccountSummary['total_accounts'] > 0): ?>
+                        <div class="mt-2 space-y-1">
+                            <?php foreach ($bankAccountSummary['bank_accounts'] as $account): ?>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-green-600">🏦 <?php echo htmlspecialchars($account['account_name']); ?> (<?php echo ucfirst($account['provider']); ?>)</span>
+                                <button onclick="disconnectBankAccount(<?php echo $account['id']; ?>)" class="text-red-500 hover:text-red-700 text-xs">
+                                    Disconnect
+                                </button>
+                            </div>
+                            <?php endforeach; ?>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Monthly cost: €<?php echo number_format($bankAccountSummary['monthly_cost'], 2); ?> 
+                                (€<?php echo number_format($bankAccountSummary['cost_per_account'], 2); ?> per account)
+                            </p>
+                        </div>
                         <?php else: ?>
                         <p class="text-sm text-gray-500 mt-1">Add subscriptions manually or connect your bank</p>
+                        <p class="text-xs text-gray-400 mt-1">€3/month per connected bank account</p>
                         <?php endif; ?>
                         <?php endif; ?>
                     </div>
@@ -367,14 +373,15 @@ $categories = [
                         <button onclick="openAddModal()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
                             Add Subscription
                         </button>
-                        <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly']) && $bankConnectionStatus !== 'connected'): ?>
+                        <?php if (in_array($userPlan['plan_type'], ['monthly', 'yearly'])): ?>
                         <button onclick="startBankScan()" class="bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                            Connect Bank
+                            <?php echo $bankAccountSummary['total_accounts'] > 0 ? 'Connect Another Bank' : 'Connect Bank'; ?>
                         </button>
-                        <?php elseif ($bankConnectionStatus === 'connected'): ?>
-                        <button onclick="disconnectBank()" class="bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
-                            Disconnect
+                        <?php if ($bankAccountSummary['total_accounts'] > 0): ?>
+                        <button onclick="disconnectAllBanks()" class="bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
+                            Disconnect All
                         </button>
+                        <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1008,18 +1015,46 @@ $categories = [
             });
         }
         
-        function disconnectBank() {
-            if (confirm('Are you sure you want to disconnect your bank? This will stop automatic subscription monitoring.')) {
-                // Add AJAX call to disconnect bank
+        function disconnectBankAccount(bankAccountId) {
+            if (confirm('Are you sure you want to disconnect this bank account? This will stop monitoring for this account.')) {
+                fetch('api/bank-accounts.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bank_account_id: bankAccountId })
+                }).then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Error disconnecting bank account. Please try again.');
+                    }
+                }).catch(err => {
+                    alert('Error disconnecting bank account. Please try again.');
+                });
+            }
+        }
+        
+        function disconnectAllBanks() {
+            if (confirm('Are you sure you want to disconnect ALL bank accounts? This will stop all automatic subscription monitoring.')) {
                 fetch('bank/disconnect.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
-                }).then(() => {
-                    location.reload();
+                }).then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Error disconnecting bank accounts. Please try again.');
+                    }
                 }).catch(err => {
-                    alert('Error disconnecting bank. Please try again.');
+                    alert('Error disconnecting bank accounts. Please try again.');
                 });
             }
+        }
+        
+        // Legacy function for backward compatibility
+        function disconnectBank() {
+            disconnectAllBanks();
         }
     </script>
 </body>
