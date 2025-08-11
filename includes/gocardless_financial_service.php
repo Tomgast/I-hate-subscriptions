@@ -522,18 +522,21 @@ class GoCardlessFinancialService {
             $amount = abs(floatval($transaction['amount']));
             $date = $transaction['booking_date'];
             
-            if (!isset($merchantGroups[$merchant])) {
-                $merchantGroups[$merchant] = [];
+            // Only process outgoing payments (negative amounts) as potential subscriptions
+            if (floatval($transaction['amount']) < 0 && $amount > 0) {
+                if (!isset($merchantGroups[$merchant])) {
+                    $merchantGroups[$merchant] = [];
+                }
+                $merchantGroups[$merchant][] = [
+                    'amount' => $amount,
+                    'date' => $date,
+                    'description' => $transaction['description'],
+                    'currency' => $transaction['currency'],
+                    'transaction_id' => $transaction['transaction_id'],
+                    'merchant_category_code' => $transaction['merchant_category_code']
+                ];
+                error_log("GoCardless: Added transaction for merchant '$merchant': {$transaction['currency']}$amount on $date");
             }
-            $merchantGroups[$merchant][] = [
-                'amount' => $amount,
-                'date' => $date,
-                'description' => $transaction['description'],
-                'currency' => $transaction['currency'],
-                'transaction_id' => $transaction['transaction_id'],
-                'merchant_category_code' => $transaction['merchant_category_code']
-            ];
-            error_log("GoCardless: Added transaction for merchant '$merchant': {$transaction['currency']}$amount on $date");
         }
         
         error_log("GoCardless: Found " . count($merchantGroups) . " unique merchants");
@@ -813,18 +816,18 @@ class GoCardlessFinancialService {
         foreach ($subscriptions as $subscription) {
             $stmt = $this->pdo->prepare("
                 INSERT INTO subscriptions 
-                (user_id, scan_id, merchant_name, amount, currency, billing_cycle, last_charge_date, confidence, provider, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'gocardless', NOW())
+                (user_id, scan_id, name, amount, currency, billing_cycle, last_charge_date, confidence, provider, status, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'gocardless', 'active', NOW())
                 ON DUPLICATE KEY UPDATE 
                 amount = VALUES(amount), last_charge_date = VALUES(last_charge_date), 
-                confidence = VALUES(confidence), updated_at = NOW()
+                confidence = VALUES(confidence), status = 'active', updated_at = NOW()
             ");
             
             $stmt->execute([
                 $userId,
                 $scanId,
-                $subscription['merchant_name'],
-                $subscription['amount'],
+                $subscription['merchant_name'], // This maps to 'name' column
+                $subscription['amount'], // This should already be positive from detection
                 $subscription['currency'],
                 $subscription['billing_cycle'],
                 $subscription['last_charge_date'],
