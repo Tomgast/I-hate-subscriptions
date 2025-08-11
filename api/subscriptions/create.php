@@ -58,10 +58,10 @@ try {
     $userId = $auth->getCurrentUserId();
     $subscriptionId = $auth->generateUuid();
     
-    // Insert subscription
+    // Insert subscription (using correct database schema)
     $db->execute(
-        "INSERT INTO subscriptions (id, user_id, name, cost, billing_cycle, next_billing_date, category, description, is_active, created_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE, NOW())",
+        "INSERT INTO subscriptions (id, user_id, name, amount, billing_cycle, next_billing_date, category, notes, status, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())",
         [
             $subscriptionId,
             $userId,
@@ -80,9 +80,11 @@ try {
         [$subscriptionId]
     );
     
-    // Convert types
-    $subscription['cost'] = (float)$subscription['cost'];
-    $subscription['is_active'] = (bool)$subscription['is_active'];
+    // Convert types and ensure compatibility
+    $subscription['amount'] = (float)($subscription['amount'] ?? 0);
+    $subscription['cost'] = $subscription['amount']; // For backward compatibility
+    $subscription['status'] = $subscription['status'] ?? 'active';
+    $subscription['is_active'] = ($subscription['status'] == 'active') ? 1 : 0; // For backward compatibility
     
     echo json_encode([
         'success' => true,

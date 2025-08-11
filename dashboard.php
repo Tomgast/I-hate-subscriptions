@@ -494,7 +494,7 @@ $categories = [
                                 ?>
                             </span>
                             <div>
-                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['name']); ?></h4>
+                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['merchant_name'] ?? $subscription['name'] ?? 'Unknown'); ?></h4>
                                 <p class="text-sm text-gray-500"><?php echo htmlspecialchars($subscription['category']); ?></p>
                             </div>
                         </div>
@@ -503,7 +503,7 @@ $categories = [
                                 <input type="checkbox" class="exclude-checkbox rounded border-gray-300 text-red-600" data-id="<?php echo $subscription['id']; ?>" onchange="toggleExclude(<?php echo $subscription['id']; ?>)">
                                 <span class="ml-1 text-xs text-gray-500">Exclude</span>
                             </label>
-                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['name'], ENT_QUOTES); ?>', <?php echo $subscription['cost']; ?>, '<?php echo $subscription['billing_cycle']; ?>', '<?php echo $subscription['category']; ?>', <?php echo $subscription['is_active']; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['merchant_name'] ?? $subscription['name'] ?? 'Unknown', ENT_QUOTES); ?>', <?php echo $subscription['amount'] ?? $subscription['cost'] ?? 0; ?>, '<?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>', '<?php echo $subscription['category'] ?? 'Other'; ?>', <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 1 : 0; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
@@ -518,10 +518,10 @@ $categories = [
                     
                     <div class="mb-4">
                         <div class="text-3xl font-bold text-gray-900 mb-1">
-                            €<?php echo number_format($subscription['cost'], 2); ?>
+                            €<?php echo number_format($subscription['amount'] ?? $subscription['cost'] ?? 0, 2); ?>
                         </div>
                         <div class="text-sm text-gray-500">
-                            per <?php echo $subscription['billing_cycle']; ?>
+                            per <?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>
                         </div>
                     </div>
                     
@@ -535,8 +535,8 @@ $categories = [
                     <?php endif; ?>
                     
                     <div class="pt-4 border-t border-gray-100">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $subscription['is_active'] == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                            <?php echo $subscription['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                            <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 'Active' : 'Inactive'; ?>
                         </span>
                     </div>
                 </div>

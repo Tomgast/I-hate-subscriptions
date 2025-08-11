@@ -264,26 +264,32 @@ header('Pragma: public');
                 <?php 
                 // Sort subscriptions by cost (highest first)
                 usort($exportData['subscriptions'], function($a, $b) {
-                    return $b['cost'] <=> $a['cost'];
+                    $aAmount = $a['amount'] ?? $a['cost'] ?? 0;
+                    $bAmount = $b['amount'] ?? $b['cost'] ?? 0;
+                    return $bAmount <=> $aAmount;
                 });
                 
                 foreach ($exportData['subscriptions'] as $sub): 
+                    // Support both column names for compatibility
+                    $amount = $sub['amount'] ?? $sub['cost'] ?? 0;
+                    $name = $sub['merchant_name'] ?? $sub['name'] ?? 'Unknown';
+                    
                     // Calculate monthly cost
-                    $monthlyCost = $sub['cost'];
+                    $monthlyCost = $amount;
                     switch ($sub['billing_cycle']) {
                         case 'yearly':
-                            $monthlyCost = $sub['cost'] / 12;
+                            $monthlyCost = $amount / 12;
                             break;
                         case 'weekly':
-                            $monthlyCost = $sub['cost'] * 4.33;
+                            $monthlyCost = $amount * 4.33;
                             break;
                     }
                 ?>
                 <tr>
-                    <td><strong><?php echo htmlspecialchars($sub['name']); ?></strong></td>
-                    <td><span class="category-badge"><?php echo htmlspecialchars($sub['category']); ?></span></td>
-                    <td><?php echo ucfirst($sub['billing_cycle']); ?></td>
-                    <td class="cost-cell">€<?php echo number_format($sub['cost'], 2); ?></td>
+                    <td><strong><?php echo htmlspecialchars($name); ?></strong></td>
+                    <td><span class="category-badge"><?php echo htmlspecialchars($sub['category'] ?? 'Other'); ?></span></td>
+                    <td><?php echo ucfirst($sub['billing_cycle'] ?? 'monthly'); ?></td>
+                    <td class="cost-cell">€<?php echo number_format($amount, 2); ?></td>
                     <td class="cost-cell">€<?php echo number_format($monthlyCost, 2); ?></td>
                     <td><?php echo $sub['next_billing_date'] ? date('M j, Y', strtotime($sub['next_billing_date'])) : 'Unknown'; ?></td>
                 </tr>

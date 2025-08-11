@@ -149,37 +149,45 @@ if ($format === 'summary') {
     // Sort subscriptions by monthly cost (highest first)
     $sortedSubs = $exportData['subscriptions'];
     usort($sortedSubs, function($a, $b) {
-        $aMonthlyCost = $a['cost'];
-        $bMonthlyCost = $b['cost'];
+        // Support both column names for compatibility
+        $aAmount = $a['amount'] ?? $a['cost'] ?? 0;
+        $bAmount = $b['amount'] ?? $b['cost'] ?? 0;
         
-        if ($a['billing_cycle'] === 'yearly') $aMonthlyCost = $a['cost'] / 12;
-        if ($a['billing_cycle'] === 'weekly') $aMonthlyCost = $a['cost'] * 4.33;
-        if ($b['billing_cycle'] === 'yearly') $bMonthlyCost = $b['cost'] / 12;
-        if ($b['billing_cycle'] === 'weekly') $bMonthlyCost = $b['cost'] * 4.33;
+        $aMonthlyCost = $aAmount;
+        $bMonthlyCost = $bAmount;
+        
+        if ($a['billing_cycle'] === 'yearly') $aMonthlyCost = $aAmount / 12;
+        if ($a['billing_cycle'] === 'weekly') $aMonthlyCost = $aAmount * 4.33;
+        if ($b['billing_cycle'] === 'yearly') $bMonthlyCost = $bAmount / 12;
+        if ($b['billing_cycle'] === 'weekly') $bMonthlyCost = $bAmount * 4.33;
         
         return $bMonthlyCost <=> $aMonthlyCost;
     });
     
     foreach ($sortedSubs as $sub) {
+        // Support both column names for compatibility
+        $amount = $sub['amount'] ?? $sub['cost'] ?? 0;
+        $name = $sub['merchant_name'] ?? $sub['name'] ?? 'Unknown';
+        
         // Calculate equivalents
-        $monthlyCost = $sub['cost'];
-        $yearlyCost = $sub['cost'] * 12;
+        $monthlyCost = $amount;
+        $yearlyCost = $amount * 12;
         
         switch ($sub['billing_cycle']) {
             case 'yearly':
-                $monthlyCost = $sub['cost'] / 12;
-                $yearlyCost = $sub['cost'];
+                $monthlyCost = $amount / 12;
+                $yearlyCost = $amount;
                 break;
             case 'weekly':
-                $monthlyCost = $sub['cost'] * 4.33;
-                $yearlyCost = $sub['cost'] * 52;
+                $monthlyCost = $amount * 4.33;
+                $yearlyCost = $amount * 52;
                 break;
         }
         
         fputcsv($output, [
-            $sub['name'],
+            $name,
             $sub['category'] ?? 'Other',
-            '€' . number_format($sub['cost'], 2),
+            '€' . number_format($amount, 2),
             ucfirst($sub['billing_cycle']),
             '€' . number_format($monthlyCost, 2),
             '€' . number_format($yearlyCost, 2),
