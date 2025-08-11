@@ -522,8 +522,9 @@ class GoCardlessFinancialService {
             $amount = abs(floatval($transaction['amount']));
             $date = $transaction['booking_date'];
             
-            // Only process outgoing payments (negative amounts) as potential subscriptions
-            if (floatval($transaction['amount']) < 0 && $amount > 0) {
+            // Process transactions as potential subscriptions
+            // Make sure we're not filtering out valid subscription amounts
+            if (floatval($transaction['amount']) < 0) {
                 if (!isset($merchantGroups[$merchant])) {
                     $merchantGroups[$merchant] = [];
                 }
@@ -713,14 +714,13 @@ class GoCardlessFinancialService {
         $recurringAmountString = array_keys($amountCounts, max($amountCounts))[0];
         $recurringAmount = (float)$recurringAmountString;
         
-        // STEP 2: Apply amount filters early
-        if ($recurringAmount < 2.00) {
-            return null; // Too small - likely fees or tips
+        // STEP 2: Apply amount filters (less restrictive)
+        if ($recurringAmount <= 0) {
+            return null; // Only process positive amounts
         }
         
-        if ($recurringAmount > 500.00) {
-            return null; // Too large - likely one-time purchase
-        }
+        // Remove upper limit to catch all potential subscriptions
+        // The confidence scoring will handle filtering out one-time purchases
         
         $recurringTransactions = array_filter($transactions, function($t) use ($recurringAmount) {
             return $t['amount'] == $recurringAmount;
