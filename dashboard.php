@@ -255,7 +255,143 @@ try {
     $dateIssues = ['problematic_dates' => 0];
 }
 
-// Categories for filtering
+// ENHANCED DASHBOARD FEATURES
+$priceChanges = [];
+$duplicateSubscriptions = [];
+$anomalies = [];
+$potentialSubscriptions = [];
+$categoryInsights = [];
+$syncHealthStatus = [];
+
+try {
+    // 1. PRICE CHANGE DETECTION
+    $stmt = $pdo->prepare("
+        SELECT s.id, s.name, s.cost as current_cost, ph.old_cost, ph.new_cost, ph.change_date
+        FROM subscriptions s
+        JOIN (
+            SELECT subscription_id, old_cost, new_cost, change_date,
+                   ROW_NUMBER() OVER (PARTITION BY subscription_id ORDER BY change_date DESC) as rn
+            FROM price_history
+            WHERE change_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+        ) ph ON s.id = ph.subscription_id AND ph.rn = 1
+        WHERE s.user_id = ? AND s.is_active = 1
+        ORDER BY ph.change_date DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$userId]);
+    $priceChanges = $stmt->fetchAll();
+    
+    // 2. DUPLICATE DETECTION
+    $stmt = $pdo->prepare("
+        SELECT s1.id, s1.name, s1.category, s1.cost,
+               GROUP_CONCAT(s2.name SEPARATOR ', ') as similar_services,
+               GROUP_CONCAT(s2.id SEPARATOR ',') as similar_ids
+        FROM subscriptions s1
+        JOIN subscriptions s2 ON s1.category = s2.category 
+            AND s1.id != s2.id 
+            AND s1.user_id = s2.user_id
+        WHERE s1.user_id = ? AND s1.is_active = 1 AND s2.is_active = 1
+        GROUP BY s1.id, s1.name, s1.category, s1.cost
+        HAVING COUNT(s2.id) > 0
+        ORDER BY s1.cost DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$userId]);
+    $duplicateSubscriptions = $stmt->fetchAll();
+    
+    // 3. ANOMALY DETECTION
+    $stmt = $pdo->prepare("
+        SELECT rt.merchant_name, rt.amount, rt.booking_date, 
+               s.name as subscription_name, s.cost as expected_cost,
+               ABS(ABS(rt.amount) - s.cost) as cost_difference
+        FROM raw_transactions rt
+        LEFT JOIN subscriptions s ON (
+            LOWER(rt.merchant_name) LIKE CONCAT('%', LOWER(SUBSTRING(s.name, 1, 5)), '%')
+            OR LOWER(s.name) LIKE CONCAT('%', LOWER(SUBSTRING(rt.merchant_name, 1, 5)), '%')
+        ) AND s.user_id = rt.user_id AND s.is_active = 1
+        WHERE rt.user_id = ? 
+        AND rt.amount < 0
+        AND rt.booking_date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+        AND s.id IS NOT NULL
+        AND ABS(ABS(rt.amount) - s.cost) > (s.cost * 0.1)
+        ORDER BY cost_difference DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$userId]);
+    $anomalies = $stmt->fetchAll();
+    
+    // 4. POTENTIAL NEW SUBSCRIPTIONS
+    $stmt = $pdo->prepare("
+        SELECT merchant_name, COUNT(*) as frequency, AVG(ABS(amount)) as avg_amount,
+               MIN(booking_date) as first_seen, MAX(booking_date) as last_seen
+        FROM raw_transactions rt
+        WHERE user_id = ? AND amount < 0
+        AND booking_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        AND NOT EXISTS (
+            SELECT 1 FROM subscriptions s 
+            WHERE s.user_id = rt.user_id 
+            AND (LOWER(rt.merchant_name) LIKE CONCAT('%', LOWER(SUBSTRING(s.name, 1, 5)), '%')
+                 OR LOWER(s.name) LIKE CONCAT('%', LOWER(SUBSTRING(rt.merchant_name, 1, 5)), '%'))
+        )
+        GROUP BY merchant_name
+        HAVING COUNT(*) >= 3
+        ORDER BY frequency DESC, avg_amount DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$userId]);
+    $potentialSubscriptions = $stmt->fetchAll();
+    
+    // 5. CATEGORY INSIGHTS WITH TRANSACTION CATEGORIZATION
+    $stmt = $pdo->prepare("
+        SELECT 
+            CASE 
+                WHEN LOWER(s.name) LIKE '%netflix%' OR LOWER(s.name) LIKE '%disney%' OR LOWER(s.name) LIKE '%hbo%' OR LOWER(s.name) LIKE '%prime%' THEN 'Streaming'
+                WHEN LOWER(s.name) LIKE '%spotify%' OR LOWER(s.name) LIKE '%apple music%' OR LOWER(s.name) LIKE '%youtube music%' THEN 'Music'
+                WHEN LOWER(s.name) LIKE '%adobe%' OR LOWER(s.name) LIKE '%microsoft%' OR LOWER(s.name) LIKE '%google%' THEN 'Software'
+                WHEN LOWER(s.name) LIKE '%gym%' OR LOWER(s.name) LIKE '%fitness%' OR LOWER(s.name) LIKE '%sport%' THEN 'Fitness'
+                WHEN LOWER(s.name) LIKE '%news%' OR LOWER(s.name) LIKE '%times%' OR LOWER(s.name) LIKE '%guardian%' THEN 'News'
+                ELSE COALESCE(s.category, 'Other')
+            END as smart_category,
+            COUNT(*) as count,
+            SUM(s.cost) as total_monthly,
+            AVG(s.cost) as avg_cost
+        FROM subscriptions s
+        WHERE s.user_id = ? AND s.is_active = 1
+        GROUP BY smart_category
+        ORDER BY total_monthly DESC
+    ");
+    $stmt->execute([$userId]);
+    $categoryInsights = $stmt->fetchAll();
+    
+    // 6. REAL-TIME SYNC STATUS
+    $stmt = $pdo->prepare("
+        SELECT 
+            bc.provider,
+            bc.status,
+            bc.last_sync_at,
+            bc.account_name,
+            COUNT(rt.id) as recent_transactions,
+            CASE 
+                WHEN bc.last_sync_at IS NULL THEN 'never'
+                WHEN bc.last_sync_at < DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 'stale'
+                WHEN bc.last_sync_at < DATE_SUB(NOW(), INTERVAL 1 DAY) THEN 'outdated'
+                ELSE 'fresh'
+            END as sync_health
+        FROM bank_connections bc
+        LEFT JOIN raw_transactions rt ON bc.user_id = rt.user_id 
+            AND rt.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        WHERE bc.user_id = ? AND bc.status = 'active'
+        GROUP BY bc.id, bc.provider, bc.status, bc.last_sync_at, bc.account_name
+        ORDER BY bc.last_sync_at DESC
+    ");
+    $stmt->execute([$userId]);
+    $syncHealthStatus = $stmt->fetchAll();
+    
+} catch (Exception $e) {
+    error_log("Enhanced dashboard features error: " . $e->getMessage());
+}
+
+// Categories for filtering (enhanced with smart categorization)
 $categories = [
     ['name' => 'Streaming', 'icon' => '📺'],
     ['name' => 'Music', 'icon' => '🎵'],
@@ -265,6 +401,25 @@ $categories = [
     ['name' => 'Fitness', 'icon' => '💪'],
     ['name' => 'Other', 'icon' => '📦']
 ];
+
+// Auto-categorize subscriptions that are currently 'Other'
+try {
+    $stmt = $pdo->prepare("
+        UPDATE subscriptions 
+        SET category = CASE 
+            WHEN LOWER(name) LIKE '%netflix%' OR LOWER(name) LIKE '%disney%' OR LOWER(name) LIKE '%hbo%' OR LOWER(name) LIKE '%prime%' THEN 'Streaming'
+            WHEN LOWER(name) LIKE '%spotify%' OR LOWER(name) LIKE '%apple music%' OR LOWER(name) LIKE '%youtube music%' THEN 'Music'
+            WHEN LOWER(name) LIKE '%adobe%' OR LOWER(name) LIKE '%microsoft%' OR LOWER(name) LIKE '%google%' THEN 'Software'
+            WHEN LOWER(name) LIKE '%gym%' OR LOWER(name) LIKE '%fitness%' OR LOWER(name) LIKE '%sport%' THEN 'Fitness'
+            WHEN LOWER(name) LIKE '%news%' OR LOWER(name) LIKE '%times%' OR LOWER(name) LIKE '%guardian%' THEN 'News'
+            ELSE category
+        END
+        WHERE user_id = ? AND (category IS NULL OR category = 'Other')
+    ");
+    $stmt->execute([$userId]);
+} catch (Exception $e) {
+    error_log("Auto-categorization error: " . $e->getMessage());
+}
 
 ?>
 <!DOCTYPE html>
@@ -338,8 +493,26 @@ $categories = [
                             ⚠️ Date Issues
                         </span>
                         <?php endif; ?>
+                        <?php if (count($priceChanges) > 0): ?>
+                        <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded" title="Recent price changes detected">
+                            💰 Price Changes
+                        </span>
+                        <?php endif; ?>
+                        <?php if (count($duplicateSubscriptions) > 0): ?>
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded" title="Duplicate services detected">
+                            🔄 Duplicates
+                        </span>
+                        <?php endif; ?>
+                        <?php if (count($anomalies) > 0): ?>
+                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded" title="Unusual charges detected">
+                            🚨 Anomalies
+                        </span>
+                        <?php endif; ?>
                     <?php else: ?>
                         <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">No Banks Connected</span>
+                        <a href="bank/connect.php" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded hover:bg-green-200 transition-colors">
+                            🔗 Connect Bank
+                        </a>
                     <?php endif; ?>
                 </div>
                 <?php if ($isPaid): ?>
@@ -430,7 +603,162 @@ $categories = [
         </div>
     </div>
 
-
+    <!-- Enhanced Insights Section -->
+    <?php if (count($priceChanges) > 0 || count($duplicateSubscriptions) > 0 || count($anomalies) > 0 || count($potentialSubscriptions) > 0): ?>
+    <section class="py-8 bg-white border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">🔍 Smart Insights</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Price Changes -->
+                <?php if (count($priceChanges) > 0): ?>
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="p-2 bg-orange-100 rounded-lg">
+                            <span class="text-orange-600 text-xl">💰</span>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-orange-900">Recent Price Changes</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <?php foreach ($priceChanges as $change): ?>
+                        <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-orange-100">
+                            <div>
+                                <p class="font-medium text-gray-900"><?php echo htmlspecialchars($change['name']); ?></p>
+                                <p class="text-sm text-gray-600"><?php echo date('M j, Y', strtotime($change['change_date'])); ?></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-500">€<?php echo number_format($change['old_cost'], 2); ?> → <span class="font-semibold text-orange-600">€<?php echo number_format($change['new_cost'], 2); ?></span></p>
+                                <p class="text-xs <?php echo $change['new_cost'] > $change['old_cost'] ? 'text-red-600' : 'text-green-600'; ?>">
+                                    <?php echo $change['new_cost'] > $change['old_cost'] ? '+' : ''; ?>€<?php echo number_format($change['new_cost'] - $change['old_cost'], 2); ?>
+                                </p>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Duplicate Subscriptions -->
+                <?php if (count($duplicateSubscriptions) > 0): ?>
+                <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="p-2 bg-red-100 rounded-lg">
+                            <span class="text-red-600 text-xl">🔄</span>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-red-900">Potential Duplicates</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <?php foreach ($duplicateSubscriptions as $duplicate): ?>
+                        <div class="bg-white rounded-lg p-3 border border-red-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="font-medium text-gray-900"><?php echo htmlspecialchars($duplicate['name']); ?></p>
+                                <span class="text-sm font-semibold text-red-600">€<?php echo number_format($duplicate['cost'], 2); ?></span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Similar to: <?php echo htmlspecialchars($duplicate['similar_services']); ?></p>
+                            <div class="flex space-x-2">
+                                <a href="unsubscribe/index.php?search=<?php echo urlencode($duplicate['name']); ?>" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors">
+                                    🚫 Cancel Guide
+                                </a>
+                                <button onclick="editSubscription(<?php echo $duplicate['id']; ?>)" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors">
+                                    ✏️ Edit
+                                </button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Anomalies -->
+                <?php if (count($anomalies) > 0): ?>
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <span class="text-purple-600 text-xl">🚨</span>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-purple-900">Unusual Charges</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <?php foreach ($anomalies as $anomaly): ?>
+                        <div class="bg-white rounded-lg p-3 border border-purple-100">
+                            <div class="flex items-center justify-between mb-1">
+                                <p class="font-medium text-gray-900"><?php echo htmlspecialchars($anomaly['merchant_name']); ?></p>
+                                <span class="text-sm text-purple-600"><?php echo date('M j', strtotime($anomaly['booking_date'])); ?></span>
+                            </div>
+                            <p class="text-sm text-gray-600">Expected: €<?php echo number_format($anomaly['expected_cost'], 2); ?> | Charged: €<?php echo number_format(abs($anomaly['actual_amount']), 2); ?></p>
+                            <p class="text-xs text-purple-600">Difference: €<?php echo number_format($anomaly['cost_difference'], 2); ?></p>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Potential New Subscriptions -->
+                <?php if (count($potentialSubscriptions) > 0): ?>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <span class="text-blue-600 text-xl">🔍</span>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-blue-900">Potential New Subscriptions</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <?php foreach ($potentialSubscriptions as $potential): ?>
+                        <div class="bg-white rounded-lg p-3 border border-blue-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="font-medium text-gray-900"><?php echo htmlspecialchars($potential['merchant_name']); ?></p>
+                                <span class="text-sm font-semibold text-blue-600">€<?php echo number_format($potential['avg_amount'], 2); ?></span>
+                            </div>
+                            <p class="text-sm text-gray-600"><?php echo $potential['frequency']; ?> charges since <?php echo date('M Y', strtotime($potential['first_seen'])); ?></p>
+                            <button onclick="addSubscriptionFromPotential('<?php echo htmlspecialchars($potential['merchant_name']); ?>', <?php echo $potential['avg_amount']; ?>)" class="mt-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
+                                ➕ Add as Subscription
+                            </button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+    
+    <!-- Real-time Sync Status -->
+    <?php if (count($syncHealthStatus) > 0): ?>
+    <section class="py-6 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">🏦 Bank Sync Status</h2>
+                <button onclick="window.location.href='bank/scan.php'" class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition-colors">
+                    🔄 Refresh Data
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <?php foreach ($syncHealthStatus as $sync): ?>
+                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($sync['account_name'] ?: $sync['provider']); ?></p>
+                        <span class="text-xs px-2 py-1 rounded <?php 
+                            echo $sync['sync_health'] === 'fresh' ? 'bg-green-100 text-green-700' : 
+                                ($sync['sync_health'] === 'outdated' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
+                        ?>">
+                            <?php echo ucfirst($sync['sync_health']); ?>
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        <?php if ($sync['last_sync_at']): ?>
+                            Last sync: <?php echo date('M j, H:i', strtotime($sync['last_sync_at'])); ?>
+                        <?php else: ?>
+                            Never synced
+                        <?php endif; ?>
+                    </p>
+                    <p class="text-xs text-gray-500"><?php echo $sync['recent_transactions']; ?> transactions today</p>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- Subscriptions Section -->
     <section class="py-12 bg-gray-50">
@@ -1206,6 +1534,171 @@ $categories = [
         // Legacy function for backward compatibility
         function disconnectBank() {
             disconnectAllBanks();
+        }
+        
+        // ENHANCED DASHBOARD FUNCTIONS
+        
+        // Add subscription from potential detection
+        function addSubscriptionFromPotential(merchantName, avgAmount) {
+            // Pre-fill the add subscription form
+            document.getElementById('subscriptionName').value = merchantName;
+            document.getElementById('subscriptionCost').value = avgAmount.toFixed(2);
+            document.getElementById('subscriptionCycle').value = 'monthly';
+            
+            // Auto-categorize based on merchant name
+            const category = autoCategorizeMerchant(merchantName);
+            document.getElementById('subscriptionCategory').value = category;
+            
+            // Show the add subscription modal
+            showAddSubscriptionModal();
+        }
+        
+        // Auto-categorize merchant based on name patterns
+        function autoCategorizeMerchant(merchantName) {
+            const name = merchantName.toLowerCase();
+            if (name.includes('netflix') || name.includes('disney') || name.includes('hbo') || name.includes('prime')) return 'Streaming';
+            if (name.includes('spotify') || name.includes('apple music') || name.includes('youtube music')) return 'Music';
+            if (name.includes('adobe') || name.includes('microsoft') || name.includes('google')) return 'Software';
+            if (name.includes('gym') || name.includes('fitness') || name.includes('sport')) return 'Fitness';
+            if (name.includes('news') || name.includes('times') || name.includes('guardian')) return 'News';
+            return 'Other';
+        }
+        
+        // Enhanced edit subscription with cancellation assistant integration
+        function editSubscription(subscriptionId) {
+            // Get subscription data
+            fetch(`api/subscriptions.php?id=${subscriptionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const sub = data.subscription;
+                        
+                        // Fill edit form
+                        document.getElementById('editSubscriptionId').value = sub.id;
+                        document.getElementById('editSubscriptionName').value = sub.name;
+                        document.getElementById('editSubscriptionCost').value = sub.cost;
+                        document.getElementById('editSubscriptionCycle').value = sub.billing_cycle;
+                        document.getElementById('editSubscriptionCategory').value = sub.category || 'Other';
+                        document.getElementById('editSubscriptionActive').checked = sub.is_active == 1;
+                        
+                        // Add cancellation assistant link if available
+                        const cancelContainer = document.getElementById('cancellationAssistant');
+                        if (cancelContainer) {
+                            cancelContainer.innerHTML = `
+                                <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <h4 class="text-sm font-semibold text-red-900 mb-2">🚫 Need to Cancel?</h4>
+                                    <a href="unsubscribe/index.php?search=${encodeURIComponent(sub.name)}" 
+                                       class="text-sm text-red-700 hover:text-red-900 underline" target="_blank">
+                                        View step-by-step cancellation guide
+                                    </a>
+                                </div>
+                            `;
+                        }
+                        
+                        showEditSubscriptionModal();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading subscription:', err);
+                    alert('Error loading subscription details.');
+                });
+        }
+        
+        // Show insights panel
+        function toggleInsightsPanel() {
+            const panel = document.getElementById('insightsPanel');
+            if (panel) {
+                panel.classList.toggle('hidden');
+            }
+        }
+        
+        // Mark anomaly as reviewed
+        function markAnomalyReviewed(anomalyId) {
+            fetch('api/anomalies.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'mark_reviewed', 
+                    anomaly_id: anomalyId 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error updating anomaly status.');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error updating anomaly status.');
+            });
+        }
+        
+        // Trigger manual bank sync
+        function triggerBankSync(provider = null) {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = '🔄 Syncing...';
+            
+            const url = provider ? `bank/scan.php?provider=${provider}` : 'bank/scan.php';
+            
+            fetch(url, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        alert(data.error || 'Sync failed. Please try again.');
+                        button.disabled = false;
+                        button.textContent = '🔄 Refresh Data';
+                    }
+                })
+                .catch(err => {
+                    console.error('Sync error:', err);
+                    alert('Sync failed. Please try again.');
+                    button.disabled = false;
+                    button.textContent = '🔄 Refresh Data';
+                });
+        }
+        
+        // Enhanced subscription management with multi-account aggregation
+        function showMultiAccountSummary() {
+            fetch('api/multi-account-summary.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                        modal.innerHTML = `
+                            <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-y-auto">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold">🏦 Multi-Account Summary</h3>
+                                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                                        ✕
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    ${data.accounts.map(account => `
+                                        <div class="border border-gray-200 rounded-lg p-4">
+                                            <h4 class="font-semibold">${account.account_name}</h4>
+                                            <p class="text-sm text-gray-600">${account.provider}</p>
+                                            <p class="text-sm">Subscriptions: ${account.subscription_count}</p>
+                                            <p class="text-sm">Monthly Total: €${account.monthly_total}</p>
+                                            <p class="text-xs text-gray-500">Last sync: ${account.last_sync_at || 'Never'}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading multi-account summary:', err);
+                    alert('Error loading account summary.');
+                });
         }
     </script>
 </body>
