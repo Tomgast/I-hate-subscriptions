@@ -8,18 +8,36 @@
  * - Predictive analytics and insights
  */
 
-session_start();
-require_once 'config/db_config.php';
-require_once 'includes/subscription_manager.php';
-require_once 'includes/multi_bank_service.php';
-require_once 'includes/plan_manager.php';
-require_once 'includes/bank_provider_router.php';
-require_once 'improved-subscription-detection.php';
+// Start output buffering to prevent header issues
+ob_start();
 
-// Authentication check
+session_start();
+
+// Authentication check first (before any includes that might output)
 if (!isset($_SESSION['user_id'])) {
+    ob_end_clean(); // Clear any output
     header('Location: auth/signin.php');
     exit;
+}
+
+// Now safely include files
+try {
+    require_once 'config/db_config.php';
+    require_once 'includes/subscription_manager.php';
+    require_once 'includes/multi_bank_service.php';
+    require_once 'includes/plan_manager.php';
+    
+    // Optional includes with error handling
+    if (file_exists('includes/bank_provider_router.php')) {
+        require_once 'includes/bank_provider_router.php';
+    }
+    
+    if (file_exists('improved-subscription-detection.php')) {
+        require_once 'improved-subscription-detection.php';
+    }
+} catch (Exception $e) {
+    ob_end_clean();
+    die('Error loading required files: ' . $e->getMessage());
 }
 
 $userId = $_SESSION['user_id'];
@@ -29,12 +47,37 @@ $userName = $_SESSION['user_name'] ?? 'User';
 $pdo = getDBConnection();
 $subscriptionManager = new SubscriptionManager();
 $multiBankService = new MultiBankService();
-$planManager = getPlanManager();
-$providerRouter = new BankProviderRouter($pdo);
+
+// Initialize optional services
+$planManager = null;
+$providerRouter = null;
+
+try {
+    $planManager = getPlanManager();
+} catch (Exception $e) {
+    error_log("Plan manager not available: " . $e->getMessage());
+}
+
+try {
+    if (class_exists('BankProviderRouter')) {
+        $providerRouter = new BankProviderRouter($pdo);
+    }
+} catch (Exception $e) {
+    error_log("Bank provider router not available: " . $e->getMessage());
+}
 
 // Get user plan info
-$userPlan = $planManager->getUserPlan($userId);
-$hasValidPlan = $userPlan && $userPlan['is_active'];
+$userPlan = null;
+$hasValidPlan = true; // Default to true if plan manager not available
+
+if ($planManager) {
+    try {
+        $userPlan = $planManager->getUserPlan($userId);
+        $hasValidPlan = $userPlan && $userPlan['is_active'];
+    } catch (Exception $e) {
+        error_log("Error getting user plan: " . $e->getMessage());
+    }
+}
 
 // Advanced Analytics Functions
 function getAdvancedAnalytics($pdo, $userId) {
@@ -146,11 +189,21 @@ foreach ($transactionInsights as $merchant) {
             'confidence' => min(90, $merchant['transaction_count'] * 8)
         ];
         
-        $validation = ImprovedSubscriptionDetector::validateSubscriptionPattern($pattern);
-        if ($validation['valid']) {
-            $potentialSubscriptions[] = array_merge($merchant, [
-                'validation_score' => $validation['score']
-            ]);
+        // Only use improved detection if class is available
+        if (class_exists('ImprovedSubscriptionDetector')) {
+            $validation = ImprovedSubscriptionDetector::validateSubscriptionPattern($pattern);
+            if ($validation['valid']) {
+                $potentialSubscriptions[] = array_merge($merchant, [
+                    'validation_score' => $validation['score']
+                ]);
+            }
+        } else {
+            // Simple fallback validation
+            if ($merchant['transaction_count'] >= 3 && $merchant['avg_amount'] >= 5) {
+                $potentialSubscriptions[] = array_merge($merchant, [
+                    'validation_score' => min(90, $merchant['transaction_count'] * 10)
+                ]);
+            }
         }
     }
 }
@@ -559,3 +612,7 @@ foreach ($transactionInsights as $merchant) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+<?php
+// Clean up output buffer
+ob_end_flush();
+?>
