@@ -643,7 +643,7 @@ $categories = [
                     
                     <div class="mb-4">
                         <div class="text-3xl font-bold text-gray-900 mb-1">
-                            €<?php echo number_format($subscription['display_amount'], 2); ?>
+                            €<?php echo number_format($subscription['cost'] ?? $subscription['amount'] ?? 0, 2); ?>
                         </div>
                         <div class="text-sm text-gray-500">
                             per <?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>
@@ -665,12 +665,12 @@ $categories = [
                     <?php endif; ?>
                     
                     <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $subscription['is_active_status'] ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                            <?php echo $subscription['is_active_status'] ? 'Active' : 'Inactive'; ?>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo ($subscription['is_active'] ?? ($subscription['status'] === 'active')) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                            <?php echo ($subscription['is_active'] ?? ($subscription['status'] === 'active')) ? 'Active' : 'Inactive'; ?>
                         </span>
-                        <?php if ($subscription['source'] === 'bank' && $subscription['bank_last_sync']): ?>
-                        <span class="text-xs text-blue-600" title="Bank sync: <?php echo $subscription['bank_last_sync']; ?>">
-                            🔄 <?php echo date('M j', strtotime($subscription['bank_last_sync'])); ?>
+                        <?php if ($subscription['provider'] && $subscription['provider'] !== 'stripe'): ?>
+                        <span class="text-xs text-blue-600" title="Bank detected subscription">
+                            🏦 <?php echo ucfirst($subscription['provider']); ?>
                         </span>
                         <?php endif; ?>
                     </div>
