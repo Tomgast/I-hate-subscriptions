@@ -143,14 +143,14 @@ try {
     $nextPaymentDate = null;
     
     foreach ($subscriptions as $subscription) {
-        // Check if subscription is active (using unified field)
-        $isActive = (bool)$subscription['is_active_status'];
+        // Check if subscription is active (using actual database fields)
+        $isActive = (bool)($subscription['is_active'] ?? ($subscription['status'] === 'active'));
         
         if ($isActive) {
             $stats['total_active']++;
             
-            // Get amount (using unified field)
-            $amount = (float)$subscription['display_amount'];
+            // Get amount (using actual database fields)
+            $amount = (float)($subscription['cost'] ?? $subscription['amount'] ?? 0);
             
             // Calculate monthly cost
             $monthlyCost = 0;
@@ -625,11 +625,11 @@ $categories = [
                                 ?>
                             </span>
                             <div>
-                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['display_name'] ?? 'Unknown'); ?></h4>
+                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['name'] ?: $subscription['merchant_name'] ?: 'Unknown'); ?></h4>
                                 <div class="flex items-center space-x-2">
                                     <p class="text-sm text-gray-500"><?php echo htmlspecialchars($subscription['category'] ?? 'Other'); ?></p>
-                                    <?php if ($subscription['bank_account_name']): ?>
-                                    <span class="text-xs text-blue-600">• <?php echo htmlspecialchars($subscription['bank_account_name']); ?></span>
+                                    <?php if ($subscription['provider'] && $subscription['provider'] !== 'stripe'): ?>
+                                    <span class="text-xs text-blue-600">• <?php echo ucfirst($subscription['provider']); ?> Bank</span>
                                     <?php endif; ?>
                                     <?php if ($subscription['confidence']): ?>
                                     <span class="text-xs text-gray-400" title="Detection confidence: <?php echo $subscription['confidence']; ?>%">
@@ -644,7 +644,7 @@ $categories = [
                                 <input type="checkbox" class="exclude-checkbox rounded border-gray-300 text-red-600" data-id="<?php echo $subscription['id']; ?>" onchange="toggleExclude(<?php echo $subscription['id']; ?>)">
                                 <span class="ml-1 text-xs text-gray-500">Exclude</span>
                             </label>
-                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['display_name'] ?? 'Unknown', ENT_QUOTES); ?>', <?php echo $subscription['display_amount']; ?>, '<?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>', '<?php echo $subscription['category'] ?? 'Other'; ?>', <?php echo $subscription['is_active_status'] ? 1 : 0; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['name'] ?: $subscription['merchant_name'] ?: 'Unknown', ENT_QUOTES); ?>', <?php echo $subscription['cost'] ?? $subscription['amount'] ?? 0; ?>, '<?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>', '<?php echo $subscription['category'] ?? 'Other'; ?>', <?php echo $subscription['is_active'] ? 1 : 0; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
