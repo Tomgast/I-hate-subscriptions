@@ -10,171 +10,44 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'User';
-
-// Initialize services
 $pdo = getDBConnection();
-$subscriptionManager = new SubscriptionManager();
-$multiBankService = new MultiBankService();
 
-// Initialize optional services
-$planManager = null;
-$providerRouter = null;
+// Get basic subscription data
+$stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC");
+$stmt->execute([$userId]);
+$subscriptions = $stmt->fetchAll();
 
-try {
-    $planManager = getPlanManager();
-} catch (Exception $e) {
-    error_log("Plan manager not available: " . $e->getMessage());
-}
+// Get basic stats
+$stmt = $pdo->prepare("
+    SELECT 
+        COUNT(*) as total_active,
+        SUM(cost) as monthly_total,
+        SUM(cost * 12) as yearly_total
+    FROM subscriptions 
+    WHERE user_id = ? AND is_active = 1
+");
+$stmt->execute([$userId]);
+$stats = $stmt->fetch();
 
-try {
-    if (class_exists('BankProviderRouter')) {
-        $providerRouter = new BankProviderRouter($pdo);
-    }
-} catch (Exception $e) {
-    error_log("Bank provider router not available: " . $e->getMessage());
-}
-
-// Get user plan info
-$userPlan = null;
-$hasValidPlan = true; // Default to true if plan manager not available
-
-if ($planManager) {
-    try {
-        $userPlan = $planManager->getUserPlan($userId);
-        $hasValidPlan = $userPlan && $userPlan['is_active'];
-    } catch (Exception $e) {
-        error_log("Error getting user plan: " . $e->getMessage());
-    }
-}
-
-// Advanced Analytics Functions
-function getAdvancedAnalytics($pdo, $userId) {
-    // Get subscription trends
-    $stmt = $pdo->prepare("
-        SELECT 
-            DATE_FORMAT(created_at, '%Y-%m') as month,
-            COUNT(*) as new_subscriptions,
-            SUM(cost) as monthly_cost_added
-        FROM subscriptions 
-        WHERE user_id = ? 
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-        ORDER BY month DESC
-        LIMIT 6
-    ");
-    $stmt->execute([$userId]);
-    $trends = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get category breakdown
-    $stmt = $pdo->prepare("
-        SELECT 
-            COALESCE(category, 'Uncategorized') as category,
-            COUNT(*) as count,
-            SUM(cost) as total_cost,
-            AVG(confidence) as avg_confidence
-        FROM subscriptions 
-        WHERE user_id = ? AND is_active = 1
-        GROUP BY category
-        ORDER BY total_cost DESC
-    ");
-    $stmt->execute([$userId]);
-    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    return ['trends' => $trends, 'categories' => $categories];
-}
-
-function getTransactionInsights($pdo, $userId) {
-    // Top recurring merchants (potential subscriptions)
-    $stmt = $pdo->prepare("
-        SELECT 
-            merchant_name,
-            COUNT(*) as transaction_count,
-            AVG(ABS(amount)) as avg_amount,
-            MIN(booking_date) as first_seen,
-            MAX(booking_date) as last_seen,
-            CASE 
-                WHEN COUNT(*) >= 12 THEN 'Monthly Pattern'
-                WHEN COUNT(*) >= 4 THEN 'Quarterly Pattern'
-                WHEN COUNT(*) >= 2 THEN 'Recurring Pattern'
-                ELSE 'Single Transaction'
-            END as pattern_type
-        FROM raw_transactions 
-        WHERE user_id = ? 
-        AND amount < 0  -- Only expenses
-        AND booking_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-        GROUP BY merchant_name
-        HAVING COUNT(*) >= 2
-        ORDER BY transaction_count DESC, avg_amount DESC
-        LIMIT 10
-    ");
-    $stmt->execute([$userId]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getBankHealth($pdo, $userId) {
-    $stmt = $pdo->prepare("
-        SELECT 
-            bc.*,
-            bsr.last_sync_at as last_scan,
-            bsr.subscriptions_found,
-            bsr.status as scan_status
-        FROM bank_connections bc
-        LEFT JOIN bank_scan_results bsr ON bc.user_id = bsr.user_id AND bc.provider = bsr.provider
-        WHERE bc.user_id = ?
-        ORDER BY bc.created_at DESC
-    ");
-    $stmt->execute([$userId]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// Get dashboard data
-$subscriptions = $subscriptionManager->getUserSubscriptions($userId, false);
-$stats = $subscriptionManager->getSubscriptionStats($userId);
-$upcomingPayments = $subscriptionManager->getUpcomingPayments($userId, 30);
-$bankSummary = $multiBankService->getBankAccountSummary($userId);
-
-// Advanced analytics
-$analytics = getAdvancedAnalytics($pdo, $userId);
-$transactionInsights = getTransactionInsights($pdo, $userId);
-$bankHealth = getBankHealth($pdo, $userId);
-
-// Detect potential new subscriptions
+// Simple potential subscriptions from transactions
 $potentialSubscriptions = [];
-foreach ($transactionInsights as $merchant) {
-    // Check if already a known subscription
-    $isKnown = false;
-    foreach ($subscriptions as $sub) {
-        if (stripos($sub['merchant_name'] ?? $sub['name'], $merchant['merchant_name']) !== false) {
-            $isKnown = true;
-            break;
-        }
-    }
-    
-    if (!$isKnown) {
-        $pattern = [
-            'merchant_name' => $merchant['merchant_name'],
-            'amount' => $merchant['avg_amount'],
-            'billing_cycle' => $merchant['pattern_type'] === 'Monthly Pattern' ? 'monthly' : 'unknown',
-            'confidence' => min(90, $merchant['transaction_count'] * 8)
-        ];
-        
-        // Only use improved detection if class is available
-        if (class_exists('ImprovedSubscriptionDetector')) {
-            $validation = ImprovedSubscriptionDetector::validateSubscriptionPattern($pattern);
-            if ($validation['valid']) {
-                $potentialSubscriptions[] = array_merge($merchant, [
-                    'validation_score' => $validation['score']
-                ]);
-            }
-        } else {
-            // Simple fallback validation
-            if ($merchant['transaction_count'] >= 3 && $merchant['avg_amount'] >= 5) {
-                $potentialSubscriptions[] = array_merge($merchant, [
-                    'validation_score' => min(90, $merchant['transaction_count'] * 10)
-                ]);
-            }
-        }
-    }
+try {
+    $stmt = $pdo->prepare("
+        SELECT merchant_name, COUNT(*) as count, AVG(ABS(amount)) as avg_amount
+        FROM raw_transactions 
+        WHERE user_id = ? AND amount < 0 
+        GROUP BY merchant_name 
+        HAVING COUNT(*) >= 3 
+        ORDER BY count DESC 
+        LIMIT 5
+    ");
+    $stmt->execute([$userId]);
+    $potentialSubscriptions = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Ignore if raw_transactions doesn't exist
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
