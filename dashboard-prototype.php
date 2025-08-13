@@ -1,43 +1,11 @@
 <?php
-/**
- * ADVANCED DASHBOARD PROTOTYPE
- * State-of-the-art subscription management dashboard leveraging:
- * - Raw bank transaction data analysis
- * - Advanced subscription detection algorithms
- * - Real-time bank connection monitoring
- * - Predictive analytics and insights
- */
-
-// Start output buffering to prevent header issues
-ob_start();
-
 session_start();
+require_once 'config/db_config.php';
 
-// Authentication check first (before any includes that might output)
+// Simple auth check
 if (!isset($_SESSION['user_id'])) {
-    ob_end_clean(); // Clear any output
     header('Location: auth/signin.php');
     exit;
-}
-
-// Now safely include files
-try {
-    require_once 'config/db_config.php';
-    require_once 'includes/subscription_manager.php';
-    require_once 'includes/multi_bank_service.php';
-    require_once 'includes/plan_manager.php';
-    
-    // Optional includes with error handling
-    if (file_exists('includes/bank_provider_router.php')) {
-        require_once 'includes/bank_provider_router.php';
-    }
-    
-    if (file_exists('improved-subscription-detection.php')) {
-        require_once 'improved-subscription-detection.php';
-    }
-} catch (Exception $e) {
-    ob_end_clean();
-    die('Error loading required files: ' . $e->getMessage());
 }
 
 $userId = $_SESSION['user_id'];
