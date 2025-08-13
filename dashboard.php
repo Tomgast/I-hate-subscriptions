@@ -104,8 +104,24 @@ if ($_POST && isset($_POST['action'])) {
 try {
     $pdo = getDBConnection();
     
-    // Get all subscriptions (both manual and bank-detected)
-    $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC");
+    // Get all subscriptions with enhanced data and proper column handling
+    $stmt = $pdo->prepare("
+        SELECT s.*, 
+               COALESCE(s.amount, s.cost) as display_amount,
+               COALESCE(s.status = 'active', s.is_active = 1, s.status IS NULL) as is_active_status,
+               COALESCE(s.merchant_name, s.name) as display_name,
+               s.source,
+               s.bank_reference,
+               s.last_charge_date,
+               s.confidence,
+               bc.provider as bank_provider,
+               bc.account_name as bank_account_name,
+               bc.last_sync_at as bank_last_sync
+        FROM subscriptions s
+        LEFT JOIN bank_connections bc ON s.bank_reference = bc.account_id AND bc.user_id = s.user_id
+        WHERE s.user_id = ? 
+        ORDER BY s.created_at DESC
+    ");
     $stmt->execute([$userId]);
     $subscriptions = $stmt->fetchAll();
     
@@ -127,14 +143,14 @@ try {
     $nextPaymentDate = null;
     
     foreach ($subscriptions as $subscription) {
-        // Check if subscription is active (support both column names for compatibility)
-        $isActive = ($subscription['status'] == 'active') || ($subscription['is_active'] == 1);
+        // Check if subscription is active (using unified field)
+        $isActive = (bool)$subscription['is_active_status'];
         
         if ($isActive) {
             $stats['total_active']++;
             
-            // Get amount (support both column names for compatibility)
-            $amount = $subscription['amount'] ?? $subscription['cost'] ?? 0;
+            // Get amount (using unified field)
+            $amount = (float)$subscription['display_amount'];
             
             // Calculate monthly cost
             $monthlyCost = 0;
@@ -192,10 +208,68 @@ try {
     $upcomingPayments = [];
 }
 
-// Get multi-bank account information
+// Get comprehensive bank and sync status information
 require_once 'includes/multi_bank_service.php';
 $multiBankService = new MultiBankService();
 $bankAccountSummary = $multiBankService->getBankAccountSummary($userId);
+
+// Get enhanced bank sync status and recent activity
+try {
+    // Get last sync information with more details
+    $stmt = $pdo->prepare("
+        SELECT bsr.provider, bsr.status, bsr.last_sync_at, bsr.subscriptions_found, 
+               bsr.created_at, bsr.scan_duration_seconds,
+               COUNT(bc.id) as connected_accounts
+        FROM bank_scan_results bsr
+        LEFT JOIN bank_connections bc ON bc.user_id = bsr.user_id AND bc.provider = bsr.provider AND bc.status = 'active'
+        WHERE bsr.user_id = ? 
+        GROUP BY bsr.id
+        ORDER BY bsr.created_at DESC 
+        LIMIT 1
+    ");
+    $stmt->execute([$userId]);
+    $lastSyncInfo = $stmt->fetch();
+    
+    // Get detailed bank connection status
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as total_connections,
+               SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_connections,
+               MAX(last_sync_at) as last_sync_date,
+               GROUP_CONCAT(DISTINCT provider) as providers
+        FROM bank_connections 
+        WHERE user_id = ?
+    ");
+    $stmt->execute([$userId]);
+    $connectionStatus = $stmt->fetch();
+    
+    // Get recent transactions count and activity indicators
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as recent_transactions,
+               COUNT(DISTINCT merchant_name) as unique_merchants,
+               MIN(booking_date) as oldest_transaction,
+               MAX(booking_date) as newest_transaction
+        FROM raw_transactions 
+        WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    ");
+    $stmt->execute([$userId]);
+    $recentActivity = $stmt->fetch();
+    
+    // Check for subscription detection issues (like the November 30 problem)
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as problematic_dates
+        FROM subscriptions 
+        WHERE user_id = ? AND next_billing_date LIKE '%-11-30'
+    ");
+    $stmt->execute([$userId]);
+    $dateIssues = $stmt->fetch();
+    
+} catch (Exception $e) {
+    error_log("Error getting enhanced bank sync status: " . $e->getMessage());
+    $lastSyncInfo = null;
+    $connectionStatus = ['total_connections' => 0, 'active_connections' => 0, 'last_sync_date' => null, 'providers' => ''];
+    $recentActivity = ['recent_transactions' => 0, 'unique_merchants' => 0, 'oldest_transaction' => null, 'newest_transaction' => null];
+    $dateIssues = ['problematic_dates' => 0];
+}
 
 // Categories for filtering
 $categories = [
@@ -261,7 +335,28 @@ $categories = [
                     <?php if ($userPlan['plan_type'] === 'yearly'): ?>
                     <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Priority Support</span>
                     <?php endif; ?>
-                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Bank Connected</span>
+                    <?php if ($connectionStatus['active_connections'] > 0): ?>
+                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            🏦 <?php echo $connectionStatus['active_connections']; ?> Bank<?php echo $connectionStatus['active_connections'] > 1 ? 's' : ''; ?> Connected
+                        </span>
+                        <?php if ($lastSyncInfo && $lastSyncInfo['created_at']): ?>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded" title="Last sync: <?php echo $lastSyncInfo['created_at']; ?>">
+                            ⏱️ Synced <?php echo date('M j, H:i', strtotime($lastSyncInfo['created_at'])); ?>
+                        </span>
+                        <?php endif; ?>
+                        <?php if ($recentActivity['recent_transactions'] > 0): ?>
+                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            📊 <?php echo $recentActivity['recent_transactions']; ?> new transactions
+                        </span>
+                        <?php endif; ?>
+                        <?php if ($dateIssues['problematic_dates'] > 0): ?>
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded" title="Some subscriptions may have incorrect next payment dates">
+                            ⚠️ Date Issues
+                        </span>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">No Banks Connected</span>
+                    <?php endif; ?>
                 </div>
                 <?php if ($isPaid): ?>
                     <p>You're on the <span class="text-green-600 font-semibold">Pro Plan</span> - all features unlocked!</p>
@@ -370,16 +465,40 @@ $categories = [
                         <div class="mt-2 space-y-1">
                             <?php foreach ($bankAccountSummary['bank_accounts'] as $account): ?>
                             <div class="flex items-center justify-between text-sm">
-                                <span class="text-green-600">🏦 <?php echo htmlspecialchars($account['account_name']); ?> (<?php echo ucfirst($account['provider']); ?>)</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-green-600">🏦 <?php echo htmlspecialchars($account['account_name']); ?></span>
+                                    <span class="text-xs text-gray-500">(<?php echo ucfirst($account['provider']); ?>)</span>
+                                    <?php if ($account['last_sync_at']): ?>
+                                    <span class="text-xs text-blue-600" title="Last synced: <?php echo $account['last_sync_at']; ?>">
+                                        ✓ <?php echo date('M j', strtotime($account['last_sync_at'])); ?>
+                                    </span>
+                                    <?php else: ?>
+                                    <span class="text-xs text-yellow-600" title="Never synced or sync data unavailable">
+                                        ⚠️ No sync
+                                    </span>
+                                    <?php endif; ?>
+                                </div>
                                 <button onclick="disconnectBankAccount(<?php echo $account['id']; ?>)" class="text-red-500 hover:text-red-700 text-xs">
                                     Disconnect
                                 </button>
                             </div>
                             <?php endforeach; ?>
-                            <p class="text-xs text-gray-600 mt-1">
-                                Monthly cost: €<?php echo number_format($bankAccountSummary['monthly_cost'], 2); ?> 
-                                (€<?php echo number_format($bankAccountSummary['cost_per_account'], 2); ?> per account)
-                            </p>
+                            <div class="text-xs text-gray-600 mt-2 space-y-1">
+                                <p>Monthly cost: €<?php echo number_format($bankAccountSummary['monthly_cost'], 2); ?> (€<?php echo number_format($bankAccountSummary['cost_per_account'], 2); ?> per account)</p>
+                                <?php if ($lastSyncInfo): ?>
+                                <p>Last scan: <?php echo date('M j, Y H:i', strtotime($lastSyncInfo['created_at'])); ?> - Found <?php echo $lastSyncInfo['subscriptions_found'] ?? 0; ?> subscriptions
+                                <?php if ($lastSyncInfo['scan_duration_seconds']): ?>
+                                (<?php echo $lastSyncInfo['scan_duration_seconds']; ?>s)
+                                <?php endif; ?>
+                                </p>
+                                <?php endif; ?>
+                                <?php if ($recentActivity['recent_transactions'] > 0): ?>
+                                <p class="text-green-600">📊 <?php echo $recentActivity['recent_transactions']; ?> new transactions from <?php echo $recentActivity['unique_merchants']; ?> merchants this week</p>
+                                <?php endif; ?>
+                                <?php if ($recentActivity['newest_transaction']): ?>
+                                <p>Latest transaction: <?php echo date('M j, Y', strtotime($recentActivity['newest_transaction'])); ?></p>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         <?php else: ?>
                         <p class="text-sm text-gray-500 mt-1">Add subscriptions manually or connect your bank</p>
@@ -506,8 +625,18 @@ $categories = [
                                 ?>
                             </span>
                             <div>
-                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['merchant_name'] ?? $subscription['name'] ?? 'Unknown'); ?></h4>
-                                <p class="text-sm text-gray-500"><?php echo htmlspecialchars($subscription['category']); ?></p>
+                                <h4 class="font-semibold text-gray-900 text-lg"><?php echo htmlspecialchars($subscription['display_name'] ?? 'Unknown'); ?></h4>
+                                <div class="flex items-center space-x-2">
+                                    <p class="text-sm text-gray-500"><?php echo htmlspecialchars($subscription['category'] ?? 'Other'); ?></p>
+                                    <?php if ($subscription['bank_account_name']): ?>
+                                    <span class="text-xs text-blue-600">• <?php echo htmlspecialchars($subscription['bank_account_name']); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($subscription['confidence']): ?>
+                                    <span class="text-xs text-gray-400" title="Detection confidence: <?php echo $subscription['confidence']; ?>%">
+                                        <?php echo $subscription['confidence']; ?>% confidence
+                                    </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -515,7 +644,7 @@ $categories = [
                                 <input type="checkbox" class="exclude-checkbox rounded border-gray-300 text-red-600" data-id="<?php echo $subscription['id']; ?>" onchange="toggleExclude(<?php echo $subscription['id']; ?>)">
                                 <span class="ml-1 text-xs text-gray-500">Exclude</span>
                             </label>
-                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['merchant_name'] ?? $subscription['name'] ?? 'Unknown', ENT_QUOTES); ?>', <?php echo $subscription['amount'] ?? $subscription['cost'] ?? 0; ?>, '<?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>', '<?php echo $subscription['category'] ?? 'Other'; ?>', <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 1 : 0; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <button onclick="openEditModal(<?php echo $subscription['id']; ?>, '<?php echo htmlspecialchars($subscription['display_name'] ?? 'Unknown', ENT_QUOTES); ?>', <?php echo $subscription['display_amount']; ?>, '<?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>', '<?php echo $subscription['category'] ?? 'Other'; ?>', <?php echo $subscription['is_active_status'] ? 1 : 0; ?>)" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
@@ -530,11 +659,16 @@ $categories = [
                     
                     <div class="mb-4">
                         <div class="text-3xl font-bold text-gray-900 mb-1">
-                            €<?php echo number_format($subscription['amount'] ?? $subscription['cost'] ?? 0, 2); ?>
+                            €<?php echo number_format($subscription['display_amount'], 2); ?>
                         </div>
                         <div class="text-sm text-gray-500">
                             per <?php echo $subscription['billing_cycle'] ?? 'monthly'; ?>
                         </div>
+                        <?php if ($subscription['last_charge_date']): ?>
+                        <div class="text-xs text-gray-400 mt-1">
+                            Last charged: <?php echo date('M j, Y', strtotime($subscription['last_charge_date'])); ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <?php if ($subscription['next_billing_date']): ?>
@@ -546,10 +680,15 @@ $categories = [
                     </div>
                     <?php endif; ?>
                     
-                    <div class="pt-4 border-t border-gray-100">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                            <?php echo ($subscription['status'] == 'active' || $subscription['is_active'] == 1) ? 'Active' : 'Inactive'; ?>
+                    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $subscription['is_active_status'] ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                            <?php echo $subscription['is_active_status'] ? 'Active' : 'Inactive'; ?>
                         </span>
+                        <?php if ($subscription['source'] === 'bank' && $subscription['bank_last_sync']): ?>
+                        <span class="text-xs text-blue-600" title="Bank sync: <?php echo $subscription['bank_last_sync']; ?>">
+                            🔄 <?php echo date('M j', strtotime($subscription['bank_last_sync'])); ?>
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>
