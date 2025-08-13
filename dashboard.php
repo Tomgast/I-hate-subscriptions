@@ -104,24 +104,8 @@ if ($_POST && isset($_POST['action'])) {
 try {
     $pdo = getDBConnection();
     
-    // Get all subscriptions with enhanced data and proper column handling
-    $stmt = $pdo->prepare("
-        SELECT s.*, 
-               COALESCE(s.amount, s.cost) as display_amount,
-               COALESCE(s.status = 'active', s.is_active = 1, s.status IS NULL) as is_active_status,
-               COALESCE(s.merchant_name, s.name) as display_name,
-               s.source,
-               s.bank_reference,
-               s.last_charge_date,
-               s.confidence,
-               bc.provider as bank_provider,
-               bc.account_name as bank_account_name,
-               bc.last_sync_at as bank_last_sync
-        FROM subscriptions s
-        LEFT JOIN bank_connections bc ON s.bank_reference = bc.account_id AND bc.user_id = s.user_id
-        WHERE s.user_id = ? 
-        ORDER BY s.created_at DESC
-    ");
+    // Get all subscriptions (simple query that works reliably)
+    $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->execute([$userId]);
     $subscriptions = $stmt->fetchAll();
     
